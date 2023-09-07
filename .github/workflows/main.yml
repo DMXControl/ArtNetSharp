@@ -25,4 +25,4 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.1.1
       with:
-        path: NanoleafAPI/bin/Release/net6.0/ArtNetSharp.dll
+        path: NanoleafAPI/bin/Release/netstandard2.0/ArtNetSharp.dll
