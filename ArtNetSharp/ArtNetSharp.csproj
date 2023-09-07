@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<Version>0.0.1</Version>
+		<RepositoryUrl>https://github.com/DMXControl/ArtNetSharp</RepositoryUrl>
+		<PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
+		<PackageTags>RDM; ArtNet; E1.20; E1.33; E1.37-1; E1.37-2; E1.37-7</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>RDMSharp.png</PackageIcon>
+		<ApplicationIcon>Icons\ArtNetSharp.ico</ApplicationIcon>
+		<Description>This library allows you to use the ArtNet protocol version 4 in C#</Description>
+		<Company>DMXControl-Projects e.V.</Company>
+		<Authors>Patrick Grote</Authors>
+		<Title>$(AssemblyName)</Title>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Content Include="Icons\ArtNetSharp.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\LICENSE">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="Icons\ArtNetSharp.png" Pack="true" PackagePath="" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Reference Include="RDMSharp">
+	    <HintPath>..\..\RDMSharp\RDMSharp\bin\Debug\net6.0\RDMSharp.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+</Project>

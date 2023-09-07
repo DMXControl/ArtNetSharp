@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+          dotnet-version: '6.0.x'
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.1
+      with:
+        path: NanoleafAPI/bin/Release/net6.0/ArtNetSharp.dll
