@@ -4,12 +4,12 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-		<Version>0.0.1</Version>
+		<Version>0.0.2</Version>
 		<RepositoryUrl>https://github.com/DMXControl/ArtNetSharp</RepositoryUrl>
 		<PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
 		<PackageTags>RDM; ArtNet; E1.20; E1.33; E1.37-1; E1.37-2; E1.37-7</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageIcon>RDMSharp.png</PackageIcon>
+		<PackageIcon>ArtNetSharp.png</PackageIcon>
 		<ApplicationIcon>Icons\ArtNetSharp.ico</ApplicationIcon>
 		<Description>This library allows you to use the ArtNet protocol version 4 in C#</Description>
 		<Company>DMXControl-Projects e.V.</Company>
