@@ -34,10 +34,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
-	</ItemGroup>
-	<ItemGroup>
-	  <Reference Include="RDMSharp">
-	    <HintPath>..\..\RDMSharp\RDMSharp\bin\Debug\net6.0\RDMSharp.dll</HintPath>
-	  </Reference>
+		<PackageReference Include="RDMSharp" Version="0.0.1" />
 	</ItemGroup>
 </Project>
