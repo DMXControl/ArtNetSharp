@@ -36,6 +36,7 @@ namespace ArtNetSharp.Communication
         public virtual ushort OEMProductCode { get; } = Constants.DEFAULT_OEM_CODE;
 
         protected virtual bool SendArtPoll { get; } = false;
+        protected virtual bool SendArtData { get; } = false;
         protected virtual bool SupportRDM { get; } = false;
 
         public virtual RDMUID UID { get; } = RDMUID.Empty;
@@ -594,7 +595,7 @@ namespace ArtNetSharp.Communication
                     remoteClient.processArtPollReply(artPollReply);
                 else
                 {
-                    remoteClient = new RemoteClient(artPollReply);
+                    remoteClient = new RemoteClient(artPollReply) { Instance = this };
                     remoteClients.TryAdd(remoteClient.IpAddress, remoteClient);
 
                     //Delay, to give The Remote CLient time to send all ArtPollReplys

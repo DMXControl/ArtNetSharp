@@ -81,6 +81,11 @@ namespace ArtNetSharp
 
                         case EOpCodes.OpAddress:
                             return new ArtAddress(packet);
+
+                        case EOpCodes.OpDataRequest:
+                            return new ArtData(packet);
+                        case EOpCodes.OpDataReply:
+                            return new ArtDataReply(packet);
                     }
                 }
                 return null;

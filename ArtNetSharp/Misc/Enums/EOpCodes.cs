@@ -22,12 +22,20 @@ namespace ArtNetSharp
         /// Used to send text based parameter commands.
         /// </summary>
         OpCommand = 0x2400,
+        /// <summary>
+        /// This is an ArtDataRequest packet. It is used to request data such as products URLs
+        /// </summary>
+        OpDataRequest = 0x2700,
+        /// <summary>
+        /// This is an ArtDmx data packet. It contains zero start
+        /// code DMX512 information for a single Universe.
+        /// </summary>
+        OpDataReply = 0x2800,
         /// <value>
         /// OpOutput / OpDmx
         /// </value>
         /// <summary>
-        /// This is an ArtDmx data packet. It contains zero start
-        /// code DMX512 information for a single Universe.
+        /// This is an ArtDataReply packet. It is used to reply to ArtDataRequest packets.
         /// </summary>
         OpOutput = 0x5000,
         /// <summary>

@@ -253,5 +253,25 @@ namespace ArtNetTests
             if (res is ArtAddress des)
                 Assert.That(des, Is.EqualTo(src));
         }
+        [Test]
+        public void ArtData()
+        {
+            ArtData src = new ArtData(1234,5678, EDataRequest.UrlProduct);
+            byte[] array = src;
+            var res = Tools.DeserializePacket(array);
+            Assert.That(res.GetType(), Is.EqualTo(src.GetType()));
+            if (res is ArtData des)
+                Assert.That(des, Is.EqualTo(src));
+        }
+        [Test]
+        public void ArtDataReply()
+        {
+            ArtDataReply src = new ArtDataReply(1234, 5678, EDataRequest.UrlProduct, "TestUrl");
+            byte[] array = src;
+            var res = Tools.DeserializePacket(array);
+            Assert.That(res.GetType(), Is.EqualTo(src.GetType()));
+            if (res is ArtDataReply des)
+                Assert.That(des, Is.EqualTo(src));
+        }
     }
 }
