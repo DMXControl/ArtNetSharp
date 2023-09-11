@@ -1,6 +1,7 @@
 using ArtNetSharp;
 using ArtNetSharp.Communication;
 using ArtNetTests.Mocks;
+using ArtNetTests.Mocks.Instances;
 using RDMSharp;
 using RDMSharp.ParameterWrapper;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace ArtNetTests
         [Test]
         public void TestNodeInstance()
         {
-            NodeInstance instance = new NodeInstance();
+            NodeInstance instance = new NodeMock();
             instance.Name = "Test";
             for (ushort i = 0; i < 32; i++)
                 instance.AddPortConfig(new PortConfig(i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });

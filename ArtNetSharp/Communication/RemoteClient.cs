@@ -119,10 +119,14 @@ namespace ArtNetSharp.Communication
 
         private async Task PollArtData()
         {
-            await ArtNet.Instance.TrySendPacket(new ArtData(instance.OEMProductCode, instance.ESTAManufacturerCode), IpAddress);
+            if (Instance is ControllerInstance)
+                await ArtNet.Instance.TrySendPacket(new ArtData(instance.OEMProductCode, instance.ESTAManufacturerCode), IpAddress);
         }
         private async Task QueryArtData()
         {
+            if (!(Instance is ControllerInstance))
+                return;
+
             EDataRequest[] todo = new[] { EDataRequest.UrlProduct, EDataRequest.UrlSupport, EDataRequest.UrlUserGuide, EDataRequest.UrlPersUdr, EDataRequest.UrlPersGdtf };
             foreach (EDataRequest req in todo)
                 await ArtNet.Instance.TrySendPacket(new ArtData(instance.OEMProductCode, instance.ESTAManufacturerCode, req), IpAddress);
