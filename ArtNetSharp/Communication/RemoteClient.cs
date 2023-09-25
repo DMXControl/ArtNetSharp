@@ -11,7 +11,8 @@ namespace ArtNetSharp.Communication
     public class RemoteClient
     {
         private static ILogger Logger = ApplicationLogging.CreateLogger<RemoteClient>();
-        public readonly IPv4Address IpAddress;
+        public IPv4Address IpAddress;
+        public readonly MACAddress MacAddress;
         public ArtPollReply Root { get; private set; }
         private ConcurrentDictionary<byte, RemoteClientPort> ports= new ConcurrentDictionary<byte, RemoteClientPort>();
         public IReadOnlyCollection<RemoteClientPort> Ports { get; private set; }
@@ -52,22 +53,26 @@ namespace ArtNetSharp.Communication
 
         public DateTime LastSeen { get; private set; }
 
-        public RemoteClient(in IPv4Address ipAddress)
+        public RemoteClient(in MACAddress macAddress, in IPv4Address ipAddress)
         {
+            MacAddress = macAddress;
             IpAddress = ipAddress;
             LastSeen = DateTime.UtcNow;
         }
-        public RemoteClient(in ArtPollReply artPollReply) : this(artPollReply.OwnIp)
+        public RemoteClient(in ArtPollReply artPollReply) : this(artPollReply.MAC, artPollReply.OwnIp)
         {
             processArtPollReply(artPollReply);
         }
 
         public void processArtPollReply(ArtPollReply artPollReply)
         {
-            if (!IpAddress.Equals(artPollReply.OwnIp))
+            if (!MacAddress.Equals(artPollReply.MAC))
                 return;
 
-            if (artPollReply.BindIndex <= 1)
+            if (!IpAddress.Equals(artPollReply.OwnIp))
+                IpAddress = artPollReply.OwnIp;
+
+                if (artPollReply.BindIndex <= 1)
                 Root = artPollReply;
 
             if (artPollReply.Ports == 0)
