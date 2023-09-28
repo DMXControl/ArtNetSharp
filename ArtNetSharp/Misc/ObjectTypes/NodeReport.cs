@@ -20,7 +20,13 @@ namespace ArtNetSharp
         public NodeReport(in string reportCode)
         {
             var Matches=Regex.Matches(reportCode, REGEX);
-
+            if (Matches.Count == 0)
+            {
+                ReportCode = 0;
+                Counter = 0;
+                Text = string.Empty;
+                return;
+            }
             string hex = Matches[0].Groups[1].Value.Replace(" ", "");
             string counter = Matches[0].Groups[2].Value.Replace(" ", "");
             string text = Matches[0].Groups[3].Value;

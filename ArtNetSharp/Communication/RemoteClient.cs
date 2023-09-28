@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Net.Mail;
 using System.Threading.Tasks;
 
 namespace ArtNetSharp.Communication
@@ -12,6 +13,7 @@ namespace ArtNetSharp.Communication
     public class RemoteClient : INotifyPropertyChanged
     {
         private static ILogger Logger = ApplicationLogging.CreateLogger<RemoteClient>();
+        public readonly string ID;
         public readonly MACAddress MacAddress;
         private IPv4Address ipAddress;
         public IPv4Address IpAddress
@@ -121,20 +123,23 @@ namespace ArtNetSharp.Communication
 
         public DateTime LastSeen { get; private set; }
 
-        public RemoteClient(in MACAddress macAddress, in IPv4Address ipAddress)
+        public RemoteClient(in ArtPollReply artPollReply)
         {
-            MacAddress = macAddress;
-            IpAddress = ipAddress;
+            ID = getIDOf(artPollReply);
+            MacAddress = artPollReply.MAC;
+            IpAddress = artPollReply.OwnIp;
             LastSeen = DateTime.UtcNow;
-        }
-        public RemoteClient(in ArtPollReply artPollReply) : this(artPollReply.MAC, artPollReply.OwnIp)
-        {
             processArtPollReply(artPollReply);
+        }
+
+        public static string getIDOf(ArtPollReply artPollReply)
+        {
+            return $"{artPollReply.MAC}#{(ushort)artPollReply.Style}#{artPollReply.ManufacturerCode}#{artPollReply.OemCode}";
         }
 
         public void processArtPollReply(ArtPollReply artPollReply)
         {
-            if (!MacAddress.Equals(artPollReply.MAC))
+            if (!ID.Equals(getIDOf(artPollReply)))
                 return;
 
             if (artPollReply.BindIndex <= 1)

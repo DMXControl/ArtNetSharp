@@ -114,7 +114,7 @@ namespace ArtNetSharp.Communication
         private SemaphoreSlim semaphoreSlimAddRemoteClient = new SemaphoreSlim(1, 1);
         private SemaphoreSlim pauseDMXOutput = new SemaphoreSlim(1, 1);
 
-        private ConcurrentDictionary<MACAddress,RemoteClient> remoteClients = new ConcurrentDictionary<MACAddress, RemoteClient>();
+        private ConcurrentDictionary<string,RemoteClient> remoteClients = new ConcurrentDictionary<string, RemoteClient>();
         public IReadOnlyCollection<RemoteClient> RemoteClients { get; private set; }
         public IReadOnlyCollection<RemoteClientPort> RemoteClientsPorts { get { return remoteClients.SelectMany(rc => rc.Value.Ports).ToList().AsReadOnly(); } }
 
@@ -594,12 +594,12 @@ namespace ArtNetSharp.Communication
             try
             {
                 RemoteClient remoteClient = null;
-                if (remoteClients.TryGetValue(artPollReply.MAC, out remoteClient))
+                if (remoteClients.TryGetValue(RemoteClient.getIDOf(artPollReply), out remoteClient))
                     remoteClient.processArtPollReply(artPollReply);
                 else
                 {
                     remoteClient = new RemoteClient(artPollReply) { Instance = this };
-                    if (remoteClients.TryAdd(remoteClient.MacAddress, remoteClient))
+                    if (remoteClients.TryAdd(remoteClient.ID, remoteClient))
                     {
 
                         //Delay, to give The Remote CLient time to send all ArtPollReplys
