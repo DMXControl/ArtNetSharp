@@ -3,17 +3,83 @@ using RDMSharp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace ArtNetSharp.Communication
 {
-    public class RemoteClient
+    public class RemoteClient : INotifyPropertyChanged
     {
         private static ILogger Logger = ApplicationLogging.CreateLogger<RemoteClient>();
-        public IPv4Address IpAddress;
         public readonly MACAddress MacAddress;
-        public ArtPollReply Root { get; private set; }
+        private IPv4Address ipAddress;
+        public IPv4Address IpAddress
+        {
+            get
+            {
+                return ipAddress;
+            }
+            set
+            {
+                if (ipAddress == value)
+                    return;
+
+                ipAddress = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IpAddress)));
+            }
+        }
+        private string shortName;
+        public string ShortName
+        {
+            get
+            {
+                return shortName;
+            }
+            set
+            {
+                if (shortName == value)
+                    return;
+
+                shortName = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShortName)));
+            }
+        }
+        private string longName;
+        public string LongName
+        {
+            get
+            {
+                return longName;
+            }
+            set
+            {
+                if (longName == value)
+                    return;
+
+                longName = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LongName)));
+            }
+        }
+        private ArtPollReply root;
+        public ArtPollReply Root
+        {
+            get
+            {
+                return root;
+            }
+            set
+            {
+                if (ArtPollReply.Equals(root, value))
+                    return;
+
+                root = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Root)));
+                this.IpAddress = root.OwnIp;
+                this.ShortName = root.ShortName;
+                this.LongName = root.LongName;
+            }
+        }
         private ConcurrentDictionary<byte, RemoteClientPort> ports= new ConcurrentDictionary<byte, RemoteClientPort>();
         public IReadOnlyCollection<RemoteClientPort> Ports { get; private set; }
         public event EventHandler<RemoteClientPort> PortDiscovered;
@@ -23,6 +89,8 @@ namespace ArtNetSharp.Communication
         private ConcurrentDictionary<EDataRequest, object> artDataCache = new ConcurrentDictionary<EDataRequest, object>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public IReadOnlyDictionary<EDataRequest, object> ArtDataCache
         {
@@ -69,10 +137,7 @@ namespace ArtNetSharp.Communication
             if (!MacAddress.Equals(artPollReply.MAC))
                 return;
 
-            if (!IpAddress.Equals(artPollReply.OwnIp))
-                IpAddress = artPollReply.OwnIp;
-
-                if (artPollReply.BindIndex <= 1)
+            if (artPollReply.BindIndex <= 1)
                 Root = artPollReply;
 
             if (artPollReply.Ports == 0)
@@ -100,7 +165,7 @@ namespace ArtNetSharp.Communication
             LastSeen = DateTime.UtcNow;
             var deadline = LastSeen.AddSeconds(-6); // Spec 1.4dd page 12, doubled to allow one lost reply
             var timoutedPorts = ports.Where(p => p.Value.LastSeen < deadline);
-            if (timoutedPorts.Count()!=0)
+            if (timoutedPorts.Count() != 0)
             {
                 timoutedPorts = timoutedPorts.ToList();
                 foreach (var port in timoutedPorts)

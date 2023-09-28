@@ -214,8 +214,8 @@ namespace ArtNetSharp
             UbeaVersion = packet[22]; // 11 UbeaVersion
             byte status1 = packet[23]; // 12 Status 1
             ManufacturerCode = (ushort)(packet[25] << 8 | packet[24]); // 13 & 14 ESTA manufacturer
-            ShortName = Encoding.ASCII.GetString(packet, 26, 18).TrimEnd('\0'); // 15 ShortName [18]
-            LongName = Encoding.ASCII.GetString(packet, 44, 64).TrimEnd('\0'); // 16 LongName  [64]
+            ShortName = Encoding.ASCII.GetString(packet, 26, 18).Split('\0')[0]; // 15 ShortName [18]
+            LongName = Encoding.ASCII.GetString(packet, 44, 64).Split('\0')[0]; // 16 LongName  [64]
 
             // 17 NodeReport [64]
             string nodeReport = Encoding.ASCII.GetString(packet, 108, 64);

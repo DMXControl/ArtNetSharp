@@ -248,6 +248,12 @@ namespace ArtNetSharp
             networkClients.Clear();
         }
 
+        public static void SetLoggerFectory(ILoggerFactory loggerFactory)
+        {
+            Tools.LoggerFactory= loggerFactory;
+            ApplicationLogging.LoggerFactory = loggerFactory;
+        }
+
         private void _updateNetworkClientsTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             updateNetworkClients();

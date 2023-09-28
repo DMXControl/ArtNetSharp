@@ -111,6 +111,7 @@ namespace ArtNetSharp.Communication
         private ConcurrentDictionary<Tuple<IPv4Address, PortAddress>, byte> sequenceBag = new ConcurrentDictionary<Tuple<IPv4Address, PortAddress>, byte>();
         private byte pauseDMXCountdown = 0;
         private SemaphoreSlim semaphoreSlimDMXOutput = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim semaphoreSlimAddRemoteClient = new SemaphoreSlim(1, 1);
         private SemaphoreSlim pauseDMXOutput = new SemaphoreSlim(1, 1);
 
         private ConcurrentDictionary<MACAddress,RemoteClient> remoteClients = new ConcurrentDictionary<MACAddress, RemoteClient>();
@@ -588,6 +589,8 @@ namespace ArtNetSharp.Communication
                     && string.Equals(artPollReply.LongName, Name))
                     return; //break loopback
 
+
+            await semaphoreSlimAddRemoteClient.WaitAsync();
             try
             {
                 RemoteClient remoteClient = null;
@@ -596,14 +599,17 @@ namespace ArtNetSharp.Communication
                 else
                 {
                     remoteClient = new RemoteClient(artPollReply) { Instance = this };
-                    remoteClients.TryAdd(remoteClient.MacAddress, remoteClient);
+                    if (remoteClients.TryAdd(remoteClient.MacAddress, remoteClient))
+                    {
 
-                    //Delay, to give The Remote CLient time to send all ArtPollReplys
-                    await Task.Delay(1000);
-                    RemoteClientDiscovered?.Invoke(this, remoteClient);
+                        //Delay, to give The Remote CLient time to send all ArtPollReplys
+                        await Task.Delay(1000);
+                        RemoteClientDiscovered?.Invoke(this, remoteClient);
+                    }
                 }
             }
             catch (Exception ex) { Logger.LogError(ex); }
+            semaphoreSlimAddRemoteClient.Release();
 
             var now = DateTime.UtcNow;
             var deadline = now.AddSeconds(-6); // Spec 1.4dd page 12, doubled to allow one lost reply
