@@ -6,11 +6,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Net.Mail;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ArtNetSharp.Communication
 {
-    public class RemoteClient : INotifyPropertyChanged
+    public sealed class RemoteClient : INotifyPropertyChanged
     {
         private static ILogger Logger = ApplicationLogging.CreateLogger<RemoteClient>();
         public readonly string ID;
@@ -28,7 +29,7 @@ namespace ArtNetSharp.Communication
                     return;
 
                 ipAddress = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IpAddress)));
+                onPropertyChanged();
             }
         }
         private string shortName;
@@ -44,7 +45,7 @@ namespace ArtNetSharp.Communication
                     return;
 
                 shortName = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShortName)));
+                onPropertyChanged();
             }
         }
         private string longName;
@@ -60,9 +61,26 @@ namespace ArtNetSharp.Communication
                     return;
 
                 longName = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LongName)));
+                onPropertyChanged();
             }
         }
+
+        private DateTime lastSeen;
+        public DateTime LastSeen
+        {
+            get
+            {
+                return lastSeen;
+            }
+            private set
+            {
+                if (lastSeen == value)
+                    return;
+                lastSeen = value;
+                onPropertyChanged();
+            }
+        }
+
         private ArtPollReply root;
         public ArtPollReply Root
         {
@@ -76,7 +94,7 @@ namespace ArtNetSharp.Communication
                     return;
 
                 root = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Root)));
+                onPropertyChanged();
                 this.IpAddress = root.OwnIp;
                 this.ShortName = root.ShortName;
                 this.LongName = root.LongName;
@@ -93,6 +111,21 @@ namespace ArtNetSharp.Communication
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
 
         public event PropertyChangedEventHandler PropertyChanged;
+        private void onPropertyChanged([CallerMemberName] string membername = "")
+        {
+            onPropertyChanged(new PropertyChangedEventArgs(membername));
+        }
+        private void onPropertyChanged(PropertyChangedEventArgs eventArgs)
+        {
+            try
+            {
+                PropertyChanged?.Invoke(this, eventArgs);
+            }
+            catch(Exception e)
+            {
+                Logger.LogError(e);
+            }
+        }
 
         public IReadOnlyDictionary<EDataRequest, object> ArtDataCache
         {
@@ -120,8 +153,6 @@ namespace ArtNetSharp.Communication
                 _ = PollArtData();
             }
         }
-
-        public DateTime LastSeen { get; private set; }
 
         public RemoteClient(in ArtPollReply artPollReply)
         {

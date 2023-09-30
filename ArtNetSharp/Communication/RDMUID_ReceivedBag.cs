@@ -3,7 +3,7 @@ using System;
 
 namespace ArtNetSharp.Communication
 {
-    public class RDMUID_ReceivedBag
+    public sealed class RDMUID_ReceivedBag
     {
         public readonly RDMUID Uid;
         public DateTime LastSeen { get; private set; }

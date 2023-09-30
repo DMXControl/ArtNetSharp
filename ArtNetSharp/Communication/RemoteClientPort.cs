@@ -3,30 +3,149 @@ using RDMSharp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace ArtNetSharp.Communication
 {
-    public class RemoteClientPort
+    public sealed class RemoteClientPort : INotifyPropertyChanged
     {
         private static ILogger Logger = ApplicationLogging.CreateLogger<RemoteClientPort>();
         public readonly IPv4Address IpAddress;
+        public readonly string ID;
         public readonly byte BindIndex;
         public readonly byte PortIndex;
-        public DateTime LastSeen { get; private set; }
+        private DateTime lastSeen;
+        public DateTime LastSeen
+        {
+            get
+            {
+                return lastSeen;
+            }
+            private set
+            {
+                if (lastSeen == value)
+                    return;
+                lastSeen = value;
+                onPropertyChanged();
+            }
+        }
         public ArtPollReply ArtPollReply { get; private set; }
-        public PortAddress? OutputPortAddress { get; private set; }
-        public PortAddress? InputPortAddress { get; private set; }
-        public EPortType PortType { get; private set; }
-        public EGoodOutput GoodOutput { get; private set; }
-        public EGoodInput GoodInput { get; private set; }
+        private PortAddress? outputPortAddress;
+        public PortAddress? OutputPortAddress
+        {
+            get
+            {
+                return outputPortAddress;
+            }
+            private set
+            {
+                if (outputPortAddress == value)
+                    return;
+                outputPortAddress = value;
+                onPropertyChanged();
+            }
+        }
+        private PortAddress? inputPortAddress;
+        public PortAddress? InputPortAddress
+        {
+            get
+            {
+                return inputPortAddress;
+            }
+            private set
+            {
+                if (inputPortAddress == value)
+                    return;
+                inputPortAddress = value;
+                onPropertyChanged();
+            }
+        }
+        private EPortType portType;
+        public EPortType PortType
+        {
+            get
+            {
+                return portType;
+            }
+            private set
+            {
+                if (portType == value)
+                    return;
+                portType = value;
+                onPropertyChanged();
+            }
+        }
+        private EGoodOutput goodOutput;
+        public EGoodOutput GoodOutput
+        {
+            get
+            {
+                return goodOutput;
+            }
+            private set
+            {
+                if (goodOutput == value)
+                    return;
+                goodOutput = value;
+                onPropertyChanged();
+            }
+        }
+        private EGoodInput goodInput;
+        public EGoodInput GoodInput
+        {
+            get
+            {
+                return goodInput;
+            }
+            private set
+            {
+                if (goodInput == value)
+                    return;
+                goodInput = value;
+                onPropertyChanged();
+            }
+        }
 
-        public bool IsRDMCapable { get; private set; }
+        private bool isRDMCapable;
+        public bool IsRDMCapable
+        {
+            get
+            {
+                return isRDMCapable;
+            }
+            private set
+            {
+                if (isRDMCapable == value)
+                    return;
+                isRDMCapable = value;
+                onPropertyChanged();
+            }
+        }
 
         private ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
         public event EventHandler<byte[]> RDMMessageReceived;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void onPropertyChanged([CallerMemberName] string membername = "")
+        {
+            onPropertyChanged( new PropertyChangedEventArgs(membername));
+        }
+        private void onPropertyChanged(PropertyChangedEventArgs eventArgs)
+        {
+            try
+            {
+                PropertyChanged?.Invoke(this, eventArgs);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e);
+            }
+        }
 
 
         private byte sequence = byte.MaxValue;
@@ -41,11 +160,16 @@ namespace ArtNetSharp.Communication
 
         public RemoteClientPort(in ArtPollReply artPollReply, byte portIndex = 0)
         {
+            ID = getIDOf(artPollReply);
             IpAddress = artPollReply.OwnIp;
             BindIndex = artPollReply.BindIndex;
             PortIndex = portIndex;
             processArtPollReply(artPollReply);
             KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
+        }
+        public static string getIDOf(ArtPollReply artPollReply)
+        {
+            return $"{RemoteClient.getIDOf(artPollReply)}==>{artPollReply.BindIndex}";
         }
 
         public void processArtPollReply(ArtPollReply artPollReply)
