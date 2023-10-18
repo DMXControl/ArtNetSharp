@@ -114,7 +114,8 @@ namespace ArtNetSharp.Communication
         private SemaphoreSlim semaphoreSlimAddRemoteClient = new SemaphoreSlim(1, 1);
         private SemaphoreSlim pauseDMXOutput = new SemaphoreSlim(1, 1);
 
-        private ConcurrentDictionary<string,RemoteClient> remoteClients = new ConcurrentDictionary<string, RemoteClient>();
+        private ConcurrentDictionary<string, RemoteClient> remoteClients = new ConcurrentDictionary<string, RemoteClient>();
+        private ConcurrentDictionary<string, RemoteClient> remoteClientsTimeouted = new ConcurrentDictionary<string, RemoteClient>();
         public IReadOnlyCollection<RemoteClient> RemoteClients { get; private set; }
         public IReadOnlyCollection<RemoteClientPort> RemoteClientsPorts { get { return remoteClients.SelectMany(rc => rc.Value.Ports).ToList().AsReadOnly(); } }
 
@@ -593,17 +594,30 @@ namespace ArtNetSharp.Communication
             await semaphoreSlimAddRemoteClient.WaitAsync();
             try
             {
+                string id = RemoteClient.getIDOf(artPollReply);
                 RemoteClient remoteClient = null;
-                if (remoteClients.TryGetValue(RemoteClient.getIDOf(artPollReply), out remoteClient))
+                
+                if (remoteClients.TryGetValue(id, out remoteClient))
+                {
                     remoteClient.processArtPollReply(artPollReply);
+                }
+                else if (remoteClientsTimeouted.TryRemove(id, out remoteClient))
+                {
+                    remoteClient.processArtPollReply(artPollReply);
+                    await add();
+                }
                 else
                 {
                     remoteClient = new RemoteClient(artPollReply) { Instance = this };
+                    await add();
+                }
+                async Task add()
+                {
                     if (remoteClients.TryAdd(remoteClient.ID, remoteClient))
                     {
-
                         //Delay, to give The Remote CLient time to send all ArtPollReplys
                         await Task.Delay(1000);
+                        Logger.LogInformation($"Discovered: {remoteClient.ID}");
                         RemoteClientDiscovered?.Invoke(this, remoteClient);
                     }
                 }
@@ -619,9 +633,11 @@ namespace ArtNetSharp.Communication
                 timoutedClients = timoutedClients.ToList();
                 foreach (var remoteClient in timoutedClients)
                 {
-                    remoteClients.TryRemove(remoteClient.Key, out _);
-                    Logger.LogInformation($"Timeout: {remoteClient.Key}");
-                    RemoteClientTimedOut?.Invoke(this, remoteClient.Value);
+
+                    if (remoteClients.TryRemove(remoteClient.Key, out RemoteClient removed))
+                        remoteClientsTimeouted.TryAdd(removed.ID, removed);
+                    Logger.LogInformation($"Timeout: {removed.ID}");
+                    RemoteClientTimedOut?.Invoke(this, removed);
                 }
             }
             RemoteClients = remoteClients.Select(p => p.Value).ToList().AsReadOnly();
