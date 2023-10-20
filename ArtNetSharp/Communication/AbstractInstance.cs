@@ -596,15 +596,15 @@ namespace ArtNetSharp.Communication
             {
                 string id = RemoteClient.getIDOf(artPollReply);
                 RemoteClient remoteClient = null;
-                
-                if (remoteClients.TryGetValue(id, out remoteClient))
-                {
-                    remoteClient.processArtPollReply(artPollReply);
-                }
-                else if (remoteClientsTimeouted.TryRemove(id, out remoteClient))
+
+                if (remoteClientsTimeouted.TryRemove(id, out remoteClient))
                 {
                     remoteClient.processArtPollReply(artPollReply);
                     await add();
+                }
+                else if (remoteClients.TryGetValue(id, out remoteClient))
+                {
+                    remoteClient.processArtPollReply(artPollReply);
                 }
                 else
                 {
@@ -636,8 +636,11 @@ namespace ArtNetSharp.Communication
 
                     if (remoteClients.TryRemove(remoteClient.Key, out RemoteClient removed))
                         remoteClientsTimeouted.TryAdd(removed.ID, removed);
-                    Logger.LogInformation($"Timeout: {removed.ID}");
-                    RemoteClientTimedOut?.Invoke(this, removed);
+                    if (removed != null)
+                    {
+                        Logger.LogInformation($"Timeout: {removed.ID}");
+                        RemoteClientTimedOut?.Invoke(this, removed);
+                    }
                 }
             }
             RemoteClients = remoteClients.Select(p => p.Value).ToList().AsReadOnly();

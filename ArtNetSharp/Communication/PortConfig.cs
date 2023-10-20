@@ -141,4 +141,37 @@ namespace ArtNetSharp.Communication
             return $"{nameof(PortConfig)}: Unknown Port {PortAddress.Combined}";
         }
     }
+    public class OutputPortConfig : PortConfig
+    {
+        public override EPortType Type
+        {
+            get
+            {
+                return base.Type | EPortType.OutputFromArtNet;
+            }
+            set
+            {
+                base.Type = value | EPortType.OutputFromArtNet;
+            }
+        }
+        public OutputPortConfig(in Address address) : base(address, true, false)
+        {
+        }
+
+        public OutputPortConfig(PortAddress portAddress) : base(portAddress, true, false)
+        {
+        }
+
+        public OutputPortConfig(in Subnet subnet, in Universe universe) : base(subnet, universe, true, false)
+        {
+        }
+
+        public OutputPortConfig(in Net net, in Address address) : base(net, address, true, false)
+        {
+        }
+
+        public OutputPortConfig(in Net net, in Subnet subnet, in Universe universe) : base(net, subnet, universe, true, false)
+        {
+        }
+    }
 }
