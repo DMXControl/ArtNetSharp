@@ -80,6 +80,81 @@ namespace ArtNetSharp.Communication
                 onPropertyChanged();
             }
         }
+        private bool isRDMCapable;
+        public bool IsRDMCapable
+        {
+            get
+            {
+                return isRDMCapable;
+            }
+            private set
+            {
+                if (isRDMCapable == value)
+                    return;
+                isRDMCapable = value;
+                onPropertyChanged();
+            }
+        }
+        private bool isLLRPCapable;
+        public bool IsLLRPCapable
+        {
+            get
+            {
+                return isLLRPCapable;
+            }
+            private set
+            {
+                if (isLLRPCapable == value)
+                    return;
+                isLLRPCapable = value;
+                onPropertyChanged();
+            }
+        }
+        private bool isDHCPCapable;
+        public bool IsDHCPCapable
+        {
+            get
+            {
+                return isDHCPCapable;
+            }
+            private set
+            {
+                if (isDHCPCapable == value)
+                    return;
+                isDHCPCapable = value;
+                onPropertyChanged();
+            }
+        }
+        private bool isWebConfigurationCapable;
+        public bool IsWebConfigurationCapable
+        {
+            get
+            {
+                return isWebConfigurationCapable;
+            }
+            private set
+            {
+                if (isWebConfigurationCapable == value)
+                    return;
+                isWebConfigurationCapable = value;
+                onPropertyChanged();
+            }
+        }
+        private bool isArtNet4Capable;
+        public bool IsArtNet4Capable
+        {
+            get
+            {
+                return isArtNet4Capable;
+            }
+            private set
+            {
+                if (isArtNet4Capable == value)
+                    return;
+                isArtNet4Capable = value;
+                onPropertyChanged();
+            }
+        }
 
         private ArtPollReply root;
         public ArtPollReply Root
@@ -98,6 +173,11 @@ namespace ArtNetSharp.Communication
                 this.IpAddress = root.OwnIp;
                 this.ShortName = root.ShortName;
                 this.LongName = root.LongName;
+                this.IsRDMCapable = root.Status.HasFlag(ENodeStatus.RDM_Supported);
+                this.IsLLRPCapable = root.Status.HasFlag(ENodeStatus.NodeSupportLLRP);
+                this.IsDHCPCapable = root.Status.HasFlag(ENodeStatus.DHCP_ConfigurationSupported);
+                this.IsWebConfigurationCapable = root.Status.HasFlag(ENodeStatus.WebConfigurationSupported);
+                this.IsArtNet4Capable = root.Status.HasFlag(ENodeStatus.NodeSupports15BitPortAddress);
             }
         }
         private ConcurrentDictionary<byte, RemoteClientPort> ports= new ConcurrentDictionary<byte, RemoteClientPort>();
