@@ -194,7 +194,7 @@ namespace ArtNetTests
             artNet.AddInstance(instance);
             for (int i = 0; i < 600; i++)
             {
-                TimeOnly time = TimeOnly.FromDateTime(DateTime.UtcNow);
+                DateTime time = DateTime.UtcNow;
                 ArtTimeCode timecode = new ArtTimeCode((byte)(time.Millisecond / 1000.0 * 30), (byte)time.Second, (byte)time.Minute, (byte)time.Hour, ETimecodeType.SMTPE);
                 _ = instance.SendArtTimeCode(timecode);
                 Thread.Sleep(100);
