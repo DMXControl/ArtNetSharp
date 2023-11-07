@@ -574,6 +574,26 @@ namespace ArtNetSharp.Communication
         }
         #endregion
 
+        #region Send ArtIpProg
+        public async Task SendArtIpProg(ArtIpProg artIpProg, IPv4Address ipAddress)
+        {
+            await sendArtIpProg(artIpProg, ipAddress);
+        }
+        private async Task sendArtIpProg(ArtIpProg artIpProg, IPv4Address ipAddress)
+        {
+            if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+                return;
+
+            switch (this.EstCodes)
+            {
+                case EStCodes.StController:
+                case EStCodes.StConfig:
+                    await TrySendPacket(artIpProg, ipAddress);
+                    return;
+            }
+        }
+        #endregion
+
         #endregion
 
         #region Process
