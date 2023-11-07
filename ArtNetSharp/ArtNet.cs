@@ -135,6 +135,8 @@ namespace ArtNetSharp
             {
                 if (ip == null)
                     return false;
+                if (ip.ToString().Equals("0.0.0.0"))
+                    return false;
 
                 if (notMatchingIpAdddresses.Contains(ip))
                     return false;
