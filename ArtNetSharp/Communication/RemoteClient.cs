@@ -155,6 +155,21 @@ namespace ArtNetSharp.Communication
                 onPropertyChanged();
             }
         }
+        private bool isSACNCapable;
+        public bool IsSACNCapable
+        {
+            get
+            {
+                return isSACNCapable;
+            }
+            private set
+            {
+                if (isSACNCapable == value)
+                    return;
+                isSACNCapable = value;
+                onPropertyChanged();
+            }
+        }
 
         private ArtPollReply root;
         public ArtPollReply Root
@@ -178,6 +193,7 @@ namespace ArtNetSharp.Communication
                 this.IsDHCPCapable = root.Status.HasFlag(ENodeStatus.DHCP_ConfigurationSupported);
                 this.IsWebConfigurationCapable = root.Status.HasFlag(ENodeStatus.WebConfigurationSupported);
                 this.IsArtNet4Capable = root.Status.HasFlag(ENodeStatus.NodeSupports15BitPortAddress);
+                this.IsSACNCapable = root.Status.HasFlag(ENodeStatus.NodeSupportArtNet_sACN_Switching);
             }
         }
         private ConcurrentDictionary<int, RemoteClientPort> ports= new ConcurrentDictionary<int, RemoteClientPort>();
