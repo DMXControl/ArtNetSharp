@@ -307,8 +307,8 @@ namespace ArtNetSharp.Communication
                                                           MinorVersion,
                                                           net,
                                                           subnet,
-                                                          new Universe[0],
-                                                          new Universe[0],
+                                                          new object[0],
+                                                          new object[0],
                                                           OEMProductCode,
                                                           ESTAManufacturerCode,
                                                           nodeReport: nodeReport);

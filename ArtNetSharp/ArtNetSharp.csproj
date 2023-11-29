@@ -13,6 +13,7 @@
 		<Company>DMXControl-Projects e.V.</Company>
 		<Authors>Patrick Grote</Authors>
 		<Title>$(AssemblyName)</Title>
+		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
 
 	<ItemGroup>

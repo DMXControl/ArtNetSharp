@@ -42,8 +42,8 @@ namespace ArtNetSharp
         /// </summary>
         public readonly Net Net;
         public readonly Subnet Subnet;
-        public readonly Universe[] OutputUniverses;
-        public readonly Universe[] InputUniverses;
+        public readonly object[] OutputUniverses;
+        public readonly object[] InputUniverses;
         public readonly byte UbeaVersion;
         public readonly ENodeStatus Status;
         /// <summary>
@@ -54,6 +54,61 @@ namespace ArtNetSharp
         public readonly RDMUID? DefaulRespUID;
 
         private const byte MaxPortCount = 4;
+        public ArtPollReply(in IPv4Address ownIp,
+                            in IPv4Address bindIp,
+                            in MACAddress mac,
+                            in string shortName,
+                            in string longName,
+                            in byte bindIndex,
+                            in ENodeStatus status,
+                            in byte majorVersion,
+                            in byte minorVersion,
+                            in Address outputUniverse,
+                            in Address inputUniverse,
+                            in ushort oemCode = Constants.DEFAULT_OEM_CODE,
+                            in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
+                            in NodeReport? nodeReport = null,
+                            in EPortType portType = default,
+                            in EGoodInput goodInput = default,
+                            in EGoodOutput goodOutput = default,
+                            in EMacroState macro = EMacroState.None,
+                            in ERemoteState remote = ERemoteState.None,
+                            in byte ubeaVersion = 0,
+                            in byte acnPriority = 0,
+                            in ushort user = 0,
+                            in ushort refreshRate = 0,
+                            in EStCodes style = EStCodes.StController,
+                            in RDMUID? defaulRespUID = null)
+            : this(ownIp,
+                  bindIp,
+                  mac,
+                  shortName,
+                  longName,
+                  bindIndex,
+                  status & ~ENodeStatus.NodeSupports15BitPortAddress,
+                  majorVersion,
+                  minorVersion,
+                  0,
+                  0,
+                  new object[] { outputUniverse },
+                  new object[] { inputUniverse },
+                  oemCode,
+                  manufacturerCode,
+                  1,
+                  nodeReport,
+                  new EPortType[] { portType },
+                  new EGoodInput[] { goodInput },
+                  new EGoodOutput[] { goodOutput },
+                  macro,
+                  remote,
+                  ubeaVersion,
+                  acnPriority,
+                  user,
+                  refreshRate,
+                  style,
+                  defaulRespUID)
+        {
+        }
         public ArtPollReply(in IPv4Address ownIp,
                             in IPv4Address bindIp,
                             in MACAddress mac,
@@ -87,13 +142,13 @@ namespace ArtNetSharp
                   shortName,
                   longName,
                   bindIndex,
-                  status,
+                  status | ENodeStatus.NodeSupports15BitPortAddress,
                   majorVersion,
                   minorVersion,
                   net,
                   subNet,
-                  new Universe[] { outputUniverse },
-                  new Universe[] { inputUniverse },
+                  new object[] { outputUniverse },
+                  new object[] { inputUniverse },
                   oemCode,
                   manufacturerCode,
                   1,
@@ -122,8 +177,8 @@ namespace ArtNetSharp
                             in byte minorVersion,
                             in Net net,
                             in Subnet subNet,
-                            in Universe[] outputUniverses,
-                            in Universe[] inputUniverses,
+                            in object[] outputUniverses,
+                            in object[] inputUniverses,
                             in ushort oemCode = Constants.DEFAULT_OEM_CODE,
                             in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
                             in byte ports = 1,
@@ -249,15 +304,6 @@ namespace ArtNetSharp
             for (int i = 0; i < 4; i++)
                 goodOutputA.Add((EGoodOutput)packet[182 + i]);
 
-            // 23 SwIn [4] Input Universe
-            List<Universe> swIn = new List<Universe>();
-            for (int i = 0; i < 4; i++)
-                swIn.Add((Universe)packet[186 + i]);
-
-            // 24 SwIn [4] Input Universe
-            List<Universe> swOut = new List<Universe>();
-            for (int i = 0; i < 4; i++)
-                swOut.Add((Universe)packet[190 + i]);
 
             AcnPriority = packet[194]; // 25 AcnPriority
             Macro = (EMacroState)packet[195]; // 26 SwMacro
@@ -311,7 +357,31 @@ namespace ArtNetSharp
 
             // 53 Filler 11x8
 
+            // 23 SwIn [4] Input Universe
+            List<object> swIn = new List<object>();
+            // 24 SwIn [4] Input Universe
+            List<object> swOut = new List<object>();
+
             Status = (ENodeStatus)((status3 << 16) + (status2 << 8) + status1);
+            if (!Status.HasFlag(ENodeStatus.NodeSupports15BitPortAddress))
+            {
+                for (int i = 0; i < 4; i++)
+                    swIn.Add((Address)packet[186 + i]);
+
+                for (int i = 0; i < 4; i++)
+                    swOut.Add((Address)packet[190 + i]);
+
+                Net = 0;
+                Subnet = 0;
+            }
+            else
+            {
+                for (int i = 0; i < 4; i++)
+                    swIn.Add((Universe)packet[186 + i]);
+
+                for (int i = 0; i < 4; i++)
+                    swOut.Add((Universe)packet[190 + i]);
+            }
 
             List<EGoodOutput> goodOutput = new List<EGoodOutput>();
             for(int i = 0; i < goodOutputA.Count; i++)
@@ -376,14 +446,14 @@ namespace ArtNetSharp
             //p[186] = ReceiveUniverse;
             if (InputUniverses != null)
                 for (int i = 0; i < InputUniverses.Length; i++)
-                    p[186 + i] = InputUniverses[i];
+                    p[186 + i] = InputUniverses[i] is Universe? (Universe)InputUniverses[i]: (Address)InputUniverses[i];
 
             // 24 SwIn [4] Input Universe
             //p[190] = SendUniverse;
             if (OutputUniverses != null)
                 for (int i = 0; i < OutputUniverses.Length; i++)
-                    p[190 + i] = OutputUniverses[i];
-            
+                    p[190 + i] = OutputUniverses[i] is Universe ? (Universe)OutputUniverses[i] : (Address)OutputUniverses[i];
+
             p[194] = AcnPriority; // 25 AcnPriority
             p[195] = (byte)Macro; // 26 SwMacro
             p[196] = (byte)Remote; // 27 SwRemote
@@ -488,8 +558,8 @@ namespace ArtNetSharp
             hashCode = hashCode * -1521134295 + RefreshRate.GetHashCode();
             hashCode = hashCode * -1521134295 + Net.GetHashCode();
             hashCode = hashCode * -1521134295 + Subnet.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<Universe[]>.Default.GetHashCode(OutputUniverses);
-            hashCode = hashCode * -1521134295 + EqualityComparer<Universe[]>.Default.GetHashCode(InputUniverses);
+            hashCode = hashCode * -1521134295 + OutputUniverses.GetHashCode();
+            hashCode = hashCode * -1521134295 + InputUniverses.GetHashCode();
             hashCode = hashCode * -1521134295 + UbeaVersion.GetHashCode();
             hashCode = hashCode * -1521134295 + Status.GetHashCode();
             hashCode = hashCode * -1521134295 + AcnPriority.GetHashCode();

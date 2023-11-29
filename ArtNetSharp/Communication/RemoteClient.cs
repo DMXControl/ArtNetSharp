@@ -180,7 +180,7 @@ namespace ArtNetSharp.Communication
                 this.IsArtNet4Capable = root.Status.HasFlag(ENodeStatus.NodeSupports15BitPortAddress);
             }
         }
-        private ConcurrentDictionary<byte, RemoteClientPort> ports= new ConcurrentDictionary<byte, RemoteClientPort>();
+        private ConcurrentDictionary<int, RemoteClientPort> ports= new ConcurrentDictionary<int, RemoteClientPort>();
         public IReadOnlyCollection<RemoteClientPort> Ports { get; private set; }
         public event EventHandler<RemoteClientPort> PortDiscovered;
         public event EventHandler<RemoteClientPort> PortTimedOut;
@@ -260,16 +260,20 @@ namespace ArtNetSharp.Communication
                 return;
             try
             {
-                RemoteClientPort port = null;
-                if (ports.TryGetValue(artPollReply.BindIndex, out port))
-                    port.processArtPollReply(artPollReply);
-                else
+                for (byte portIndex = 0; portIndex < artPollReply.Ports; portIndex++)
                 {
-                    port = new RemoteClientPort(artPollReply);
-                    if (ports.TryAdd(port.BindIndex, port))
+                    int physicalPort = ((artPollReply.BindIndex - 1) * artPollReply.Ports) + portIndex;
+                    RemoteClientPort port = null;
+                    if (ports.TryGetValue(physicalPort, out port))
+                        port.processArtPollReply(artPollReply);
+                    else
                     {
-                        PortDiscovered?.Invoke(this, port);
-                        port.RDMUIDReceived += Port_RDMUIDReceived;
+                        port = new RemoteClientPort(artPollReply, portIndex);
+                        if (ports.TryAdd(physicalPort, port))
+                        {
+                            PortDiscovered?.Invoke(this, port);
+                            port.RDMUIDReceived += Port_RDMUIDReceived;
+                        }
                     }
                 }
             }

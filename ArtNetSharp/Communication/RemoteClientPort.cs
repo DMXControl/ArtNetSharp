@@ -16,6 +16,7 @@ namespace ArtNetSharp.Communication
         public readonly string ID;
         public readonly byte BindIndex;
         public readonly byte PortIndex;
+        public readonly int PhysicalPort;
         private DateTime lastSeen;
         public DateTime LastSeen
         {
@@ -160,16 +161,18 @@ namespace ArtNetSharp.Communication
 
         public RemoteClientPort(in ArtPollReply artPollReply, byte portIndex = 0)
         {
-            ID = getIDOf(artPollReply);
+            ID = getIDOf(artPollReply, portIndex);
             IpAddress = artPollReply.OwnIp;
             BindIndex = artPollReply.BindIndex;
             PortIndex = portIndex;
+            PhysicalPort = ((BindIndex - 1) * artPollReply.Ports) + portIndex;
             processArtPollReply(artPollReply);
             KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
         }
-        public static string getIDOf(ArtPollReply artPollReply)
+        public static string getIDOf(ArtPollReply artPollReply, byte portIndex)
         {
-            return $"{RemoteClient.getIDOf(artPollReply)}==>{artPollReply.BindIndex}";
+            int physicalPort = ((artPollReply.BindIndex - 1) * artPollReply.Ports) + portIndex;
+            return $"{RemoteClient.getIDOf(artPollReply)}==>{physicalPort}";
         }
 
         public void processArtPollReply(ArtPollReply artPollReply)
@@ -186,17 +189,27 @@ namespace ArtNetSharp.Communication
             PortType = artPollReply.PortTypes[PortIndex];
             GoodOutput = artPollReply.GoodOutput[PortIndex];
             GoodOutput = artPollReply.GoodOutput[PortIndex];
-            Universe output = artPollReply.OutputUniverses[PortIndex];
-            Universe input = artPollReply.InputUniverses[PortIndex];
+            var output = artPollReply.OutputUniverses[PortIndex];
+            var input = artPollReply.InputUniverses[PortIndex];
             IsRDMCapable = artPollReply.Status.HasFlag(ENodeStatus.RDM_Supported) && !GoodOutput.HasFlag(EGoodOutput.RDMisDisabled);
 
             if (PortType.HasFlag(EPortType.OutputFromArtNet))
-                OutputPortAddress = new PortAddress(artPollReply.Net, artPollReply.Subnet, output);
+            {
+                if (output is Universe outputUniverse)
+                    OutputPortAddress = new PortAddress(artPollReply.Net, artPollReply.Subnet, outputUniverse);
+                else if (output is Address outputAddress)
+                    OutputPortAddress = new PortAddress(outputAddress);
+            }
             else
                 OutputPortAddress = null;
 
             if (PortType.HasFlag(EPortType.InputToArtNet))
-                InputPortAddress = new PortAddress(artPollReply.Net, artPollReply.Subnet, input);
+            {
+                if (input is Universe inputUniverse)
+                    InputPortAddress = new PortAddress(artPollReply.Net, artPollReply.Subnet, inputUniverse);
+                else if (input is Address inputAddress)
+                    InputPortAddress = new PortAddress(inputAddress);
+            }
             else
                 InputPortAddress = null;
 
@@ -249,7 +262,7 @@ namespace ArtNetSharp.Communication
 
         public override string ToString()
         {
-            return $"{nameof(RemoteClientPort)}: {IpAddress}#{BindIndex}";
+            return $"{nameof(RemoteClientPort)}: {IpAddress}#{BindIndex},{PortIndex}";
         }
     }
 }
