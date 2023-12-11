@@ -111,7 +111,7 @@ namespace ArtNetTests
             Task.Run(async () =>
             {
                 ERDM_Parameter[] supportedParameters = new ERDM_Parameter[0];
-                RDMDeviceInfo deviceInfo = null;
+                RDMDeviceInfo? deviceInfo = null;
                 foreach (var uid in uids)
                 {
                     instance.RDMMessageReceived -= Instance_RDMMessageReceived;

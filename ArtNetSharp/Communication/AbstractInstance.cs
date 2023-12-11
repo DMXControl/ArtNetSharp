@@ -180,17 +180,17 @@ namespace ArtNetSharp.Communication
                         break;
 
                     case ArtDMX artDMX:
-                       _ = processArtDMX(artDMX, sourceIp);
+                        processArtDMX(artDMX, sourceIp);
                         break;
                     case ArtSync artSync:
                         SyncReceived?.Invoke(this, new EventArgs());
                         break;
 
                     case ArtTodData artTodData:
-                        _ = processArtTodData(artTodData, sourceIp);
+                        processArtTodData(artTodData, sourceIp);
                         break;
                     case ArtRDM artRDM:
-                        _ = processArtRDM(artRDM, sourceIp);
+                        processArtRDM(artRDM, sourceIp);
                         break;
 
                     case ArtTimeCode artTimeCode:
@@ -666,7 +666,7 @@ namespace ArtNetSharp.Communication
             RemoteClients = remoteClients.Select(p => p.Value).ToList().AsReadOnly();
             checkForMatchingPortConfiguration();
         }
-        private async Task processArtDMX(ArtDMX artDMX, IPv4Address sourceIp)
+        private void processArtDMX(ArtDMX artDMX, IPv4Address sourceIp)
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
@@ -742,7 +742,7 @@ namespace ArtNetSharp.Communication
             }
             catch (Exception ex) { Logger.LogError(ex); }
         }
-        protected async Task processArtTodData(ArtTodData artTodData, IPv4Address source)
+        protected void processArtTodData(ArtTodData artTodData, IPv4Address source)
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
@@ -775,7 +775,7 @@ namespace ArtNetSharp.Communication
             }
             catch (Exception ex) { Logger.LogError(ex); }
         }
-        private async Task processArtRDM(ArtRDM artRDM, IPv4Address source)
+        private void processArtRDM(ArtRDM artRDM, IPv4Address source)
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;

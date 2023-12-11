@@ -5,7 +5,7 @@ namespace ArtNetTests.Mocks
 {
     public class RDMDeviceMock : AbstractRDMDevice<RDMDeviceModelMock>
     {
-        internal static ControllerInstanceMock Controller = ArtNet.Instance.Instances.OfType<ControllerInstanceMock>().FirstOrDefault();
+        internal static ControllerInstanceMock Controller = ArtNet.Instance.Instances.OfType<ControllerInstanceMock>().First();
         public RDMDeviceMock(RDMUID uid) : base(uid)
         {
             Controller.RDMMessageReceived += Controller_RDMMessageReceived;

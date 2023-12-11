@@ -55,18 +55,21 @@ namespace ArtNetSharp
             private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
             public FileProvider()
             {
-                FileProvider.semaphore.WaitAsync();
-                try
-                {
-                    if (!Directory.Exists(fileDirectory))
-                    Directory.CreateDirectory(fileDirectory);
+                //FileProvider.semaphore.WaitAsync();
+                //try
+                //{
+                //    if (!Directory.Exists(fileDirectory))
+                //    Directory.CreateDirectory(fileDirectory);
 
-                if (File.Exists(filePath))
-                    File.Delete(filePath);
+                //if (File.Exists(filePath))
+                //    File.Delete(filePath);
 
-                    using (var file = File.Create(filePath)) ;
-                }
-                finally { FileProvider.semaphore.Release(); }
+                //    using (var file = File.Create(filePath))
+                //    {
+
+                //    }
+                //}
+                //finally { FileProvider.semaphore.Release(); }
             }
 
             public ILogger CreateLogger(string categoryName)

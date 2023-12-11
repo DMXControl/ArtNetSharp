@@ -1,5 +1,6 @@
 ﻿using RDMSharp;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -12,21 +13,24 @@ namespace ArtNetSharp.Communication
         protected sealed override bool SendArtData => true;
         protected sealed override bool SupportRDM => true;
 
-        protected override void OnPacketReceived(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
+        protected override async void OnPacketReceived(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
         {
             switch(packet)
             {
 
                 case ArtDataReply artDataReply:
-                    processArtDataReply(artDataReply, sourceIp);
+                    await processArtDataReply(artDataReply, sourceIp);
                     break;
             }
         }
 
-        private void processArtDataReply(ArtDataReply artDataReply, IPv4Address sourceIp)
+        private async Task processArtDataReply(ArtDataReply artDataReply, IPv4Address sourceIp)
         {
+            List<Task> tasks = new List<Task>();
             foreach (var client in RemoteClients.Where(rc => rc.IpAddress.Equals(sourceIp)))
-                client.processArtDataReply(artDataReply);
+                tasks.Add(client.processArtDataReply(artDataReply));
+
+            await Task.WhenAll(tasks);
         }
 
         public async Task PerformRDMDiscovery(PortAddress? portAddress = null, bool flush = false)
