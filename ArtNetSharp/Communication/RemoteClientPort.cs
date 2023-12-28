@@ -185,6 +185,7 @@ namespace ArtNetSharp.Communication
                 return;
 
             ArtPollReply = artPollReply;
+            LastSeen = DateTime.UtcNow;
 
             PortType = artPollReply.PortTypes[PortIndex];
             GoodOutput = artPollReply.GoodOutput[PortIndex];
@@ -212,8 +213,6 @@ namespace ArtNetSharp.Communication
             }
             else
                 InputPortAddress = null;
-
-            LastSeen = DateTime.UtcNow;
         }
         internal void AddRdmUIDs(params RDMUID[] rdmuids)
         {
@@ -256,6 +255,7 @@ namespace ArtNetSharp.Communication
             if (!KnownRDMUIDs.Any(k => k.Uid.Equals(artRDM.Source)))
                 return;
 
+            LastSeen = DateTime.UtcNow;
             AddRdmUIDs(artRDM.Source);
             RDMMessageReceived?.Invoke(this, artRDM.Data);
         }

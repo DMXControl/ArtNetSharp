@@ -255,8 +255,12 @@ namespace ArtNetSharp.Communication
             ID = getIDOf(artPollReply);
             MacAddress = artPollReply.MAC;
             IpAddress = artPollReply.OwnIp;
-            LastSeen = DateTime.UtcNow;
+            seen();
             processArtPollReply(artPollReply);
+        }
+        private void seen()
+        {
+            LastSeen = DateTime.UtcNow;
         }
 
         public static string getIDOf(ArtPollReply artPollReply)
@@ -274,6 +278,8 @@ namespace ArtNetSharp.Communication
 
             if (artPollReply.Ports == 0)
                 return;
+
+            seen();
             try
             {
                 for (byte portIndex = 0; portIndex < artPollReply.Ports; portIndex++)
@@ -298,9 +304,8 @@ namespace ArtNetSharp.Communication
                 Logger.LogError(ex);
             }
 
-            LastSeen = DateTime.UtcNow;
-            var deadline = LastSeen.AddSeconds(-6); // Spec 1.4dd page 12, doubled to allow one lost reply
-            var timoutedPorts = ports.Where(p => p.Value.LastSeen < deadline);
+            var deadline = 7500; // Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 1500 ms)
+            var timoutedPorts = ports.Where(p => (DateTime.UtcNow - p.Value.LastSeen).TotalMilliseconds > deadline);
             if (timoutedPorts.Count() != 0)
             {
                 timoutedPorts = timoutedPorts.ToList();
@@ -314,7 +319,8 @@ namespace ArtNetSharp.Communication
         }
         public async Task processArtDataReply(ArtDataReply artDataReply)
         {
-            if(artDataReply.Request == EDataRequest.Poll)
+            LastSeen = DateTime.UtcNow;
+            if (artDataReply.Request == EDataRequest.Poll)
             {
                 await QueryArtData();
                 return;

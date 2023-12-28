@@ -645,9 +645,8 @@ namespace ArtNetSharp.Communication
             catch (Exception ex) { Logger.LogError(ex); }
             semaphoreSlimAddRemoteClient.Release();
 
-            var now = DateTime.UtcNow;
-            var deadline = now.AddSeconds(-6); // Spec 1.4dd page 12, doubled to allow one lost reply
-            var timoutedClients = remoteClients.Where(p => p.Value.LastSeen < deadline);
+            var deadline = 7500; // Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 1500 ms)
+            var timoutedClients = remoteClients.Where(p => (DateTime.UtcNow-p.Value.LastSeen).TotalMilliseconds > deadline);
             if (timoutedClients.Count() != 0)
             {
                 timoutedClients = timoutedClients.ToList();
