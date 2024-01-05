@@ -31,7 +31,7 @@ namespace ArtNetTests
             for (int i = 0; i < 60; i++)
                 Thread.Sleep(1000);
             artNet.RemoveInstance(instance);
-            instance.Dispose();
+            ((IDisposable)instance).Dispose();
         }
 
         [Test]
@@ -45,7 +45,7 @@ namespace ArtNetTests
             for (int i = 0; i < 60; i++)
                 Thread.Sleep(1000);
             artNet.RemoveInstance(instance);
-            instance.Dispose();
+            ((IDisposable)instance).Dispose();
         }
 
 
@@ -82,7 +82,7 @@ namespace ArtNetTests
             for (int i = 0; i < 20; i++)
                 Thread.Sleep(1000);
             artNet.RemoveInstance(instance);
-            instance.Dispose();
+            ((IDisposable)instance).Dispose();
         }
 
         [Test]
@@ -151,7 +151,7 @@ namespace ArtNetTests
 
             Thread.Sleep(10000);
             artNet.RemoveInstance(instance);
-            instance.Dispose();
+            ((IDisposable)instance).Dispose();
         }
 
         [Test]
@@ -180,7 +180,7 @@ namespace ArtNetTests
 
             Thread.Sleep(60000);
             artNet.RemoveInstance(instance);
-            instance.Dispose();
+            ((IDisposable)instance).Dispose();
         }
 
 
@@ -200,7 +200,7 @@ namespace ArtNetTests
                 Thread.Sleep(100);
             }
             artNet.RemoveInstance(instance);
-            instance.Dispose();
+            ((IDisposable)instance).Dispose();
         }
 
         [Test]
@@ -218,7 +218,7 @@ namespace ArtNetTests
                 Thread.Sleep(1000);
             }
             artNet.RemoveInstance(instance);
-            instance.Dispose();
+            ((IDisposable)instance).Dispose();
         }
 
         [Test]
@@ -246,7 +246,7 @@ namespace ArtNetTests
                 Thread.Sleep(1000);
 
             artNet.RemoveInstance(instance);
-            instance.Dispose();
+            ((IDisposable)instance).Dispose();
         }
     }
 }
