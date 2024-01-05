@@ -11,7 +11,7 @@ namespace ArtNetSharp
         protected override sealed ushort PacketMinLength => 107;
 
         public readonly Net? Net;
-        public readonly Subnet? Subnet;        
+        public readonly Subnet? Subnet;
         public readonly ArtAddressCommand Command;
         public readonly byte BindIndex;
         public readonly string ShortName;
@@ -83,7 +83,7 @@ namespace ArtNetSharp
             for (int i = 0; i < 4; i++)
                 if ((packet[100 + i] & 0x80) == 0x80)
                     swOut.Add((Universe?)(byte)(packet[100 + i] & 0x0f));
-            OutputUniverses= swOut.ToArray();
+            OutputUniverses = swOut.ToArray();
 
             if ((packet[104] & 0x80) == 0x80)
                 Subnet = (byte)(packet[104] & 0x0f);

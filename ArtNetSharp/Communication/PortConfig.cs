@@ -64,7 +64,7 @@ namespace ArtNetSharp.Communication
             KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
         }
 
-        public void AddAdditionalIPEndpoints(params IPv4Address[] addresses) 
+        public void AddAdditionalIPEndpoints(params IPv4Address[] addresses)
         {
             foreach (IPv4Address address in addresses)
                 if (!additionalIPEndpoints.Contains(address))

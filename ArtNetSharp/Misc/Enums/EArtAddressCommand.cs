@@ -1,10 +1,8 @@
-﻿using System;
-
-namespace ArtNetSharp
+﻿namespace ArtNetSharp
 {
     public enum EArtAddressCommand : byte
     {
-        None=0x00,
+        None = 0x00,
         /// <summary>
         ///  If Node is currently in merge mode, cancel merge mode upon receipt of next ArtDmx packet.
         ///  See discussion of merge mode operation.

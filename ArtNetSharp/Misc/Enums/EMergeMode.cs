@@ -2,7 +2,7 @@
 {
     public enum EMergeMode
     {
-        HTP=0,
-        LTP=1
+        HTP = 0,
+        LTP = 1
     }
 }

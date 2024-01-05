@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ArtNetSharp
 {
-    public sealed class ArtTodRequest: AbstractArtPacketNetCommand<EArtTodRequestCommand>
+    public sealed class ArtTodRequest : AbstractArtPacketNetCommand<EArtTodRequestCommand>
     {
         public sealed override EOpCodes OpCode => EOpCodes.OpTodRequest;
         protected sealed override ushort PacketMinLength => 24;
@@ -33,10 +33,10 @@ namespace ArtNetSharp
         public ArtTodRequest(in byte net,
                          in Address[] address,
                          in EArtTodRequestCommand command = EArtTodRequestCommand.TodFull,
-                         in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net,command, protocolVersion)
+                         in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net, command, protocolVersion)
         {
             Addresses = address.Take(32).ToArray();
-            PortAddresses = Addresses.Select(a=>new PortAddress(Net,a)).ToArray();
+            PortAddresses = Addresses.Select(a => new PortAddress(Net, a)).ToArray();
         }
         public ArtTodRequest(in byte[] packet) : base(packet)
         {

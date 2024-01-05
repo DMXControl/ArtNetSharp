@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ArtNetSharp
 {
-    public sealed class ArtPollReply: AbstractArtPacketCore
+    public sealed class ArtPollReply : AbstractArtPacketCore
     {
         public override EOpCodes OpCode => EOpCodes.OpPollReply;
         protected override ushort PacketMinLength => 198;
@@ -166,34 +166,34 @@ namespace ArtNetSharp
                   defaulRespUID)
         {
         }
-            public ArtPollReply(in IPv4Address ownIp,
-                            in IPv4Address bindIp,
-                            in MACAddress mac,
-                            in string shortName,
-                            in string longName,
-                            in byte bindIndex,
-                            in ENodeStatus status,
-                            in byte majorVersion,
-                            in byte minorVersion,
-                            in Net net,
-                            in Subnet subNet,
-                            in object[] outputUniverses,
-                            in object[] inputUniverses,
-                            in ushort oemCode = Constants.DEFAULT_OEM_CODE,
-                            in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
-                            in byte ports = 1,
-                            in NodeReport? nodeReport = null,
-                            in EPortType[] portTypes = null,
-                            in EGoodInput[] goodInput = null,
-                            in EGoodOutput[] goodOutput = null,
-                            in EMacroState macro = EMacroState.None,
-                            in ERemoteState remote = ERemoteState.None,
-                            in byte ubeaVersion = 0,
-                            in byte acnPriority = 0,
-                            in ushort user = 0,
-                            in ushort refreshRate = 0,
-                            in EStCodes style = EStCodes.StController,
-                            in RDMUID? defaulRespUID = null) : base()
+        public ArtPollReply(in IPv4Address ownIp,
+                        in IPv4Address bindIp,
+                        in MACAddress mac,
+                        in string shortName,
+                        in string longName,
+                        in byte bindIndex,
+                        in ENodeStatus status,
+                        in byte majorVersion,
+                        in byte minorVersion,
+                        in Net net,
+                        in Subnet subNet,
+                        in object[] outputUniverses,
+                        in object[] inputUniverses,
+                        in ushort oemCode = Constants.DEFAULT_OEM_CODE,
+                        in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
+                        in byte ports = 1,
+                        in NodeReport? nodeReport = null,
+                        in EPortType[] portTypes = null,
+                        in EGoodInput[] goodInput = null,
+                        in EGoodOutput[] goodOutput = null,
+                        in EMacroState macro = EMacroState.None,
+                        in ERemoteState remote = ERemoteState.None,
+                        in byte ubeaVersion = 0,
+                        in byte acnPriority = 0,
+                        in ushort user = 0,
+                        in ushort refreshRate = 0,
+                        in EStCodes style = EStCodes.StController,
+                        in RDMUID? defaulRespUID = null) : base()
         {
             if ((outputUniverses?.Length ?? 0) > MaxPortCount)
                 throw new ArgumentOutOfRangeException($"The argument {nameof(outputUniverses)} should be an array with max size of {MaxPortCount}.");
@@ -212,7 +212,7 @@ namespace ArtNetSharp
 
             if (oemCode == 0)
                 throw new ArgumentOutOfRangeException($"The argument {nameof(oemCode)} should be not 0x0000, insted use Constants.DEFAULT_OEM_CODE ({Constants.DEFAULT_OEM_CODE}).");
-            if (manufacturerCode == 0 )
+            if (manufacturerCode == 0)
                 throw new ArgumentOutOfRangeException($"The argument {nameof(manufacturerCode)} should be not 0x0000, insted use Constants.DEFAULT_ESTA_MANUFACTURER_CODE ({Constants.DEFAULT_ESTA_MANUFACTURER_CODE}).");
 
             OwnIp = ownIp;
@@ -384,7 +384,7 @@ namespace ArtNetSharp
             }
 
             List<EGoodOutput> goodOutput = new List<EGoodOutput>();
-            for(int i = 0; i < goodOutputA.Count; i++)
+            for (int i = 0; i < goodOutputA.Count; i++)
             {
                 goodOutput.Add(goodOutputA[i] | goodOutputB[i]);
             }
@@ -446,7 +446,7 @@ namespace ArtNetSharp
             //p[186] = ReceiveUniverse;
             if (InputUniverses != null)
                 for (int i = 0; i < InputUniverses.Length; i++)
-                    p[186 + i] = InputUniverses[i] is Universe? (Universe)InputUniverses[i]: (Address)InputUniverses[i];
+                    p[186 + i] = InputUniverses[i] is Universe ? (Universe)InputUniverses[i] : (Address)InputUniverses[i];
 
             // 24 SwIn [4] Input Universe
             //p[190] = SendUniverse;
@@ -479,7 +479,7 @@ namespace ArtNetSharp
 
             p[211] = (byte)BindIndex; // 39 BindIndex (0 and 1 are equal)
 
-            
+
             p[212] = (byte)((uint)Status >> 8); // 40 Status 2
 
             // 41 GoodOutputB

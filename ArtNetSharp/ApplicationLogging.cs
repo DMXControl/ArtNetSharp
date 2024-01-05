@@ -1,16 +1,12 @@
-﻿using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
-using System.ComponentModel;
 using System.IO;
-using System.Reflection;
-using static ArtNetSharp.ApplicationLogging;
-using System.Net.Sockets;
+using System.Linq;
 using System.Text;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Linq;
+using static ArtNetSharp.ApplicationLogging;
 
 namespace ArtNetSharp
 {

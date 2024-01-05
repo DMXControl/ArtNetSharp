@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using ArtNetSharp.Messages.Interfaces;
+using Microsoft.Extensions.Logging;
 using RDMSharp;
 using System;
 using System.Collections.Concurrent;
@@ -14,10 +15,12 @@ namespace ArtNetSharp.Communication
     public abstract class AbstractInstance : IInstance
     {
         protected static ILogger Logger { get; private set; } = null;
-        public bool IsDisposed { get; private set; }
-        public bool IsDisposing { get; private set; }
+        protected bool IsDisposed { get; private set; }
+        protected bool IsDisposing { get; private set; }
+        bool IDisposableExtended.IsDisposed { get => IsDisposed; }
+        bool IDisposableExtended.IsDisposing { get => IsDisposing; }
 
-        public bool IsDeactivated { get {  return !artNet.Instances.Contains(this); } }
+        public bool IsDeactivated { get { return !artNet.Instances.Contains(this); } }
 
         private Random _random;
         private ArtNet artNet;
@@ -46,10 +49,10 @@ namespace ArtNetSharp.Communication
         private readonly System.Timers.Timer _timerSendDMXKeepAlive;
 
         private List<PortConfig> portConfigs = new List<PortConfig>();
-        public ReadOnlyCollection<PortConfig> PortConfigs { get=> portConfigs.AsReadOnly(); }
+        public ReadOnlyCollection<PortConfig> PortConfigs { get => portConfigs.AsReadOnly(); }
 
-        private ConcurrentDictionary<PortAddress, ConcurrentDictionary<IPv4Address,DMXReceiveBag>> receivedDMXBuffer = new ConcurrentDictionary<PortAddress, ConcurrentDictionary<IPv4Address, DMXReceiveBag>>();
-        private object _receiveLock= new object();
+        private ConcurrentDictionary<PortAddress, ConcurrentDictionary<IPv4Address, DMXReceiveBag>> receivedDMXBuffer = new ConcurrentDictionary<PortAddress, ConcurrentDictionary<IPv4Address, DMXReceiveBag>>();
+        private object _receiveLock = new object();
 
         private class DMXReceiveBag
         {
@@ -83,7 +86,7 @@ namespace ArtNetSharp.Communication
                 if (_new == 0)
                     return null; //SpezialCase
 
-                if(_old<_new)
+                if (_old < _new)
                     return true;
 
                 if (_old > _new && ((byte.MaxValue - _old) < _new))
@@ -95,7 +98,7 @@ namespace ArtNetSharp.Communication
         private class DMXSendBag
         {
             public byte[] Data { get; internal set; }
-            public bool Updated{ get; internal set; }
+            public bool Updated { get; internal set; }
 
             public DMXSendBag(byte[] data)
             {
@@ -160,7 +163,7 @@ namespace ArtNetSharp.Communication
         }
         ~AbstractInstance()
         {
-            Dispose();
+            ((IDisposable)this).Dispose();
         }
 
         void IInstance.PacketReceived(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
@@ -176,7 +179,7 @@ namespace ArtNetSharp.Communication
                         _ = sendArtPollReply(localIp, sourceIp, artPoll);
                         break;
                     case ArtPollReply artPollReply:
-                        _ = processArtPollReply(artPollReply,localIp, sourceIp);
+                        _ = processArtPollReply(artPollReply, localIp, sourceIp);
                         break;
 
                     case ArtDMX artDMX:
@@ -205,7 +208,7 @@ namespace ArtNetSharp.Communication
                         break;
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Logger?.LogError(e);
             }
@@ -233,10 +236,10 @@ namespace ArtNetSharp.Communication
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
 
-            ArtPoll artPoll = new ArtPoll(OEMProductCode, ESTAManufacturerCode);
+            using ArtPoll artPoll = new ArtPoll(OEMProductCode, ESTAManufacturerCode);
             await TrySendBroadcastPacket(artPoll);
         }
-        private async Task sendArtPollReply(IPv4Address ownIp, IPv4Address destinationIp, ArtPoll artPoll=null)
+        private async Task sendArtPollReply(IPv4Address ownIp, IPv4Address destinationIp, ArtPoll artPoll = null)
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
@@ -252,7 +255,7 @@ namespace ArtNetSharp.Communication
                 List<Task> tasks = new List<Task>();
                 var ports = portConfigs.OrderBy(pc => pc.PortAddress.Combined).ToList();
                 if (ports.Count != 0)
-                    for (byte bindindex=0; bindindex< Math.Min(byte.MaxValue,ports.Count()); bindindex++)
+                    for (byte bindindex = 0; bindindex < Math.Min(byte.MaxValue, ports.Count()); bindindex++)
                     {
                         PortConfig portConfig = ports[bindindex];
                         if (artPoll?.Flags.HasFlag(EArtPollFlags.EnableTargetedMode) ?? false)
@@ -382,13 +385,13 @@ namespace ArtNetSharp.Communication
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
-
-            await TrySendBroadcastPacket(new ArtSync());
+            using ArtSync artSync = new ArtSync();
+            await TrySendBroadcastPacket(artSync);
         }
         #endregion
 
         #region Send ArtDMX
-        internal async Task sendArtDMX(RemoteClientPort remoteClientPort, byte sourcePort, byte[] data, bool broadcast=false)
+        internal async Task sendArtDMX(RemoteClientPort remoteClientPort, byte sourcePort, byte[] data, bool broadcast = false)
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
@@ -396,9 +399,9 @@ namespace ArtNetSharp.Communication
             if (!remoteClientPort.OutputPortAddress.HasValue)
                 return;
 
-            PortAddress portAddress= remoteClientPort.OutputPortAddress.Value;
-            ArtDMX artDMX = new ArtDMX(remoteClientPort.Sequence, sourcePort, portAddress.Net, portAddress.Address, data);
-            if(broadcast)
+            PortAddress portAddress = remoteClientPort.OutputPortAddress.Value;
+            using ArtDMX artDMX = new ArtDMX(remoteClientPort.Sequence, sourcePort, portAddress.Net, portAddress.Address, data);
+            if (broadcast)
                 await TrySendBroadcastPacket(artDMX);
             else
                 await TrySendPacket(artDMX, remoteClientPort.IpAddress);
@@ -417,7 +420,7 @@ namespace ArtNetSharp.Communication
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
 
-            if(pauseDMXOutput.CurrentCount == 0)
+            if (pauseDMXOutput.CurrentCount == 0)
                 await pauseDMXOutput.WaitAsync();
 
             if (semaphoreSlimDMXOutput.CurrentCount == 0)
@@ -440,7 +443,7 @@ namespace ArtNetSharp.Communication
                                     PortConfig config = portConfigs.FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, port.OutputPortAddress));
                                     byte sourcePort = config?.PortNumber ?? 0;
                                     bag.Updated = false;
-                                    await sendArtDMX(port, sourcePort, bag.Data, config?.ForceBroadcast??false);
+                                    await sendArtDMX(port, sourcePort, bag.Data, config?.ForceBroadcast ?? false);
                                     sended++;
                                     if (config == null)
                                         return;
@@ -451,7 +454,7 @@ namespace ArtNetSharp.Communication
                                     }
                                 }
                         }
-                        catch(Exception e) { Logger.LogError(e); }
+                        catch (Exception e) { Logger.LogError(e); }
                     }));
                 await Task.WhenAll(tasks);
                 if (EnabelSync && sended != 0)
@@ -476,7 +479,7 @@ namespace ArtNetSharp.Communication
         private async Task sendArtTodRequestBroadcast(PortAddress portAddress)
         {
 
-            ArtTodRequest artTodRequest = new ArtTodRequest(portAddress);
+            using ArtTodRequest artTodRequest = new ArtTodRequest(portAddress);
             await TrySendBroadcastPacket(artTodRequest);
         }
         private async Task sendArtTodControl(IPv4Address ipAddress, PortAddress portAddress, EArtTodControlCommand command)
@@ -488,14 +491,14 @@ namespace ArtNetSharp.Communication
         private async Task sendArtTodControlBroadcast(PortAddress portAddress, EArtTodControlCommand command)
         {
 
-            ArtTodControl artTodControl = new ArtTodControl(portAddress, command);
+            using ArtTodControl artTodControl = new ArtTodControl(portAddress, command);
             await TrySendBroadcastPacket(artTodControl);
         }
 
         protected async Task sendArtTodData(IPv4Address ipAddress, PortConfig portConfig)
         {
             ArtTodData artTodData = null;
-            List<RDMUID> uids = portConfig.KnownRDMUIDs.Select(bag=>bag.Uid).ToList();
+            List<RDMUID> uids = portConfig.KnownRDMUIDs.Select(bag => bag.Uid).ToList();
             ushort totalCount = (ushort)uids.Count();
             byte blockCount = 0;
             EArtTodDataCommandResponse command = EArtTodDataCommandResponse.TodFull;
@@ -515,7 +518,7 @@ namespace ArtNetSharp.Communication
             }
             while (uids.Count != 0);
         }
-        public async Task SendArtRDM(RDMMessage rdmMessage)            
+        public async Task SendArtRDM(RDMMessage rdmMessage)
         {
             if (!rdmMessage.Command.HasFlag(ERDM_Command.RESPONSE) && rdmMessage.SourceUID == RDMUID.Empty)
                 rdmMessage.SourceUID = UID;
@@ -524,7 +527,7 @@ namespace ArtNetSharp.Communication
             if (knownRDMUIDs.TryGetValue(rdmMessage.DestUID, out uidBag))
                 rdmMessage.TransactionCounter = uidBag.NewTransactionNumber();
 
-            var ports = RemoteClientsPorts.Where(port => port.KnownRDMUIDs.Count != 0).Where(port => port.OutputPortAddress.HasValue && port.KnownRDMUIDs.Any(bag => bag.Uid==rdmMessage.DestUID)).ToList();
+            var ports = RemoteClientsPorts.Where(port => port.KnownRDMUIDs.Count != 0).Where(port => port.OutputPortAddress.HasValue && port.KnownRDMUIDs.Any(bag => bag.Uid == rdmMessage.DestUID)).ToList();
             List<Task> tasks = new List<Task>();
             foreach (var port in ports)
             {
@@ -539,7 +542,7 @@ namespace ArtNetSharp.Communication
                 rdmMessage.SourceUID = UID;
 
             RDMUID_ReceivedBag uidBag;
-            if (knownRDMUIDs.TryGetValue(rdmMessage.DestUID, out uidBag)) 
+            if (knownRDMUIDs.TryGetValue(rdmMessage.DestUID, out uidBag))
                 rdmMessage.TransactionCounter = uidBag.NewTransactionNumber();
 
             ArtRDM artRDM = new ArtRDM(portAddress, rdmMessage);
@@ -602,13 +605,13 @@ namespace ArtNetSharp.Communication
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
 
-                if (MajorVersion == artPollReply.MajorVersion
-                    && MinorVersion == artPollReply.MinorVersion
-                    && IPv4Address.Equals(sourceIp, localIp)
-                    && IPv4Address.Equals(artPollReply.OwnIp, localIp)
-                    && string.Equals(artPollReply.ShortName, ShortName)
-                    && string.Equals(artPollReply.LongName, Name))
-                    return; //break loopback
+            if (MajorVersion == artPollReply.MajorVersion
+                && MinorVersion == artPollReply.MinorVersion
+                && IPv4Address.Equals(sourceIp, localIp)
+                && IPv4Address.Equals(artPollReply.OwnIp, localIp)
+                && string.Equals(artPollReply.ShortName, ShortName)
+                && string.Equals(artPollReply.LongName, Name))
+                return; //break loopback
 
 
             await semaphoreSlimAddRemoteClient.WaitAsync();
@@ -646,7 +649,7 @@ namespace ArtNetSharp.Communication
             semaphoreSlimAddRemoteClient.Release();
 
             var deadline = 7500; // Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 1500 ms)
-            var timoutedClients = remoteClients.Where(p => (DateTime.UtcNow-p.Value.LastSeen).TotalMilliseconds > deadline);
+            var timoutedClients = remoteClients.Where(p => (DateTime.UtcNow - p.Value.LastSeen).TotalMilliseconds > deadline);
             if (timoutedClients.Count() != 0)
             {
                 timoutedClients = timoutedClients.ToList();
@@ -670,7 +673,7 @@ namespace ArtNetSharp.Communication
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
 
-            var port= portConfigs.FirstOrDefault(p => p.Universe == artDMX.Address.Universe && p.Subnet == artDMX.Address.Subnet && p.Net == artDMX.Net);
+            var port = portConfigs.FirstOrDefault(p => p.Universe == artDMX.Address.Universe && p.Subnet == artDMX.Address.Subnet && p.Net == artDMX.Net);
             if (port == null)
                 return;
 
@@ -695,7 +698,7 @@ namespace ArtNetSharp.Communication
             if (success)
                 DMXReceived?.Invoke(this, port.PortAddress);
         }
-        
+
 
         protected async Task processArtTodRequest(ArtTodRequest artTodRequest, IPv4Address source)
         {
@@ -902,7 +905,7 @@ namespace ArtNetSharp.Communication
             pauseDMXCountdown = 0;
         }
 
-        public byte[] GetReceivedDMX(in PortAddress portAddress, EMergeMode mergeMode= EMergeMode.HTP)
+        public byte[] GetReceivedDMX(in PortAddress portAddress, EMergeMode mergeMode = EMergeMode.HTP)
         {
             if (this.IsDisposing || this.IsDisposed)
                 return null;
@@ -911,7 +914,7 @@ namespace ArtNetSharp.Communication
             if (!receivedDMXBuffer.TryGetValue(portAddress, out cdb))
                 return null;
 
-            
+
             var bags = cdb.Select(b => b.Value).ToList();
 
             if (bags.Count == 0)
@@ -923,9 +926,9 @@ namespace ArtNetSharp.Communication
             switch (mergeMode)
             {
                 case EMergeMode.HTP:
-                    int length = bags.Select(b=>b.Data.Length).OrderBy(b => b).Last();
+                    int length = bags.Select(b => b.Data.Length).OrderBy(b => b).Last();
                     byte[] dataResult = new byte[length];
-                    for(ushort i = 0; i < dataResult.Length; i++)
+                    for (ushort i = 0; i < dataResult.Length; i++)
                     {
                         byte val = 0;
                         bags.ForEach(b => { if (i < b.Data.Length) val = Math.Max(val, b.Data[i]); });
@@ -948,7 +951,7 @@ namespace ArtNetSharp.Communication
             return KnownRDMUIDs.Where(k => !k.Timouted()).Select(k => k.Uid).ToArray();
         }
 
-        protected async Task PerformRDMDiscovery(PortAddress? portAddress = null, bool flush = false, bool broadcast=false)
+        protected async Task PerformRDMDiscovery(PortAddress? portAddress = null, bool flush = false, bool broadcast = false)
         {
             if (this.IsDisposing || this.IsDisposed)
                 return;
@@ -959,7 +962,7 @@ namespace ArtNetSharp.Communication
             else
                 ports = RemoteClientsPorts.Where(port => port.OutputPortAddress.HasValue && PortAddress.Equals(port.OutputPortAddress.Value, portAddress.Value)).ToList();
 
-            List<Task> tasks= new List<Task>();
+            List<Task> tasks = new List<Task>();
             foreach (var port in ports)
             {
                 if (!port.IsRDMCapable)
@@ -993,7 +996,7 @@ namespace ArtNetSharp.Communication
 
         private ENodeStatus getOwnNodeStatus()
         {
-            ENodeStatus nodeStatus= ENodeStatus.None;
+            ENodeStatus nodeStatus = ENodeStatus.None;
 
             if (SupportRDM)
                 nodeStatus |= ENodeStatus.RDM_Supported;
@@ -1060,7 +1063,7 @@ namespace ArtNetSharp.Communication
         }
         private async void _timerSendDMX_Elapsed(object sender, ElapsedEventArgs e)
         {
-            if (pauseDMXOutput.CurrentCount==0)
+            if (pauseDMXOutput.CurrentCount == 0)
             {
                 pauseDMXCountdown--;
                 if (pauseDMXCountdown == 0)
@@ -1073,7 +1076,7 @@ namespace ArtNetSharp.Communication
             await sendAllArtDMX(true);
         }
 
-        public void Dispose()
+        void IDisposable.Dispose()
         {
             if (this.IsDisposed || this.IsDisposing)
                 return;
@@ -1101,9 +1104,9 @@ namespace ArtNetSharp.Communication
                 remoteClients.Clear();
                 RemoteClients = null;
 
-                OnDispose();
+                Dispose();
             }
-            catch(Exception e) { Logger.LogError(e); }
+            catch (Exception e) { Logger.LogError(e); }
             finally
             {
                 this.IsDisposed = true;
@@ -1112,7 +1115,7 @@ namespace ArtNetSharp.Communication
             }
         }
 
-        protected virtual void OnDispose()
+        protected virtual void Dispose()
         {
 
         }

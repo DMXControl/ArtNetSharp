@@ -4,7 +4,7 @@ namespace ArtNetSharp
 {
     public readonly struct Universe : IEquatable<Universe>
     {
-        public static Universe Default { get; }= new Universe();
+        public static Universe Default { get; } = new Universe();
         public readonly byte Value;
 
         public Universe(in byte value)

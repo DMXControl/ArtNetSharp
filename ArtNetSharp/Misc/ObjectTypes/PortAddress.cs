@@ -9,7 +9,7 @@ namespace ArtNetSharp
         public readonly Universe Universe;
         public readonly Address Address;
         public readonly ushort Combined;
-        
+
         public PortAddress(in Net net, in Subnet subnet, Universe universe)
         {
             Net = net;
@@ -26,7 +26,7 @@ namespace ArtNetSharp
             Address = new Address(Subnet, Universe);
             Combined = combined;
         }
-        public PortAddress(in Subnet subnet, Universe universe): this(0,subnet,universe)
+        public PortAddress(in Subnet subnet, Universe universe) : this(0, subnet, universe)
         {
 
         }

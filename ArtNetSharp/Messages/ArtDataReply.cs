@@ -9,7 +9,7 @@ namespace ArtNetSharp
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpDataReply;
         protected override sealed ushort PacketMinLength => 42;
-        protected override sealed ushort PacketMaxLength => (ushort)(PacketMinLength+512);
+        protected override sealed ushort PacketMaxLength => (ushort)(PacketMinLength + 512);
         protected override sealed ushort PacketBuildLength => (ushort)(PacketMinLength + (Data?.Length ?? 0));
 
         public readonly EDataRequest Request;
@@ -33,7 +33,7 @@ namespace ArtNetSharp
                        in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
                        in EDataRequest request = EDataRequest.Poll,
                        in string payload = null,
-                       in ushort protocolVersion = Constants.PROTOCOL_VERSION) : this(oemCode,manufacturerCode,request, !string.IsNullOrWhiteSpace(payload)? Encoding.ASCII.GetBytes(payload):null,protocolVersion)
+                       in ushort protocolVersion = Constants.PROTOCOL_VERSION) : this(oemCode, manufacturerCode, request, !string.IsNullOrWhiteSpace(payload) ? Encoding.ASCII.GetBytes(payload) : null, protocolVersion)
         {
             PayloadObject = payload;
         }
@@ -53,13 +53,13 @@ namespace ArtNetSharp
         {
             if (packet.Length >= 13)
 
-            ManufacturerCode = (ushort)(packet[12] << 8 | packet[13]);
+                ManufacturerCode = (ushort)(packet[12] << 8 | packet[13]);
             OemCode = (ushort)(packet[14] << 8 | packet[15]);
             Request = (EDataRequest)(ushort)(packet[16] << 8 | packet[17]);
-            ushort payloadLength= (ushort)(packet[18] << 8 | packet[19]);
+            ushort payloadLength = (ushort)(packet[18] << 8 | packet[19]);
             Data = new byte[payloadLength];
             Array.Copy(packet, 20, Data, 0, Data.Length);
-            if((ushort)Request <=8) // Data is String/URL
+            if ((ushort)Request <= 8) // Data is String/URL
                 PayloadObject = Encoding.ASCII.GetString(Data, 0, Data.Length).TrimEnd('\0');
         }
 

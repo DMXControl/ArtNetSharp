@@ -7,7 +7,7 @@ namespace ArtNetSharp
         public readonly Subnet Subnet;
         public readonly Universe Universe;
         public readonly byte Combined;
-        
+
         public Address(in Subnet subnet, Universe universe)
         {
             Subnet = subnet;

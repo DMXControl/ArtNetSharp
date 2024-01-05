@@ -44,7 +44,7 @@ namespace ArtNetSharp
             p[17] = (byte)DateTime.Hour; // Hours
             p[18] = (byte)DateTime.Day; // DayOfMonth
             p[19] = (byte)DateTime.Month; // Month
-            Tools.FromUShort((ushort)(DateTime.Year-1900), out p[21], out p[20]);
+            Tools.FromUShort((ushort)(DateTime.Year - 1900), out p[21], out p[20]);
             p[22] = (byte)DateTime.DayOfWeek; // DayOfWeek
             p[23] = (byte)DaylightSaving; // DaylightSaving
         }

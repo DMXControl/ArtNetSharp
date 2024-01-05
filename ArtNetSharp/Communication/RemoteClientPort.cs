@@ -134,7 +134,7 @@ namespace ArtNetSharp.Communication
 
         private void onPropertyChanged([CallerMemberName] string membername = "")
         {
-            onPropertyChanged( new PropertyChangedEventArgs(membername));
+            onPropertyChanged(new PropertyChangedEventArgs(membername));
         }
         private void onPropertyChanged(PropertyChangedEventArgs eventArgs)
         {
@@ -226,7 +226,7 @@ namespace ArtNetSharp.Communication
                     bag.Seen();
                 else
                 {
-                    bag= new RDMUID_ReceivedBag(rdmuid);
+                    bag = new RDMUID_ReceivedBag(rdmuid);
                     if (knownRDMUIDs.TryAdd(rdmuid, bag))
                     {
                         RDMUIDReceived?.Invoke(this, bag);

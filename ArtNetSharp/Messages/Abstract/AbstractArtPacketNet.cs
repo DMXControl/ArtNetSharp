@@ -7,7 +7,7 @@
         /// The top 7 bits of the 15 bit Port-Address to which this packet is destined.
         /// </summary>
         public readonly Net Net;
-        
+
         public AbstractArtPacketNet(in Net net,
                              in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(protocolVersion)
         {
@@ -29,7 +29,7 @@
 
         public override bool Equals(object obj)
         {
-            return base.Equals(obj) && 
+            return base.Equals(obj) &&
                    obj is AbstractArtPacketNet other &&
                    Net == other.Net;
         }

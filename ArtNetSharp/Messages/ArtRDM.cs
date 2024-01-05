@@ -28,12 +28,12 @@ namespace ArtNetSharp
                       in ushort protocolVersion = Constants.PROTOCOL_VERSION) : this(portAddress.Net, portAddress.Address, rdmMessage, command, rdmVersion, protocolVersion)
         {
         }
-            public ArtRDM(in Net net,
-                      in Address address,
-                      in RDMMessage rdmMessage,
-                      in EArtRDMCommand command = EArtRDMCommand.ArProcess,
-                      in ERDMVersion rdmVersion = ERDMVersion.STANDARD_V1_0,
-                      in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net, address, command, protocolVersion)
+        public ArtRDM(in Net net,
+                  in Address address,
+                  in RDMMessage rdmMessage,
+                  in EArtRDMCommand command = EArtRDMCommand.ArProcess,
+                  in ERDMVersion rdmVersion = ERDMVersion.STANDARD_V1_0,
+                  in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net, address, command, protocolVersion)
         {
             RDMMessage = rdmMessage;
             RdmVersion = rdmVersion;
@@ -45,7 +45,7 @@ namespace ArtNetSharp
 
             Data = new byte[(packet.Length - 24) + 1];
             Data[0] = 0xcc;
-            Array.Copy(packet, 24, Data, 1, Data.Length-1);
+            Array.Copy(packet, 24, Data, 1, Data.Length - 1);
 
             RDMMessage = RDMMessageFactory.BuildResponse(Data);
         }
@@ -65,7 +65,7 @@ namespace ArtNetSharp
             //p[21] = 0; // Net (done by Abstract part)
             //p[22] = 0; // Command (done by Abstract part)
             //p[23] = 0; // Address (done by Abstract part)
-            Array.Copy(Data, 1, p, 24, Data.Length-1);
+            Array.Copy(Data, 1, p, 24, Data.Length - 1);
         }
 
         public static implicit operator byte[](ArtRDM artRDM)

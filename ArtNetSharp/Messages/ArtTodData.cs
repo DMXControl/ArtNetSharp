@@ -10,8 +10,8 @@ namespace ArtNetSharp
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpTodData;
         protected override sealed ushort PacketMinLength => 28;
-        protected override sealed ushort PacketMaxLength => (ushort)(PacketMinLength + (MaxUidsPerPacket*8));
-        protected override sealed ushort PacketBuildLength => (ushort)(PacketMinLength + ((Uids?.Length ?? 0)*8));
+        protected override sealed ushort PacketMaxLength => (ushort)(PacketMinLength + (MaxUidsPerPacket * 8));
+        protected override sealed ushort PacketBuildLength => (ushort)(PacketMinLength + ((Uids?.Length ?? 0) * 8));
         protected override sealed ushort NetByte => 21;
         protected override sealed ushort CommandByte => 22;
         protected override sealed ushort AddressByte => 23;
@@ -63,20 +63,20 @@ namespace ArtNetSharp
                       in RDMUID[] uids = default,
                       in EArtTodDataCommandResponse command = EArtTodDataCommandResponse.TodNak,
                       in ERDMVersion rdmVersion = ERDMVersion.STANDARD_V1_0,
-                      in ushort protocolVersion = Constants.PROTOCOL_VERSION) : this(portAddress.Net, portAddress.Address, port,bindIndex,uidTotalCount, blockCount, uids, command, rdmVersion, protocolVersion)
+                      in ushort protocolVersion = Constants.PROTOCOL_VERSION) : this(portAddress.Net, portAddress.Address, port, bindIndex, uidTotalCount, blockCount, uids, command, rdmVersion, protocolVersion)
         {
         }
 
-            public ArtTodData(in Net net,
-                      in Address address,
-                      in byte port,
-                      in byte bindIndex,
-                      in ushort uidTotalCount,
-                      in byte blockCount,
-                      in RDMUID[] uids = default,
-                      in EArtTodDataCommandResponse command = EArtTodDataCommandResponse.TodNak,
-                      in ERDMVersion rdmVersion = ERDMVersion.STANDARD_V1_0,
-                      in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net, address, command, protocolVersion)
+        public ArtTodData(in Net net,
+                  in Address address,
+                  in byte port,
+                  in byte bindIndex,
+                  in ushort uidTotalCount,
+                  in byte blockCount,
+                  in RDMUID[] uids = default,
+                  in EArtTodDataCommandResponse command = EArtTodDataCommandResponse.TodNak,
+                  in ERDMVersion rdmVersion = ERDMVersion.STANDARD_V1_0,
+                  in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net, address, command, protocolVersion)
         {
             if (uids.Length > MaxUidsPerPacket)
                 throw new ArgumentOutOfRangeException($"The limit of UIDs per Package is {MaxUidsPerPacket}");
@@ -100,7 +100,7 @@ namespace ArtNetSharp
             byte count = packet[27];
             List<RDMUID> uids = new List<RDMUID>();
             byte[] buffer = new byte[8];
-            for( int i=0; i <count; i++)
+            for (int i = 0; i < count; i++)
             {
                 int index = 28 + (i * 6);
                 for (int j = 0; j < 6; j++)
@@ -108,7 +108,7 @@ namespace ArtNetSharp
                 RDMUID uid = RDMUID.FromULong(BitConverter.ToUInt64(buffer, 0));
                 uids.Add(uid);
             }
-            this.Uids=uids.ToArray();
+            this.Uids = uids.ToArray();
         }
         protected sealed override void fillPacket(ref byte[] p)
         {
@@ -170,10 +170,10 @@ namespace ArtNetSharp
             string uids = string.Empty;
             if (Uids.Length != 0)
             {
-                StringBuilder sb= new StringBuilder();
+                StringBuilder sb = new StringBuilder();
                 foreach (RDMUID uid in Uids)
                     sb.Append($"{uid}, ");
-                uids=sb.ToString().Trim().TrimEnd(',');
+                uids = sb.ToString().Trim().TrimEnd(',');
             }
             return $"{nameof(ArtTodData)}: Port: {Port} - #{BindIndex} UIDs[{Uids.Length}]: {uids}";
         }

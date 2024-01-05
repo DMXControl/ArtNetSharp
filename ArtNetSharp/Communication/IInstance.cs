@@ -1,9 +1,9 @@
-﻿using RDMSharp;
-using System;
+﻿using ArtNetSharp.Messages.Interfaces;
+using RDMSharp;
 
 namespace ArtNetSharp.Communication
 {
-    internal interface IInstance: IDisposable
+    internal interface IInstance : IDisposableExtended
     {
         string Name { get; set; }
         string ShortName { get; set; }

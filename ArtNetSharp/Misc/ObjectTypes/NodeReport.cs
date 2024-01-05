@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace ArtNetSharp
 {
@@ -9,9 +8,9 @@ namespace ArtNetSharp
         public readonly uint Counter;
         public readonly string Text;
 
-        private const string REGEX= "#([A-Fa-f0-9]+) \\[([0-9]+)\\](.*)";
+        private const string REGEX = "#([A-Fa-f0-9]+) \\[([0-9]+)\\](.*)";
 
-        public NodeReport(in ENodeReportCodes reportCode, in string text="", in uint counter=0)
+        public NodeReport(in ENodeReportCodes reportCode, in string text = "", in uint counter = 0)
         {
             ReportCode = reportCode;
             Counter = counter;
@@ -19,7 +18,7 @@ namespace ArtNetSharp
         }
         public NodeReport(in string reportCode)
         {
-            var Matches=Regex.Matches(reportCode, REGEX);
+            var Matches = Regex.Matches(reportCode, REGEX);
             if (Matches.Count == 0)
             {
                 ReportCode = 0;

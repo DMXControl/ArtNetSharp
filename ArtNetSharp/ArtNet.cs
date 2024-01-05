@@ -33,7 +33,7 @@ namespace ArtNetSharp
         private List<AbstractInstance> instances = new List<AbstractInstance>();
         public ReadOnlyCollection<AbstractInstance> Instances { get => instances.AsReadOnly(); }
 
-        private List<NetworkClientBag> networkClients= new List<NetworkClientBag>();
+        private List<NetworkClientBag> networkClients = new List<NetworkClientBag>();
         public IReadOnlyCollection<NetworkClientBag> NetworkClients => networkClients.AsReadOnly();
 
         private System.Timers.Timer _updateNetworkClientsTimer = null;
@@ -64,7 +64,7 @@ namespace ArtNetSharp
                 }
             }
 
-            public event EventHandler<Tuple<IPv4Address,UdpReceiveResult>> ReceivedData;
+            public event EventHandler<Tuple<IPv4Address, UdpReceiveResult>> ReceivedData;
 
             internal NetworkClientBag(IPAddress broadcastIpAddress)
             {
@@ -126,7 +126,7 @@ namespace ArtNetSharp
                             ReceivedData?.Invoke(this, new Tuple<IPv4Address, UdpReceiveResult>(LocalIpAddress, received));
                     }
                 }
-                catch(Exception e) { Logger.LogError(e); _ = openClient(); }
+                catch (Exception e) { Logger.LogError(e); _ = openClient(); }
             }
 
             private List<IPAddress> notMatchingIpAdddresses = new List<IPAddress>();
@@ -144,7 +144,7 @@ namespace ArtNetSharp
                     return true;
 
                 var _ip = await GetLocalIP(ip);
-                if (IPAddress.Equals(LocalIpAddress , _ip))
+                if (IPAddress.Equals(LocalIpAddress, _ip))
                 {
                     matchingIpAdddresses.Add(ip);
                     return true;
@@ -252,7 +252,7 @@ namespace ArtNetSharp
 
         public static void SetLoggerFectory(ILoggerFactory loggerFactory)
         {
-            Tools.LoggerFactory= loggerFactory;
+            Tools.LoggerFactory = loggerFactory;
             ApplicationLogging.LoggerFactory = loggerFactory;
         }
 
@@ -337,7 +337,7 @@ namespace ArtNetSharp
                     return true;
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Logger.LogError(e);
             }
@@ -415,7 +415,7 @@ namespace ArtNetSharp
         internal async Task TrySendBroadcastPacket(AbstractArtPacketCore packet)
         {
             List<Task> tasks = new List<Task>();
-            foreach(var ncb in networkClients)
+            foreach (var ncb in networkClients)
                 tasks.Add(Task.Run(async () => await ncb.TrySendBroadcastPacket(packet)));
             await Task.WhenAll(tasks);
         }

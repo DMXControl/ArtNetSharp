@@ -5,7 +5,7 @@ namespace ArtNetSharp
     [Flags]
     public enum EMacroState : byte
     {
-        None=0,
+        None = 0,
         Macro1Active = 0b00000001,
         Macro2Active = 0b00000010,
         Macro3Active = 0b00000100,

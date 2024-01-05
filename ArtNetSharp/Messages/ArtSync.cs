@@ -1,8 +1,6 @@
-﻿using System.Reflection.Emit;
-
-namespace ArtNetSharp
+﻿namespace ArtNetSharp
 {
-    public sealed class ArtSync :AbstractArtPacket
+    public sealed class ArtSync : AbstractArtPacket
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpSync;
         protected override sealed ushort PacketMinLength => 14;

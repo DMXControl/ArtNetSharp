@@ -65,7 +65,7 @@ namespace ArtNetSharp.Communication
                     packet = buildArtDataReply(artData);
 
                 if (packet != null)
-                    await TrySendPacket(packet,source);
+                    await TrySendPacket(packet, source);
             }
             catch (Exception ex) { Logger.LogError(ex); }
         }

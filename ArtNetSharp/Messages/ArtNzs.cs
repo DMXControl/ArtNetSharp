@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ArtNetSharp
 {
-    public sealed class ArtNzs: AbstractArtPacketNetAddress
+    public sealed class ArtNzs : AbstractArtPacketNetAddress
     {
         /// <summary>
         /// The sequence number is used to ensure that ArtDmx packets are used in the correct order.

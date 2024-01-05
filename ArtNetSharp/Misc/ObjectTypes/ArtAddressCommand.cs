@@ -4,7 +4,7 @@ namespace ArtNetSharp
 {
     public readonly struct ArtAddressCommand : IEquatable<ArtAddressCommand>
     {
-        public static ArtAddressCommand Default { get; }= new ArtAddressCommand();
+        public static ArtAddressCommand Default { get; } = new ArtAddressCommand();
         public readonly EArtAddressCommand Command;
         public readonly byte? Port;
 

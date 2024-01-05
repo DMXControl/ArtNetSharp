@@ -37,7 +37,7 @@
             Flags = flags;
             Priority = priority;
         }
-        public ArtPoll(in byte[] packet): base(packet)
+        public ArtPoll(in byte[] packet) : base(packet)
         {
             if (packet.Length >= 13)
                 Flags = (EArtPollFlags)packet[12];

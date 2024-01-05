@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ArtNetSharp
 {
-    public sealed class ArtVlc: AbstractArtPacketNetAddress
+    public sealed class ArtVlc : AbstractArtPacketNetAddress
     {
         /// <summary>
         /// The sequence number is used to ensure that ArtDmx packets are used in the correct order.
@@ -68,11 +68,11 @@ namespace ArtNetSharp
                       in byte[] payload,
                       in ushort transaction,
                       in ushort payloadChecksum,
-                      in ushort slotAddress= 0,
-                      in byte depth= 0,
-                      in ushort modulationFrequency= 0,
-                      in ushort modulationType= 0,
-                      in ushort beaconModeRepeatFrequency=0,
+                      in ushort slotAddress = 0,
+                      in byte depth = 0,
+                      in ushort modulationFrequency = 0,
+                      in ushort modulationType = 0,
+                      in ushort beaconModeRepeatFrequency = 0,
                       in EVlcFlags flags = EVlcFlags.None,
                       in EPayloadLanguageCode payloadLanguageCode = EPayloadLanguageCode.BeaconURL,
                       in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net, address, protocolVersion)
@@ -94,7 +94,7 @@ namespace ArtNetSharp
         }
         public ArtVlc(in byte[] packet) : base(packet)
         {
-            if(!IsArtVlc(packet))
+            if (!IsArtVlc(packet))
                 throw new ArgumentException("This given data isn't an ArtVlcPacket!");
 
             Sequence = packet[12]; // 5 Sequence

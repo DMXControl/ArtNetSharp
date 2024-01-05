@@ -5,7 +5,7 @@ namespace ArtNetSharp
     [Flags]
     public enum EArtPollFlags : byte
     {
-        None=0,
+        None = 0,
         ArtPollReplyOnChange = 0b00000010,
         DiagnosticEnabled = 0b00000100,
         DiagnosticUnicast = 0b00001000,

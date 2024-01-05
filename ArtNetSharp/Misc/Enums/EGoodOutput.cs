@@ -5,7 +5,7 @@ namespace ArtNetSharp
     [Flags]
     public enum EGoodOutput : ushort
     {
-        OutputArtNet= 0b00000000,
+        OutputArtNet = 0b00000000,
         OutputSACN = 0b00000001,
         MergeModeIsLTP = 0b00000010,
         DMX_OutputShortCircuit = 0b00000100,

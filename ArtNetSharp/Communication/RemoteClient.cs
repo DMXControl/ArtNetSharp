@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Net.Mail;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -196,7 +195,7 @@ namespace ArtNetSharp.Communication
                 this.IsSACNCapable = root.Status.HasFlag(ENodeStatus.NodeSupportArtNet_sACN_Switching);
             }
         }
-        private ConcurrentDictionary<int, RemoteClientPort> ports= new ConcurrentDictionary<int, RemoteClientPort>();
+        private ConcurrentDictionary<int, RemoteClientPort> ports = new ConcurrentDictionary<int, RemoteClientPort>();
         public IReadOnlyCollection<RemoteClientPort> Ports { get; private set; }
         public event EventHandler<RemoteClientPort> PortDiscovered;
         public event EventHandler<RemoteClientPort> PortTimedOut;
@@ -217,7 +216,7 @@ namespace ArtNetSharp.Communication
             {
                 PropertyChanged?.Invoke(this, eventArgs);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Logger.LogError(e);
             }
@@ -332,7 +331,10 @@ namespace ArtNetSharp.Communication
         private async Task PollArtData()
         {
             if (Instance is ControllerInstance)
-                await ArtNet.Instance.TrySendPacket(new ArtData(instance.OEMProductCode, instance.ESTAManufacturerCode), IpAddress);
+            {
+                using ArtData artData = new ArtData(instance.OEMProductCode, instance.ESTAManufacturerCode);
+                await ArtNet.Instance.TrySendPacket(artData, IpAddress);
+            }
         }
         private async Task QueryArtData()
         {
@@ -341,7 +343,10 @@ namespace ArtNetSharp.Communication
 
             EDataRequest[] todo = new[] { EDataRequest.UrlProduct, EDataRequest.UrlSupport, EDataRequest.UrlUserGuide, EDataRequest.UrlPersUdr, EDataRequest.UrlPersGdtf };
             foreach (EDataRequest req in todo)
-                await ArtNet.Instance.TrySendPacket(new ArtData(instance.OEMProductCode, instance.ESTAManufacturerCode, req), IpAddress);
+            {
+                using ArtData artData = new ArtData(instance.OEMProductCode, instance.ESTAManufacturerCode, req);
+                await ArtNet.Instance.TrySendPacket(artData, IpAddress);
+            }
         }
 
         private void Port_RDMUIDReceived(object sender, RDMUID_ReceivedBag bag)

@@ -1,5 +1,4 @@
 ﻿using RDMSharp;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,7 +14,7 @@ namespace ArtNetSharp.Communication
 
         protected override async void OnPacketReceived(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
         {
-            switch(packet)
+            switch (packet)
             {
 
                 case ArtDataReply artDataReply:
@@ -35,7 +34,7 @@ namespace ArtNetSharp.Communication
 
         public async Task PerformRDMDiscovery(PortAddress? portAddress = null, bool flush = false)
         {
-            await base.PerformRDMDiscovery(portAddress,flush);
+            await base.PerformRDMDiscovery(portAddress, flush);
         }
     }
 }
