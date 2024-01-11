@@ -520,6 +520,9 @@ namespace ArtNetSharp.Communication
         }
         public async Task SendArtRDM(RDMMessage rdmMessage)
         {
+            if (this.IsDisposed || this.IsDisposing || this.IsDeactivated)
+                return;
+
             if (!rdmMessage.Command.HasFlag(ERDM_Command.RESPONSE) && rdmMessage.SourceUID == RDMUID.Empty)
                 rdmMessage.SourceUID = UID;
 
@@ -1058,11 +1061,15 @@ namespace ArtNetSharp.Communication
 
         private async void _timerSendPoll_Elapsed(object sender, ElapsedEventArgs e)
         {
+            if (this.IsDisposed || this.IsDisposing || this.IsDeactivated)
+                return;
             if (SendArtPoll)
                 await sendArtPoll();
         }
         private async void _timerSendDMX_Elapsed(object sender, ElapsedEventArgs e)
         {
+            if (this.IsDisposed || this.IsDisposing || this.IsDeactivated)
+                return;
             if (pauseDMXOutput.CurrentCount == 0)
             {
                 pauseDMXCountdown--;
@@ -1073,6 +1080,8 @@ namespace ArtNetSharp.Communication
         }
         private async void _timerSendDMXKeepAlive_Elapsed(object sender, ElapsedEventArgs e)
         {
+            if (this.IsDisposed || this.IsDisposing || this.IsDeactivated)
+                return;
             await sendAllArtDMX(true);
         }
 
