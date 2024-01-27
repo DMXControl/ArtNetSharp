@@ -754,12 +754,15 @@ namespace ArtNetSharp.Communication
 
             try
             {
-                var ports = RemoteClientsPorts
-                    .Where(p => IPv4Address.Equals(p.IpAddress, source) && p.BindIndex == artTodData.BindIndex && PortAddress.Equals(p.OutputPortAddress, artTodData.PortAddress))
-                    .ToList();
+                if (RemoteClientsPorts.Count != 0)
+                {
+                    var ports = RemoteClientsPorts
+                        .Where(p => IPv4Address.Equals(p.IpAddress, source) && PortAddress.Equals(p.OutputPortAddress, artTodData.PortAddress))
+                        .ToList();
 
-                foreach (var port in ports)
-                    port.AddRdmUIDs(artTodData.Uids);
+                    foreach (var port in ports)
+                        port.AddRdmUIDs(artTodData.Uids);
+                }
             }
             catch (Exception ex) { Logger.LogError(ex); }
 
