@@ -526,14 +526,14 @@ namespace ArtNetSharp.Communication
             if (!rdmMessage.Command.HasFlag(ERDM_Command.RESPONSE) && rdmMessage.SourceUID == RDMUID.Empty)
                 rdmMessage.SourceUID = UID;
 
-            RDMUID_ReceivedBag uidBag;
-            if (knownRDMUIDs.TryGetValue(rdmMessage.DestUID, out uidBag))
+            if (knownRDMUIDs.TryGetValue(rdmMessage.DestUID, out RDMUID_ReceivedBag uidBag))
                 rdmMessage.TransactionCounter = uidBag.NewTransactionNumber();
 
             var ports = RemoteClientsPorts.Where(port => port.KnownRDMUIDs.Count != 0).Where(port => port.OutputPortAddress.HasValue && port.KnownRDMUIDs.Any(bag => bag.Uid == rdmMessage.DestUID)).ToList();
             List<Task> tasks = new List<Task>();
             foreach (var port in ports)
             {
+                //Todo Buffer per IP address to prevent Hardware from overflow
                 ArtRDM artRDM = new ArtRDM(port.OutputPortAddress.Value, rdmMessage);
                 tasks.Add(Task.Run(async () => await TrySendPacket(artRDM, port.IpAddress)));
             }
