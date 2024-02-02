@@ -283,7 +283,8 @@ namespace ArtNetSharp
             byte[] received = result.Buffer;
             try
             {
-                processPacket(Tools.DeserializePacket(received), localIpAddress, RemoteIpEndPoint.Address);
+                IPv4Address sourceIp = RemoteIpEndPoint.Address;
+                processPacket(Tools.DeserializePacket(received), localIpAddress, sourceIp);
             }
             catch (ObjectDisposedException ed) { Logger.LogTrace(ed); }
             catch (SocketException se) { Logger.LogTrace(se); }

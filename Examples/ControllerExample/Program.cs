@@ -1,7 +1,15 @@
 ﻿using ArtNetSharp;
 using ArtNetSharp.Communication;
+using System.Net;
 
 Console.WriteLine("Controller Example!");
+
+//Add Logging
+//ArtNet.SetLoggerFectory(YOUR_LOGGER_FACTORY);
+
+//Set Networkinterfaces
+var broadcastIp = new IPAddress(new byte[] { 2, 255, 255, 255 });
+ArtNet.Instance.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
 
 // Create Instance
 ControllerInstance controllerInstance = new ControllerInstance();
