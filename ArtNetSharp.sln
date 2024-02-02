@@ -7,6 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArtNetSharp", "ArtNetSharp\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArtNetTests", "ArtNetTests\ArtNetTests.csproj", "{AE26C891-AF80-4C7C-A05E-6358E8A96E9C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControllerExample", "Examples\ControllerExample\ControllerExample.csproj", "{FA2C4391-248B-4651-AC7D-1B4157E675CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NodeExample", "Examples\NodeExample\NodeExample.csproj", "{8A9CF0C5-2AFC-4243-8D88-DFB053878318}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{AE26C891-AF80-4C7C-A05E-6358E8A96E9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AE26C891-AF80-4C7C-A05E-6358E8A96E9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AE26C891-AF80-4C7C-A05E-6358E8A96E9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA2C4391-248B-4651-AC7D-1B4157E675CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA2C4391-248B-4651-AC7D-1B4157E675CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA2C4391-248B-4651-AC7D-1B4157E675CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA2C4391-248B-4651-AC7D-1B4157E675CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A9CF0C5-2AFC-4243-8D88-DFB053878318}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A9CF0C5-2AFC-4243-8D88-DFB053878318}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A9CF0C5-2AFC-4243-8D88-DFB053878318}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A9CF0C5-2AFC-4243-8D88-DFB053878318}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -189,7 +189,7 @@ namespace ArtNetSharp.Communication
 
             PortType = artPollReply.PortTypes[PortIndex];
             GoodOutput = artPollReply.GoodOutput[PortIndex];
-            GoodOutput = artPollReply.GoodOutput[PortIndex];
+            GoodInput = artPollReply.GoodInput[PortIndex];
             var output = artPollReply.OutputUniverses[PortIndex];
             var input = artPollReply.InputUniverses[PortIndex];
             IsRDMCapable = artPollReply.Status.HasFlag(ENodeStatus.RDM_Supported) && !GoodOutput.HasFlag(EGoodOutput.RDMisDisabled);

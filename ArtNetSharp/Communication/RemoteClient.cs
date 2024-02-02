@@ -283,7 +283,7 @@ namespace ArtNetSharp.Communication
             {
                 for (byte portIndex = 0; portIndex < artPollReply.Ports; portIndex++)
                 {
-                    int physicalPort = ((artPollReply.BindIndex - 1) * artPollReply.Ports) + portIndex;
+                    int physicalPort = (Math.Max(0, artPollReply.BindIndex - 1) * artPollReply.Ports) + portIndex;
                     RemoteClientPort port = null;
                     if (ports.TryGetValue(physicalPort, out port))
                         port.processArtPollReply(artPollReply);
