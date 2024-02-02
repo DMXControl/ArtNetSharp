@@ -7,7 +7,8 @@ namespace ArtNetSharp.Communication
     public class NodeInstance : AbstractInstance
     {
         public sealed override EStCodes EstCodes => EStCodes.StNode;
-        protected sealed override bool SendArtPoll => false;
+        protected sealed override bool SendArtPollBroadcast => false;
+        protected sealed override bool SendArtPollTargeted => true;
 
         protected virtual string UrlProduct { get; }
         protected virtual string UrlUserGuid { get; }

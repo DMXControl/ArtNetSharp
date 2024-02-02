@@ -2,7 +2,7 @@
 
 namespace ArtNetSharp
 {
-    public readonly struct PortAddress : IEquatable<PortAddress>
+    public readonly struct PortAddress : IEquatable<PortAddress>, IComparable<PortAddress>
     {
         public readonly Net Net;
         public readonly Subnet Subnet;
@@ -78,6 +78,11 @@ namespace ArtNetSharp
         public bool Equals(PortAddress other)
         {
             return Combined == other.Combined;
+        }
+
+        public int CompareTo(PortAddress other)
+        {
+            return Combined.CompareTo(other.Combined);
         }
     }
 }

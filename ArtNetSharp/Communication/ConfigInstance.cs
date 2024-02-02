@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 
 namespace ArtNetSharp.Communication
 {
-    public class ControllerInstance : AbstractInstance
+    public class ConfigInstance : AbstractInstance
     {
-        public sealed override EStCodes EstCodes => EStCodes.StController;
-        protected sealed override bool SendArtPollBroadcast => false;
-        protected sealed override bool SendArtPollTargeted => true;
+        public sealed override EStCodes EstCodes => EStCodes.StConfig;
+        protected sealed override bool SendArtPollBroadcast => true;
+        protected sealed override bool SendArtPollTargeted => false;
         protected sealed override bool SendArtData => true;
         protected sealed override bool SupportRDM => true;
 

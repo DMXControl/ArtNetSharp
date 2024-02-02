@@ -2,7 +2,7 @@
 
 namespace ArtNetSharp
 {
-    public readonly struct Universe : IEquatable<Universe>
+    public readonly struct Universe : IEquatable<Universe>, IComparable<Universe>
     {
         public static Universe Default { get; } = new Universe();
         public readonly byte Value;
@@ -53,6 +53,11 @@ namespace ArtNetSharp
         public bool Equals(Universe other)
         {
             return Value == other.Value;
+        }
+
+        public int CompareTo(Universe other)
+        {
+            return Value.CompareTo(other.Value);
         }
     }
 }

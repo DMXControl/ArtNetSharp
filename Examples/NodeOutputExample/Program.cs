@@ -1,13 +1,13 @@
 ﻿using ArtNetSharp;
 using ArtNetSharp.Communication;
 
-Console.WriteLine("Node Exampler!");
+Console.WriteLine("Node Output Exampler!");
 
 // Create Instance
 NodeInstance nodeInstance = new NodeInstance();
-nodeInstance.Name = "Test";
+nodeInstance.Name = nodeInstance.ShortName = "Node Output Example";
 
-// Configure Ports
+// Configure Output Ports
 for (ushort i = 0; i < 32; i++)
     nodeInstance.AddPortConfig(new PortConfig(i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
 

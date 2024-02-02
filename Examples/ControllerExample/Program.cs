@@ -1,11 +1,11 @@
 ﻿using ArtNetSharp;
 using ArtNetSharp.Communication;
 
-Console.WriteLine("Controller Exampler!");
+Console.WriteLine("Controller Example!");
 
 // Create Instance
 ControllerInstance controllerInstance = new ControllerInstance();
-controllerInstance.Name = "Test";
+controllerInstance.Name = controllerInstance.ShortName = "Controller Example";
 
 // Configure Ports
 for (ushort i = 0; i < 32; i++)

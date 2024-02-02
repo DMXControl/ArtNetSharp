@@ -2,7 +2,7 @@
 
 namespace ArtNetSharp
 {
-    public readonly struct Net : IEquatable<Net>
+    public readonly struct Net : IEquatable<Net>, IComparable<Net>
     {
         public readonly byte Value;
 
@@ -52,6 +52,11 @@ namespace ArtNetSharp
         public bool Equals(Net other)
         {
             return Value == other.Value;
+        }
+
+        public int CompareTo(Net other)
+        {
+            return Value.CompareTo(other.Value);
         }
     }
 }

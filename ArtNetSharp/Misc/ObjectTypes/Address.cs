@@ -2,7 +2,7 @@
 
 namespace ArtNetSharp
 {
-    public readonly struct Address : IEquatable<Address>
+    public readonly struct Address : IEquatable<Address>, IComparable<Address>
     {
         public readonly Subnet Subnet;
         public readonly Universe Universe;
@@ -60,6 +60,11 @@ namespace ArtNetSharp
         public bool Equals(Address other)
         {
             return Combined == other.Combined;
+        }
+
+        public int CompareTo(Address other)
+        {
+            return Combined.CompareTo(other.Combined);
         }
     }
 }

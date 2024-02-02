@@ -181,7 +181,7 @@ namespace ArtNetSharp
                         in object[] inputUniverses,
                         in ushort oemCode = Constants.DEFAULT_OEM_CODE,
                         in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
-                        in byte ports = 1,
+                        in byte ports = 0,
                         in NodeReport? nodeReport = null,
                         in EPortType[] portTypes = null,
                         in EGoodInput[] goodInput = null,
@@ -224,7 +224,7 @@ namespace ArtNetSharp
             else
                 ShortName = shortName.Length > 18 ? shortName.Substring(0, 18) : shortName;
 
-            if (String.IsNullOrWhiteSpace(LongName))
+            if (String.IsNullOrWhiteSpace(longName))
                 LongName = string.Empty;
             else
                 LongName = longName.Length > 64 ? longName.Substring(0, 64) : longName;

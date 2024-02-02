@@ -8,8 +8,8 @@
 
         public readonly EArtPollFlags Flags;
         public readonly EPriorityCode Priority;
-        public readonly ushort TargetPortTop;
-        public readonly ushort TargetPortBottom;
+        public readonly PortAddress TargetPortTop;
+        public readonly PortAddress TargetPortBottom;
         public readonly ushort OemCode;
         /// <summary>
         /// The ESTA manufacturer code. The ESTA
@@ -24,8 +24,8 @@
         }
         public ArtPoll(in ushort oemCode = Constants.DEFAULT_OEM_CODE,
                        in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
-                       in ushort targetPortTop = 0,
-                       in ushort targetPortBottom = 0,
+                       in PortAddress targetPortTop = default,
+                       in PortAddress targetPortBottom = default,
                        in EArtPollFlags flags = EArtPollFlags.None,
                        in EPriorityCode priority = EPriorityCode.None,
                        in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(protocolVersion)
@@ -34,7 +34,10 @@
             ManufacturerCode = manufacturerCode;
             TargetPortTop = targetPortTop;
             TargetPortBottom = targetPortBottom;
-            Flags = flags;
+            if (TargetPortBottom != default || TargetPortTop != default)
+                Flags = flags | EArtPollFlags.EnableTargetedMode;
+            else
+                Flags = flags;
             Priority = priority;
         }
         public ArtPoll(in byte[] packet) : base(packet)
@@ -95,7 +98,7 @@
 
         public override string ToString()
         {
-            return $"{nameof(ArtPoll)}: OEM:{OemCode:x4}, Manuf.:{ManufacturerCode:x4}, Version:{ProtocolVersion}";
+            return $"{nameof(ArtPoll)}: OEM:{OemCode:x4}, Manuf.:{ManufacturerCode:x4}, Version:{ProtocolVersion}, TargetPortTop:{TargetPortTop}, TargetPortBottom:{TargetPortBottom}";
         }
     }
 }

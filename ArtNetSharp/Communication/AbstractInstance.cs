@@ -38,7 +38,8 @@ namespace ArtNetSharp.Communication
         public virtual ushort ESTAManufacturerCode { get; } = Constants.DEFAULT_ESTA_MANUFACTURER_CODE;
         public virtual ushort OEMProductCode { get; } = Constants.DEFAULT_OEM_CODE;
 
-        protected virtual bool SendArtPoll { get; } = false;
+        protected virtual bool SendArtPollBroadcast { get; } = false;
+        protected virtual bool SendArtPollTargeted { get; } = false;
         protected virtual bool SendArtData { get; } = false;
         protected virtual bool SupportRDM { get; } = false;
 
@@ -231,12 +232,12 @@ namespace ArtNetSharp.Communication
             await artNet.TrySendBroadcastPacket(packet);
         }
 
-        private async Task sendArtPoll()
+        private async Task sendArtPoll(PortAddress targetPortTop = default, PortAddress targetPortBottom = default)
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
 
-            using ArtPoll artPoll = new ArtPoll(OEMProductCode, ESTAManufacturerCode);
+            using ArtPoll artPoll = new ArtPoll(OEMProductCode, ESTAManufacturerCode, targetPortTop: targetPortTop, targetPortBottom: targetPortBottom);
             await TrySendBroadcastPacket(artPoll);
         }
         private async Task sendArtPollReply(IPv4Address ownIp, IPv4Address destinationIp, ArtPoll artPoll = null)
@@ -253,7 +254,9 @@ namespace ArtNetSharp.Communication
                 Net net = 0;
                 Subnet subnet = 0;
                 List<Task> tasks = new List<Task>();
-                var ports = portConfigs.OrderBy(pc => pc.PortAddress.Combined).ToList();
+                var ports = portConfigs.OrderBy(pc => pc.PortAddress).ToList();
+                if (artPoll.Flags.HasFlag(EArtPollFlags.EnableTargetedMode))
+                    ports = ports.Where(pc => pc.PortAddress >= artPoll.TargetPortBottom && pc.PortAddress <= artPoll.TargetPortTop).ToList();
                 if (ports.Count != 0)
                     for (byte bindindex = 0; bindindex < Math.Min(byte.MaxValue, ports.Count()); bindindex++)
                     {
@@ -294,7 +297,7 @@ namespace ArtNetSharp.Communication
                         });
                         tasks.Add(task);
                     }
-                else
+                else if(!artPoll.Flags.HasFlag(EArtPollFlags.EnableTargetedMode))
                 {
 
                     Task task = Task.Run(async () =>
@@ -1000,9 +1003,13 @@ namespace ArtNetSharp.Communication
             await Task.Delay(500);
         }
 
+        protected virtual ENodeStatus GetOwnNodeStatus()
+        {
+            return ENodeStatus.None;
+        }
         private ENodeStatus getOwnNodeStatus()
         {
-            ENodeStatus nodeStatus = ENodeStatus.None;
+            ENodeStatus nodeStatus = GetOwnNodeStatus() | ENodeStatus.NodeSupports15BitPortAddress;
 
             if (SupportRDM)
                 nodeStatus |= ENodeStatus.RDM_Supported;
@@ -1066,8 +1073,38 @@ namespace ArtNetSharp.Communication
         {
             if (this.IsDisposed || this.IsDisposing || this.IsDeactivated)
                 return;
-            if (SendArtPoll)
+            if (SendArtPollBroadcast)
                 await sendArtPoll();
+            else if (SendArtPollTargeted)
+            {
+                var ports=portConfigs.Where(p => p.Type.HasFlag(EPortType.InputToArtNet)).OrderBy(p=>p.PortAddress).ToList();
+                PortAddress? bottom = null;
+                PortAddress? top = null;
+
+                for (int i=0;i< ports.Count;i++)
+                {
+                    PortConfig port = ports[i];
+                    PortConfig nextPort = null;
+                    if (i + 1 < ports.Count)
+                        nextPort = ports[i + 1];
+
+                    if (!bottom.HasValue)
+                        bottom = port.PortAddress;
+
+                    if (port.PortAddress.Combined + 1 == nextPort?.PortAddress.Combined)
+                        continue;
+                    else
+                        top = port.PortAddress;
+
+
+                    if (bottom.HasValue && top.HasValue)
+                    {
+                        await sendArtPoll(top.Value, bottom.Value);
+                        bottom = null;
+                        top = null;
+                    }
+                }
+            }
         }
         private async void _timerSendDMX_Elapsed(object sender, ElapsedEventArgs e)
         {
