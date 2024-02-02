@@ -2,5 +2,5 @@
 This library allows you to use the ArtNet protocol version 4 in C#
 
 ## Quickstart
-[Controller](https://pages.github.com/).
-[Node](https://pages.github.com/).
+* [Controller](https://github.com/DMXControl/ArtNetSharp/blob/main/Examples/ControllerExample/Program.cs)
+* [Node](https://github.com/DMXControl/ArtNetSharp/blob/main/Examples/NodeExample/Program.cs)
