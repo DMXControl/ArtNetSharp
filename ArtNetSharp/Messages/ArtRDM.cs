@@ -15,8 +15,8 @@ namespace ArtNetSharp
         protected override sealed ushort CommandByte => 22;
         protected override sealed ushort AddressByte => 23;
 
-        public RDMUID Source => RDMMessage.SourceUID;
-        public RDMUID Destination => RDMMessage.DestUID;
+        public RDMUID Source => RDMMessage?.SourceUID ?? default;
+        public RDMUID Destination => RDMMessage?.DestUID ?? default;
 
         public readonly byte[] Data;
         public readonly RDMMessage RDMMessage;
@@ -91,7 +91,7 @@ namespace ArtNetSharp
 
         public override string ToString()
         {
-            return $"{nameof(ArtRDM)}: {PortAddress.Combined:x4} Cammand: {RDMMessage.Command}, Parameter: {RDMMessage.Parameter}, ResponseType: {RDMMessage.ResponseType} ,Source: {Source}, Destination: {Destination}";
+            return $"{nameof(ArtRDM)}: {PortAddress.Combined:x4} Command: {RDMMessage?.Command}, Parameter: {RDMMessage?.Parameter}, ResponseType: {RDMMessage?.ResponseType} ,Source: {Source}, Destination: {Destination}";
         }
     }
 }

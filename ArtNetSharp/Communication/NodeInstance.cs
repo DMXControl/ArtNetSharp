@@ -20,13 +20,6 @@ namespace ArtNetSharp.Communication
         {
             switch (packet)
             {
-                case ArtTodRequest artTodRequest:
-                    _ = processArtTodRequest(artTodRequest, sourceIp);
-                    break;
-                case ArtTodControl artTodControl:
-                    _ = processArtTodControl(artTodControl, sourceIp);
-                    break;
-
                 case ArtData artData:
                     _ = processArtData(artData, sourceIp);
                     break;

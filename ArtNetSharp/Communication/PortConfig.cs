@@ -31,10 +31,12 @@ namespace ArtNetSharp.Communication
         public IReadOnlyCollection<IPv4Address> AdditionalIPEndpoints { get; private set; }
 
 
-        private ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
-        public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs;
+        private ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> discoveredRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        public IReadOnlyCollection<RDMUID_ReceivedBag> DiscoveredRDMUIDs;
+        private ConcurrentDictionary<RDMUID, RDMUID> additionalRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID>();
+        public IReadOnlyCollection<RDMUID> AdditionalRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
-        public event EventHandler<byte[]> RDMMessageReceived;
+        public event EventHandler<RDMMessage> RDMMessageReceived;
 
         public PortConfig(in Net net, in Subnet subnet, in Universe universe, bool output, bool input)
             : this(new PortAddress(net, subnet, universe), output, input)
@@ -61,7 +63,8 @@ namespace ArtNetSharp.Communication
             additionalIPEndpoints = new List<IPv4Address>();
             AdditionalIPEndpoints = additionalIPEndpoints.AsReadOnly();
 
-            KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
+            DiscoveredRDMUIDs = discoveredRDMUIDs.Values.ToList().AsReadOnly();
+            AdditionalRDMUIDs = additionalRDMUIDs.Values.ToList().AsReadOnly();
         }
 
         public void AddAdditionalIPEndpoints(params IPv4Address[] addresses)
@@ -84,7 +87,7 @@ namespace ArtNetSharp.Communication
             AdditionalIPEndpoints = additionalIPEndpoints.AsReadOnly();
         }
 
-        internal void AddRdmUIDs(params RDMUID[] rdmuids)
+        internal void AddDiscoveredRdmUIDs(params RDMUID[] rdmuids)
         {
             if (rdmuids.Length == 0)
                 return;
@@ -92,41 +95,52 @@ namespace ArtNetSharp.Communication
             foreach (RDMUID rdmuid in rdmuids)
             {
                 RDMUID_ReceivedBag bag;
-                if (knownRDMUIDs.TryGetValue(rdmuid, out bag))
+                if (discoveredRDMUIDs.TryGetValue(rdmuid, out bag))
                     bag.Seen();
                 else
                 {
                     bag = new RDMUID_ReceivedBag(rdmuid);
-                    if (knownRDMUIDs.TryAdd(rdmuid, bag))
+                    if (discoveredRDMUIDs.TryAdd(rdmuid, bag))
                     {
                         RDMUIDReceived?.Invoke(this, bag);
                         Logger.LogTrace($"#{BindIndex} PortAddress: {PortAddress.Combined:x4} Cached UID: {bag.Uid}");
                     }
                 }
             }
-            KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
+            DiscoveredRDMUIDs = discoveredRDMUIDs.Values.ToList().AsReadOnly();
+        }
+        public void AddAdditionalRdmUIDs(params RDMUID[] rdmuids)
+        {
+            if (rdmuids.Length == 0)
+                return;
+
+            foreach (RDMUID rdmuid in rdmuids)
+                additionalRDMUIDs.TryAdd(rdmuid, rdmuid);
+
+            AdditionalRDMUIDs = additionalRDMUIDs.Values.ToList().AsReadOnly();
+        }
+        public void RemoveAdditionalRdmUIDs(params RDMUID[] rdmuids)
+        {
+            if (additionalRDMUIDs.Count == 0)
+                return;
+
+            foreach (RDMUID rdmuid in rdmuids)
+                additionalRDMUIDs.TryRemove(rdmuid, out _);
+
+            AdditionalRDMUIDs = additionalRDMUIDs.Values.ToList().AsReadOnly();
         }
         public void RemoveOutdatedRdmUIDs()
         {
-            var outdated = knownRDMUIDs.Where(uid => uid.Value.Timouted()).ToList();
+            var outdated = discoveredRDMUIDs.Where(uid => uid.Value.Timouted()).ToList();
             bool removed = false;
             foreach (var remove in outdated)
-                removed |= knownRDMUIDs.TryRemove(remove.Key, out _);
+                removed |= discoveredRDMUIDs.TryRemove(remove.Key, out _);
             if (removed)
-                KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
+                DiscoveredRDMUIDs = discoveredRDMUIDs.Values.ToList().AsReadOnly();
         }
         public RDMUID[] GetReceivedRDMUIDs()
         {
-            return KnownRDMUIDs.Where(k => !k.Timouted()).Select(k => k.Uid).ToArray();
-        }
-
-        internal void ProcessArtRDM(ArtRDM artRDM)
-        {
-            if (!KnownRDMUIDs.Any(k => k.Uid.Equals(artRDM.Source)))
-                return;
-
-            AddRdmUIDs(artRDM.Source);
-            RDMMessageReceived?.Invoke(this, artRDM.Data);
+            return DiscoveredRDMUIDs.Where(k => !k.Timouted()).Select(k => k.Uid).ToArray();
         }
 
         public override string ToString()

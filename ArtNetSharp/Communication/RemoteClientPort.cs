@@ -32,6 +32,11 @@ namespace ArtNetSharp.Communication
                 onPropertyChanged();
             }
         }
+        internal bool Timouted()
+        {
+            var now = DateTime.UtcNow.AddSeconds(-30);
+            return LastSeen <= now;
+        }
         public ArtPollReply ArtPollReply { get; private set; }
         private PortAddress? outputPortAddress;
         public PortAddress? OutputPortAddress
@@ -125,10 +130,11 @@ namespace ArtNetSharp.Communication
             }
         }
 
-        private ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
-        public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs;
+        private ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownControllerRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        public IReadOnlyCollection<RDMUID_ReceivedBag> KnownControllerRDMUIDs;
+        private ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownResponderRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        public IReadOnlyCollection<RDMUID_ReceivedBag> KnownResponderRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
-        public event EventHandler<byte[]> RDMMessageReceived;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -167,7 +173,8 @@ namespace ArtNetSharp.Communication
             PortIndex = portIndex;
             PhysicalPort = ((BindIndex - 1) * artPollReply.Ports) + portIndex;
             processArtPollReply(artPollReply);
-            KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
+            KnownControllerRDMUIDs = new List<RDMUID_ReceivedBag>();
+            KnownResponderRDMUIDs = new List<RDMUID_ReceivedBag>();
         }
         public static string getIDOf(ArtPollReply artPollReply, byte portIndex)
         {
@@ -214,7 +221,20 @@ namespace ArtNetSharp.Communication
             else
                 InputPortAddress = null;
         }
-        internal void AddRdmUIDs(params RDMUID[] rdmuids)
+        private void addControllerRdmUID(RDMUID rdmuid)
+        {
+            RDMUID_ReceivedBag bag;
+            if (knownControllerRDMUIDs.TryGetValue(rdmuid, out bag))
+                bag.Seen();
+            else
+            {
+                bag = new RDMUID_ReceivedBag(rdmuid);
+                if (knownControllerRDMUIDs.TryAdd(rdmuid, bag))
+                    Logger.LogTrace($"{IpAddress}#{BindIndex} Cached Controller UID: {bag.Uid}");
+            }
+            KnownControllerRDMUIDs = knownControllerRDMUIDs.Values.ToList().AsReadOnly();
+        }
+        internal void AddResponderRdmUIDs(params RDMUID[] rdmuids)
         {
             if (rdmuids.Length == 0)
                 return;
@@ -222,42 +242,47 @@ namespace ArtNetSharp.Communication
             foreach (RDMUID rdmuid in rdmuids)
             {
                 RDMUID_ReceivedBag bag;
-                if (knownRDMUIDs.TryGetValue(rdmuid, out bag))
+                if (knownResponderRDMUIDs.TryGetValue(rdmuid, out bag))
                     bag.Seen();
                 else
                 {
                     bag = new RDMUID_ReceivedBag(rdmuid);
-                    if (knownRDMUIDs.TryAdd(rdmuid, bag))
+                    if (knownResponderRDMUIDs.TryAdd(rdmuid, bag))
                     {
                         RDMUIDReceived?.Invoke(this, bag);
-                        Logger.LogTrace($"{IpAddress}#{BindIndex} Cached UID: {bag.Uid}");
+                        Logger.LogTrace($"{IpAddress}#{BindIndex} Cached Responder UID: {bag.Uid}");
                     }
                 }
             }
-            KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
+            KnownResponderRDMUIDs = knownResponderRDMUIDs.Values.ToList().AsReadOnly();
         }
         public void RemoveOutdatedRdmUIDs()
         {
-            var outdated = knownRDMUIDs.Where(uid => uid.Value.Timouted()).ToList();
+            var outdated = knownResponderRDMUIDs.Where(uid => uid.Value.Timouted()).ToList();
             bool removed = false;
             foreach (var remove in outdated)
-                removed |= knownRDMUIDs.TryRemove(remove.Key, out _);
+                removed |= knownResponderRDMUIDs.TryRemove(remove.Key, out _);
             if (removed)
-                KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
+                KnownResponderRDMUIDs = knownResponderRDMUIDs.Values.ToList().AsReadOnly();
         }
         public RDMUID[] GetReceivedRDMUIDs()
         {
-            return KnownRDMUIDs.Where(k => !k.Timouted()).Select(k => k.Uid).ToArray();
+            return KnownResponderRDMUIDs.Where(k => !k.Timouted()).Select(k => k.Uid).ToArray();
         }
 
         internal void ProcessArtRDM(ArtRDM artRDM)
         {
-            if (!KnownRDMUIDs.Any(k => k.Uid.Equals(artRDM.Source)))
+            if (!artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE))
+            {
+                if (artRDM.Source.IsValidDeviceUID)
+                    addControllerRdmUID(artRDM.Source);
+
+                return;
+            }
+            if (!KnownResponderRDMUIDs.Any(k => k.Uid.Equals(artRDM.Source)))
                 return;
 
             LastSeen = DateTime.UtcNow;
-            AddRdmUIDs(artRDM.Source);
-            RDMMessageReceived?.Invoke(this, artRDM.Data);
         }
 
         public override string ToString()
