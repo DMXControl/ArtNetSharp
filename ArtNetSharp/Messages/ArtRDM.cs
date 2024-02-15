@@ -17,6 +17,7 @@ namespace ArtNetSharp
 
         public RDMUID Source => RDMMessage?.SourceUID ?? default;
         public RDMUID Destination => RDMMessage?.DestUID ?? default;
+        public byte Transaction => RDMMessage?.TransactionCounter ?? default;
 
         public readonly byte[] Data;
         public readonly RDMMessage RDMMessage;
@@ -91,7 +92,7 @@ namespace ArtNetSharp
 
         public override string ToString()
         {
-            return $"{nameof(ArtRDM)}: {PortAddress.Combined:x4} Command: {RDMMessage?.Command}, Parameter: {RDMMessage?.Parameter}, ResponseType: {RDMMessage?.ResponseType} ,Source: {Source}, Destination: {Destination}";
+            return $"{nameof(ArtRDM)}: {PortAddress.Combined:x4} Command: {RDMMessage?.Command}, Parameter: {RDMMessage?.Parameter}, ResponseType: {RDMMessage?.ResponseType}, Transaction: {Transaction}, Source: {Source}, Destination: {Destination}";
         }
     }
 }

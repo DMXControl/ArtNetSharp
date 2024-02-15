@@ -19,34 +19,20 @@ Console.WriteLine("Controller RDM Example!");
 ControllerInstance controllerInstance = new ControllerInstance();
 controllerInstance.Name = controllerInstance.ShortName = "Controller RDM Example";
 ConcurrentDictionary<RDMUID, TestRDMDevice> devices = new();
-controllerInstance.RDMMessageReceived += ControllerInstance_RDMMessageReceived;
-
-void ControllerInstance_RDMMessageReceived(object? sender, RDMMessage e)
-{
-    if (e == null)
-        return;
-
-    if (e.DestUID.IsBroadcast)
-        return;
-    if(!e.Command.HasFlag(ERDM_Command.RESPONSE) && devices.ContainsKey(e.DestUID))
-    {
-
-    }
-}
 
 
 // Add Instance
 ArtNet.Instance.AddInstance(controllerInstance);
 
 // Configure Ports
-for (ushort i = 0; i < 4; i++)
+for (ushort i = 1; i <= 4; i++)
 {
     try
     {
-        var outputConfig = new PortConfig(i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted, };
+        var outputConfig = new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted, };
         outputConfig.AddAdditionalRdmUIDs(generateUIDs());
         controllerInstance.AddPortConfig(outputConfig);
-        controllerInstance.AddPortConfig(new PortConfig(i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
+        controllerInstance.AddPortConfig(new PortConfig((byte)(i+4), i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
     }
     catch (Exception ex)
     {
@@ -56,7 +42,7 @@ for (ushort i = 0; i < 4; i++)
 
 RDMUID[] generateUIDs()
 {
-    RDMUID[] uids = new RDMUID[2];
+    RDMUID[] uids = new RDMUID[30];
     for (int i = 0; i < uids.Length; i++)
     {
         var uid = new RDMUID(0x9fff, (uint)devices.Count + 1);

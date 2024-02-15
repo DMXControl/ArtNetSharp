@@ -10,7 +10,7 @@ namespace ControlerRDMExample
         public override bool IsGenerated => true;
         public AbstractRDMDeviceGeneratedMock(RDMUID uid) : base(uid)
         {
-            Controller.RDMMessageReceived += Controller_RDMMessageReceived;
+            Controller.ControllerRDMMessageReceived += Controller_ControllerRDMMessageReceived;
         }
 
         protected override async Task SendRDMMessage(RDMMessage rdmMessage)
@@ -22,12 +22,26 @@ namespace ControlerRDMExample
             }
         }
 
-        private async void Controller_RDMMessageReceived(object? sender, RDMMessage rdmMessage)
+        private async void Controller_ControllerRDMMessageReceived(object? sender, ArtNetSharp.Misc.ControllerRDMMessageReceivedEventArgs e)
         {
-            if (rdmMessage.DestUID.IsBroadcast || this.UID == rdmMessage.DestUID || this.UID == rdmMessage.SourceUID)
+            if (e.Handled)
+                return;
+            if (e.Request.DestUID.IsBroadcast || this.UID == e.Request.DestUID || this.UID == e.Request.SourceUID)
             {
-                Console.WriteLine("R:" + rdmMessage);
-                await ReceiveRDMMessage(rdmMessage);
+                RDMMessage response = null;
+                try
+                {
+                    response = await processRequestMessage(e.Request);
+                }
+                catch (Exception ex)
+                {
+                }
+                if (response != null)
+                    e.SetResponse(response);
+
+                Console.WriteLine($"Request:{Environment.NewLine}{e.Request}");
+                if (e.Handled)
+                    Console.WriteLine($"Response:{Environment.NewLine}{e.Response}");
             }
         }
     }

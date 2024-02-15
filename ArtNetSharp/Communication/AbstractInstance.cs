@@ -1,4 +1,5 @@
 ﻿using ArtNetSharp.Messages.Interfaces;
+using ArtNetSharp.Misc;
 using Microsoft.Extensions.Logging;
 using RDMSharp;
 using System;
@@ -56,7 +57,6 @@ namespace ArtNetSharp.Communication
         private ConcurrentDictionary<PortAddress, ConcurrentDictionary<IPv4Address, DMXReceiveBag>> receivedDMXBuffer = new ConcurrentDictionary<PortAddress, ConcurrentDictionary<IPv4Address, DMXReceiveBag>>();
         private object _receiveLock = new object();
         private ConcurrentDictionary<RDM_TransactionID, RDMMessage> artRDMdeBumbReceive = new();
-        private ConcurrentDictionary<RDM_TransactionID, ArtRDM> artRDMprocessBuffer = new();
 
         private readonly struct RDM_TransactionID : IEquatable<RDM_TransactionID>
         {
@@ -170,7 +170,8 @@ namespace ArtNetSharp.Communication
         private ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
-        public event EventHandler<RDMMessage> RDMMessageReceived;
+        public event EventHandler<RDMMessage> ResponderRDMMessageReceived;
+        public event EventHandler<ControllerRDMMessageReceivedEventArgs> ControllerRDMMessageReceived;
 
         protected AbstractInstance()
         {
@@ -302,10 +303,10 @@ namespace ArtNetSharp.Communication
                 var ports = portConfigs.OrderBy(pc => pc.PortAddress).ToList();
                 if (artPoll.Flags.HasFlag(EArtPollFlags.EnableTargetedMode))
                     ports = ports.Where(pc => pc.PortAddress >= artPoll.TargetPortBottom && pc.PortAddress <= artPoll.TargetPortTop).ToList();
+
                 if (ports.Count != 0)
-                    for (byte bindindex = 0; bindindex < Math.Min(byte.MaxValue, ports.Count()); bindindex++)
+                    foreach (PortConfig portConfig in ports.OrderBy(p=>p.BindIndex).ToList())
                     {
-                        PortConfig portConfig = ports[bindindex];
                         if (artPoll?.Flags.HasFlag(EArtPollFlags.EnableTargetedMode) ?? false)
                         {
                             ushort pA = portConfig.PortAddress;
@@ -313,7 +314,6 @@ namespace ArtNetSharp.Communication
                                 continue;
                         }
 
-                        portConfig.BindIndex = (byte)(bindindex + 1);
                         Task task = Task.Run(async () =>
                         {
                             ArtPollReply reply = new ArtPollReply(ownIp,
@@ -342,7 +342,7 @@ namespace ArtNetSharp.Communication
                         });
                         tasks.Add(task);
                     }
-                else if(!artPoll.Flags.HasFlag(EArtPollFlags.EnableTargetedMode))
+                else if (!artPoll.Flags.HasFlag(EArtPollFlags.EnableTargetedMode))
                 {
 
                     Task task = Task.Run(async () =>
@@ -548,6 +548,7 @@ namespace ArtNetSharp.Communication
             ArtTodData artTodData = null;
             List<RDMUID> uids = portConfig.AdditionalRDMUIDs.Select(bag => bag).ToList();
             uids.AddRange(portConfig.DiscoveredRDMUIDs.Select(bag => bag.Uid));
+            uids = uids.OrderBy(uid => uid).ToList();
             ushort totalCount = (ushort)uids.Count();
             byte blockCount = 0;
             EArtTodDataCommandResponse command = EArtTodDataCommandResponse.TodFull;
@@ -566,6 +567,7 @@ namespace ArtNetSharp.Communication
                     command = EArtTodDataCommandResponse.TodNak;
             }
             while (uids.Count != 0);
+            uids.Clear();
         }
         public async Task SendArtRDM(RDMMessage rdmMessage)
         {
@@ -595,20 +597,11 @@ namespace ArtNetSharp.Communication
                 }
                 await Task.WhenAll(tasks);
             }
-            else
-            {
-                knownControllerRDMUIDs.TryGetValue(rdmMessage.DestUID, out ControllerRDMUID_Bag bag);
-                var key = new RDM_TransactionID(rdmMessage.TransactionCounter, rdmMessage.DestUID, rdmMessage.SourceUID);
-                if (artRDMprocessBuffer.TryRemove(key, out _))
-                {
-                    ArtRDM artRDM = new ArtRDM(bag.PortAddress, rdmMessage);
-                    await TrySendPacket(artRDM, bag.IpAddress);
-                }
-                else
-                {
-
-                }
-            }
+        }
+        private async Task sendArtRDM(RDMMessage rdmMessage, PortAddress portAddress, IPv4Address ip)
+        {
+            ArtRDM artRDM = new ArtRDM(portAddress, rdmMessage);
+            await TrySendPacket(artRDM, ip);
         }
 
         #region Send ArtAddress
@@ -790,6 +783,7 @@ namespace ArtNetSharp.Communication
                 foreach (var p in configs)
                     tasks.Add(Task.Run(async () =>
                     {
+                        await sendArtTodData(source, p);
                         await PerformRDMDiscoverOnOutput(p);
                         await sendArtTodData(source, p);
                     }));
@@ -848,9 +842,12 @@ namespace ArtNetSharp.Communication
                     else
                     {
                         bag = new ControllerRDMUID_Bag(artRDM.Source, artRDM.PortAddress, source);
-                        knownControllerRDMUIDs.TryAdd(artRDM.Source,bag);
+                        knownControllerRDMUIDs.TryAdd(artRDM.Source, bag);
                     }
                 }
+                else if (knownControllerRDMUIDs.TryGetValue(artRDM.Destination, out bag))
+                    return;
+
                 var ports = RemoteClientsPorts
                     .Where(p => IPv4Address.Equals(p.IpAddress, source) && (artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE) ? PortAddress.Equals(p.InputPortAddress, artRDM.PortAddress) : PortAddress.Equals(p.OutputPortAddress, artRDM.PortAddress)))
                     .ToList();
@@ -867,10 +864,15 @@ namespace ArtNetSharp.Communication
                 return;
             try
             {
-                if (bag != null && !artRDM.Destination.IsBroadcast)
-                    artRDMprocessBuffer.AddOrUpdate(ti, artRDM, (o,a)=>artRDM);
-
-                RDMMessageReceived?.Invoke(this, artRDM.RDMMessage);
+                if (!artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE))
+                {
+                    var eventArgs = new ControllerRDMMessageReceivedEventArgs(artRDM.RDMMessage);
+                    ControllerRDMMessageReceived?.Invoke(this, eventArgs);
+                    if (eventArgs.Handled)
+                        await sendArtRDM(eventArgs.Response, artRDM.PortAddress, source);
+                }
+                else
+                    ResponderRDMMessageReceived?.Invoke(this, artRDM.RDMMessage);
             }
             catch (Exception ex) { Logger.LogError(ex); }
             _ = Task.Run(async () =>

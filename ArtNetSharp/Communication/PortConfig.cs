@@ -17,7 +17,7 @@ namespace ArtNetSharp.Communication
         public Address Address { get { return PortAddress.Address; } }
 
         public virtual byte PortNumber { get; set; }
-        public byte BindIndex { get; internal set; }
+        public readonly byte BindIndex;
 
         public virtual bool Output { get; set; }
         public virtual bool Input { get; set; }
@@ -38,24 +38,28 @@ namespace ArtNetSharp.Communication
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
         public event EventHandler<RDMMessage> RDMMessageReceived;
 
-        public PortConfig(in Net net, in Subnet subnet, in Universe universe, bool output, bool input)
-            : this(new PortAddress(net, subnet, universe), output, input)
+        public PortConfig(in byte bindIndex, in Net net, in Subnet subnet, in Universe universe, in bool output, in bool input)
+            : this(bindIndex, new PortAddress(net, subnet, universe), output, input)
         {
         }
-        public PortConfig(in Subnet subnet, in Universe universe, bool output, bool input)
-            : this(new PortAddress(subnet, universe), output, input)
+        public PortConfig(in byte bindIndex, in Subnet subnet, in Universe universe, in bool output, in bool input)
+            : this(bindIndex, new PortAddress(subnet, universe), output, input)
         {
         }
-        public PortConfig(in Net net, in Address address, bool output, bool input)
-            : this(new PortAddress(net, address.Subnet, address.Universe), output, input)
+        public PortConfig(in byte bindIndex, in Net net, in Address address, in bool output, in bool input)
+            : this(bindIndex, new PortAddress(net, address.Subnet, address.Universe), output, input)
         {
         }
-        public PortConfig(in Address address, bool output, bool input)
-            : this(new PortAddress(address), output, input)
+        public PortConfig(in byte bindIndex, in Address address, in bool output, in bool input)
+            : this(bindIndex,new PortAddress(address), output, input)
         {
         }
-        public PortConfig(PortAddress portAddress, bool output, bool input)
+        public PortConfig(in byte bindIndex, in PortAddress portAddress, in bool output, in bool input)
         {
+            if(bindIndex==0)
+                throw new ArgumentOutOfRangeException("VAluje has to bee within 1 and 255", nameof(bindIndex));
+            
+            BindIndex = bindIndex;
             PortAddress = portAddress;
             Output = output;
             Input = input;
@@ -168,23 +172,23 @@ namespace ArtNetSharp.Communication
                 base.Type = value | EPortType.OutputFromArtNet;
             }
         }
-        public OutputPortConfig(in Address address) : base(address, true, false)
+        public OutputPortConfig(in byte bindIndex, in Address address) : base(bindIndex, address, true, false)
         {
         }
 
-        public OutputPortConfig(PortAddress portAddress) : base(portAddress, true, false)
+        public OutputPortConfig(in byte bindIndex, in PortAddress portAddress) : base(bindIndex, portAddress, true, false)
         {
         }
 
-        public OutputPortConfig(in Subnet subnet, in Universe universe) : base(subnet, universe, true, false)
+        public OutputPortConfig(in byte bindIndex, in Subnet subnet, in Universe universe) : base(bindIndex, subnet, universe, true, false)
         {
         }
 
-        public OutputPortConfig(in Net net, in Address address) : base(net, address, true, false)
+        public OutputPortConfig(in byte bindIndex, in Net net, in Address address) : base(bindIndex, net, address, true, false)
         {
         }
 
-        public OutputPortConfig(in Net net, in Subnet subnet, in Universe universe) : base(net, subnet, universe, true, false)
+        public OutputPortConfig(in byte bindIndex, in Net net, in Subnet subnet, in Universe universe) : base(bindIndex, net, subnet, universe, true, false)
         {
         }
     }

@@ -3,7 +3,7 @@ using RDMSharp;
 
 namespace ArtNetTests.Mocks
 {
-    public class RDMDeviceMock : AbstractRDMDevice<RDMDeviceModelMock>
+    public class RDMDeviceMock : AbstractRDMDevice
     {
         internal static ControllerInstanceMock Controller = ArtNet.Instance.Instances.OfType<ControllerInstanceMock>().First();
         public RDMDeviceMock(RDMUID uid) : base(uid)
@@ -12,7 +12,7 @@ namespace ArtNetTests.Mocks
             if (uid.Manufacturer == RDMSharp.ParameterWrapper.EManufacturer.DMXControlProjects_eV)
                 return;
 #endif
-            Controller.RDMMessageReceived += Controller_RDMMessageReceived;
+            Controller.ResponderRDMMessageReceived += Controller_RDMMessageReceived;
         }
 
         protected override async Task SendRDMMessage(RDMMessage rdmMessage)
