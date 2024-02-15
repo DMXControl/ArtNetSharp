@@ -41,33 +41,28 @@ ArtNet.Instance.AddInstance(controllerInstance);
 // Configure Ports
 for (ushort i = 0; i < 4; i++)
 {
-    var outputConfig = new PortConfig(i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted, };
-    outputConfig.AddAdditionalRdmUIDs(generateUIDs());
-    controllerInstance.AddPortConfig(outputConfig);
-    controllerInstance.AddPortConfig(new PortConfig(i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
+    try
+    {
+        var outputConfig = new PortConfig(i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted, };
+        outputConfig.AddAdditionalRdmUIDs(generateUIDs());
+        controllerInstance.AddPortConfig(outputConfig);
+        controllerInstance.AddPortConfig(new PortConfig(i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
+    }
+    catch (Exception ex)
+    {
+
+    }
 }
 
 RDMUID[] generateUIDs()
 {
-    Random random = new Random();
-    RDMUID[] uids = new RDMUID[100];
+    RDMUID[] uids = new RDMUID[2];
     for (int i = 0; i < uids.Length; i++)
     {
-        var uid = new RDMUID(0x9fff, (uint)random.Next());
+        var uid = new RDMUID(0x9fff, (uint)devices.Count + 1);
         devices.TryAdd(uid, new TestRDMDevice(uid));
         uids[i] = uid;
     }
     return uids;
 }
-
-// Genrerate some DMX-Data
-byte[] data = new byte[512];
-while (true)
-{
-    await Task.Delay(200);
-    for (short k = 0; k < 512; k++)
-        data[k]++;
-
-    for (ushort i = 0; i < 32; i++)
-        controllerInstance.WriteDMXValues(i, data);
-}
+Console.ReadLine();

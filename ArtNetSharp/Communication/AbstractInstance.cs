@@ -55,7 +55,43 @@ namespace ArtNetSharp.Communication
 
         private ConcurrentDictionary<PortAddress, ConcurrentDictionary<IPv4Address, DMXReceiveBag>> receivedDMXBuffer = new ConcurrentDictionary<PortAddress, ConcurrentDictionary<IPv4Address, DMXReceiveBag>>();
         private object _receiveLock = new object();
+        private ConcurrentDictionary<RDM_TransactionID, RDMMessage> artRDMdeBumbReceive = new();
+        private ConcurrentDictionary<RDM_TransactionID, ArtRDM> artRDMprocessBuffer = new();
 
+        private readonly struct RDM_TransactionID : IEquatable<RDM_TransactionID>
+        {
+            private readonly byte Transaction;
+            private readonly RDMUID Controller;
+            private readonly RDMUID Responder;
+
+            public RDM_TransactionID(byte transaction, RDMUID controller, RDMUID responder)
+            {
+                Transaction = transaction;
+                Controller = controller;
+                Responder = responder;
+            }
+            public override string ToString()
+            {
+                return $"{Transaction} C: {Controller} R: {Responder}";
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is RDM_TransactionID iD && Equals(iD);
+            }
+
+            public bool Equals(RDM_TransactionID other)
+            {
+                return Transaction == other.Transaction &&
+                       Controller.Equals(other.Controller) &&
+                       Responder.Equals(other.Responder);
+            }
+
+            public override int GetHashCode()
+            {
+                return Transaction.GetHashCode() + Controller.GetHashCode() + Responder.GetHashCode();
+            }
+        }
         private class DMXReceiveBag
         {
             public byte[] Data { get; private set; }
@@ -562,8 +598,16 @@ namespace ArtNetSharp.Communication
             else
             {
                 knownControllerRDMUIDs.TryGetValue(rdmMessage.DestUID, out ControllerRDMUID_Bag bag);
-                ArtRDM artRDM = new ArtRDM(bag.PortAddress, rdmMessage);
-                await TrySendPacket(artRDM, bag.IpAddress);
+                var key = new RDM_TransactionID(rdmMessage.TransactionCounter, rdmMessage.DestUID, rdmMessage.SourceUID);
+                if (artRDMprocessBuffer.TryRemove(key, out _))
+                {
+                    ArtRDM artRDM = new ArtRDM(bag.PortAddress, rdmMessage);
+                    await TrySendPacket(artRDM, bag.IpAddress);
+                }
+                else
+                {
+
+                }
             }
         }
 
@@ -790,33 +834,50 @@ namespace ArtNetSharp.Communication
             }
             catch (Exception ex) { Logger.LogError(ex); }
         }
-        private void processArtRDM(ArtRDM artRDM, IPv4Address source)
+        private async void processArtRDM(ArtRDM artRDM, IPv4Address source)
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
+            ControllerRDMUID_Bag bag = null;
             try
             {
                 if (!artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE))
                 {
-                    if (knownControllerRDMUIDs.TryGetValue(artRDM.Source, out ControllerRDMUID_Bag bag))
+                    if (knownControllerRDMUIDs.TryGetValue(artRDM.Source, out bag))
                         bag.Seen();
                     else
-                        knownControllerRDMUIDs.TryAdd(artRDM.Source, new ControllerRDMUID_Bag(artRDM.Source, artRDM.PortAddress, source));
+                    {
+                        bag = new ControllerRDMUID_Bag(artRDM.Source, artRDM.PortAddress, source);
+                        knownControllerRDMUIDs.TryAdd(artRDM.Source,bag);
+                    }
                 }
                 var ports = RemoteClientsPorts
                     .Where(p => IPv4Address.Equals(p.IpAddress, source) && (artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE) ? PortAddress.Equals(p.InputPortAddress, artRDM.PortAddress) : PortAddress.Equals(p.OutputPortAddress, artRDM.PortAddress)))
                     .ToList();
                 if (ports.Count != 0)
+                {
                     foreach (var port in ports)
                         port.ProcessArtRDM(artRDM);
+                }
             }
             catch (Exception ex) { Logger.LogError(ex); }
 
+            var ti = new RDM_TransactionID(artRDM.RDMMessage.TransactionCounter, artRDM.Source, artRDM.Destination);
+            if (!artRDMdeBumbReceive.TryAdd(ti, artRDM.RDMMessage))
+                return;
             try
             {
+                if (bag != null && !artRDM.Destination.IsBroadcast)
+                    artRDMprocessBuffer.AddOrUpdate(ti, artRDM, (o,a)=>artRDM);
+
                 RDMMessageReceived?.Invoke(this, artRDM.RDMMessage);
             }
             catch (Exception ex) { Logger.LogError(ex); }
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2000);
+                artRDMdeBumbReceive.TryRemove(ti, out _);
+            });
         }
         #endregion
 
