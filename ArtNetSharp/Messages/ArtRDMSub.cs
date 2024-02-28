@@ -44,7 +44,7 @@ namespace ArtNetSharp
             byte[] buffer = new byte[8];
             for (int j = 0; j < 6; j++)
                 buffer[5 - j] = packet[14 + j];
-            UID = RDMUID.FromULong(BitConverter.ToUInt64(buffer, 0));
+            UID = new RDMUID(BitConverter.ToUInt64(buffer, 0));
 
             CommandClass = packet[21];
             ParameterId = (ushort)(packet[22] << 8 | packet[23]);

@@ -346,7 +346,7 @@ namespace ArtNetSharp
                 byte[] buffer = new byte[8];
                 for (int j = 0; j < 6; j++)
                     buffer[5 - j] = packet[218 + j];
-                DefaulRespUID = RDMUID.FromULong(BitConverter.ToUInt64(buffer, 0));
+                DefaulRespUID = new RDMUID(BitConverter.ToUInt64(buffer, 0));
             }
 
             if (length > 224) // 49 & 50 User

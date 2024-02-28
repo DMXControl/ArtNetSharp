@@ -105,7 +105,7 @@ namespace ArtNetSharp
                 int index = 28 + (i * 6);
                 for (int j = 0; j < 6; j++)
                     buffer[5 - j] = packet[index + j];
-                RDMUID uid = RDMUID.FromULong(BitConverter.ToUInt64(buffer, 0));
+                RDMUID uid = new RDMUID(BitConverter.ToUInt64(buffer, 0));
                 uids.Add(uid);
             }
             this.Uids = uids.ToArray();
