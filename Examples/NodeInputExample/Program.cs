@@ -16,11 +16,11 @@ NodeInstance nodeInstance = new NodeInstance();
 nodeInstance.Name = nodeInstance.ShortName = "Node Input Example";
 
 // Configure Input Ports
-for (ushort i = 0; i < 4; i++)
-    nodeInstance.AddPortConfig(new PortConfig(i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
+for (byte i = 1; i <= 4; i++)
+    nodeInstance.AddPortConfig(new PortConfig(i, new PortAddress(i), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
 
-for (ushort i = 10; i < 14; i++)
-    nodeInstance.AddPortConfig(new PortConfig(i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
+for (byte i = 11; i <= 14; i++)
+    nodeInstance.AddPortConfig(new PortConfig(i, new PortAddress(i), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
 
 // Add Instance
 ArtNet.Instance.AddInstance(nodeInstance);
