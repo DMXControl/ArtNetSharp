@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -188,7 +189,7 @@ namespace ArtNetSharp.Communication
 
             _timerSendDMX = new System.Timers.Timer
             {
-                Interval = 1000 / 44, // Spec 1.4dh page 56
+                Interval = 1000.0 / 44, // Spec 1.4dh page 56
             };
             _timerSendDMX.Elapsed += _timerSendDMX_Elapsed;
 
@@ -462,9 +463,19 @@ namespace ArtNetSharp.Communication
             ArtDMX artDMX = new ArtDMX(getSequenceFor(ipAddress, portAddress), sourcePort, portAddress.Net, portAddress.Address, data);
             await TrySendPacket(artDMX, ipAddress);
         }
-
+        Stopwatch sw = Stopwatch.StartNew();
         private async Task sendAllArtDMX(bool keepAlive = false)
         {
+            if (!keepAlive)
+            {
+                _timerSendDMXKeepAlive.Elapsed -= _timerSendDMXKeepAlive_Elapsed;
+                _timerSendDMXKeepAlive.Interval = 800;
+                _timerSendDMXKeepAlive.Elapsed += _timerSendDMXKeepAlive_Elapsed;
+            }
+            if (keepAlive && sw.ElapsedMilliseconds < (_timerSendDMXKeepAlive.Interval * 0.33))
+                return;
+
+
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
 
