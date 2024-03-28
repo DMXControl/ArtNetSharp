@@ -8,8 +8,8 @@ Console.WriteLine("Controller Example!");
 //ArtNet.SetLoggerFectory(YOUR_LOGGER_FACTORY);
 
 //Set Networkinterfaces
-var broadcastIp = new IPAddress(new byte[] { 2, 255, 255, 255 });
-ArtNet.Instance.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
+//var broadcastIp = new IPAddress(new byte[] { 2, 255, 255, 255 });
+//ArtNet.Instance.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
 
 // Create Instance
 ControllerInstance controllerInstance = new ControllerInstance();
@@ -17,7 +17,7 @@ controllerInstance.Name = controllerInstance.ShortName = "Controller Example";
 
 // Configure Ports
 for (byte i = 1; i <= 32; i++)
-    controllerInstance.AddPortConfig(new PortConfig(i,new PortAddress (i), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet});
+    controllerInstance.AddPortConfig(new PortConfig(i, new PortAddress((ushort)(i - 1)), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet});
 
 // Add Instance
 ArtNet.Instance.AddInstance(controllerInstance);
