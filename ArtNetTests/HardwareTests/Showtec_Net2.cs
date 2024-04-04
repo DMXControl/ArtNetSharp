@@ -35,10 +35,10 @@ namespace ArtNetTests.HardwareTests
         private RemoteClient? remoteClient;
         private RemoteClientPort? remoteClientPort1;
         private RemoteClientPort? remoteClientPort2;
-        private readonly ControllerInstanceMock instance = new ControllerInstanceMock();
+        private ControllerInstanceMock instance;
         public Showtec_Net2(ShowtecNet2TestSubject _showtecNet2TestSubject)
         {
-            testSubject = _showtecNet2TestSubject;
+            testSubject = _showtecNet2TestSubject; 
         }
 
         [OneTimeSetUp]
@@ -47,6 +47,7 @@ namespace ArtNetTests.HardwareTests
             if (!await IsPingable())
                 return;
 
+            instance = new ControllerInstanceMock();
             instance.Name = $"Test: {nameof(Showtec_Net2)}";
             for (ushort i = 1; i <= 1; i++)
                 instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
@@ -92,14 +93,12 @@ namespace ArtNetTests.HardwareTests
         }
 
         [OneTimeTearDown]
-        public async Task TearDown()
+        public void TearDown()
         {
             if (artNet != null)
-                foreach (var instance in artNet.Instances.ToArray())
-                {
-                    artNet.RemoveInstance(instance);
-                    ((IDisposable)instance).Dispose();
-                }
+                artNet.RemoveInstance(instance);
+                ((IDisposable)instance).Dispose();
+                
             remoteClient = null;
         }
 
