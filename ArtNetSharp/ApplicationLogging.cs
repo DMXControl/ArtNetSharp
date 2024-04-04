@@ -71,10 +71,6 @@ namespace ArtNetSharp
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     return fileDirectoryLinux;
 #endif
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    return fileDirectoryWindows;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    return fileDirectoryLinux;
 
                 return null;
             }
