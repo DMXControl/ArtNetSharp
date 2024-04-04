@@ -50,7 +50,7 @@ namespace ArtNetSharp
         internal class FileProvider : ILoggerProvider
         {
             private static string fileDirectoryWindows = Path.Combine("C:", ".Debug", "ArtNetSharp");
-            private static string fileDirectoryLinux = "/var/log/ArtNetSharp";
+            private static string fileDirectoryLinux = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"ArtNetSharp");
             private static string fileDirectory = getOsDirectory();
 
             private static string filePath = Path.Combine(fileDirectory, "log.txt");
@@ -91,6 +91,10 @@ namespace ArtNetSharp
                     {
 
                     }
+                }
+                catch (Exception e)
+                {
+
                 }
                 finally { FileProvider.semaphore.Release(); }
             }
