@@ -90,7 +90,7 @@ namespace ArtNetTests.HardwareTests
                 Pingable = false;
             }
             if (Pingable != true)
-                Assert.Ignore($"TestSubject:{testSubject} IP not found!");
+                Assert.Ignore($"TestSubject: {testSubject} IP not found!");
             return false;
         }
 
@@ -112,8 +112,6 @@ namespace ArtNetTests.HardwareTests
             Assert.That(remoteClient, Is.Not.Null);
             Assert.That(remoteClient.LongName, Is.EqualTo(testSubject.LongName));
             Assert.That(remoteClient.IpAddress, Is.EqualTo(testSubject.IP));
-            if (remoteClient.Ports.Count == 1)
-                await Task.Delay(1000); //Give the Net-2 more time to send the 2nd Port
             Assert.That(remoteClient.Ports, Has.Count.EqualTo(2));
             Assert.That(remoteClient.Root.Macro, Is.EqualTo(EMacroState.None));
             Assert.That(remoteClient.Root.Style, Is.EqualTo(EStCodes.StNode));
@@ -205,7 +203,7 @@ namespace ArtNetTests.HardwareTests
                     await Task.Delay(30);
                 }
                 command = new ArtAddressCommand(EArtAddressCommand.LedNormal);
-                Assert.That(remoteClientPort2!.ArtPollReply.Status.HasFlag(ENodeStatus.IndicatorStateNormal), Is.False);
+                Assert.That(remoteClient!.Root.Status.HasFlag(ENodeStatus.IndicatorStateNormal), Is.False);
                 await instance.SendArtAddress(ArtAddress.CreateSetCommand(1, command), remoteClient!.IpAddress);// reset to Backup
             });
         }
