@@ -134,6 +134,8 @@ namespace ArtNetSharp
                 {
                     if (string.IsNullOrWhiteSpace(fileDirectory))
                         return;
+                    if (!Directory.Exists(fileDirectory))
+                        return;
 
                     await Task.Run(async () =>
                     {

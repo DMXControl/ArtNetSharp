@@ -102,6 +102,7 @@ namespace ArtNetSharp
                     _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
                     Socket testSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    testSocket.EnableBroadcast = true;
                     await testSocket.ConnectAsync(BroadcastIpAddress, Constants.ARTNET_PORT);
                     LocalIpAddress = ((IPEndPoint)testSocket.LocalEndPoint).Address;
                     IPEndPoint localEp = new IPEndPoint(LocalIpAddress, Constants.ARTNET_PORT);
