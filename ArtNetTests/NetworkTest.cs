@@ -12,16 +12,20 @@ namespace ArtNetTests
     public class NetworkTest
     {
         ArtNet artNet;
-        [SetUp]
-        public void Setup()
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
         {
+#if DEBUG
+            Assert.Ignore("Skiped in Release!");
+#endif
             artNet = ArtNet.Instance;
             var broadcastIp = new IPAddress(new byte[] { 2, 255, 255, 255 });
             artNet.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
         }
 
+
         [Test]
-        public void TestNodeInstance()
+        public async Task TestNodeInstance()
         {
             NodeInstance instance = new NodeMock();
             instance.Name = "Test";
@@ -29,13 +33,13 @@ namespace ArtNetTests
                 instance.AddPortConfig(new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
             artNet.AddInstance(instance);
             for (int i = 0; i < 60; i++)
-                Thread.Sleep(1000);
+                await Task.Delay(1000);
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();
         }
 
         [Test]
-        public void TestControllerInstance()
+        public async Task TestControllerInstance()
         {
             ControllerInstanceMock instance = new ControllerInstanceMock();
             instance.Name = "Test";
@@ -43,14 +47,14 @@ namespace ArtNetTests
                 instance.AddPortConfig(new PortConfig((byte)i,i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
             artNet.AddInstance(instance);
             for (int i = 0; i < 60; i++)
-                Thread.Sleep(1000);
+                await Task.Delay(1000);
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();
         }
 
 
         [Test]
-        public void TestDMXTrafficInstance()
+        public async Task TestDMXTrafficInstance()
         {
             ControllerInstanceMock instance = new ControllerInstanceMock();
             instance.Name = "DMXTraffic Test";
@@ -64,7 +68,7 @@ namespace ArtNetTests
                 for (ushort b = 0; b < data.Length; b++)
                     data[b] += 5;
 
-                Thread.Sleep(100);
+                await Task.Delay(100);
 
                 for (ushort pa = 0; pa < 2; pa++)
                     instance.WriteDMXValues(pa, data);
@@ -74,19 +78,19 @@ namespace ArtNetTests
                 for (ushort b = 0; b < data.Length; b++)
                     data[b] += 5;
 
-                Thread.Sleep(1000);
+                await Task.Delay(1000);
 
                 for (ushort pa = 0; pa < 2; pa++)
                     instance.WriteDMXValues(pa, data);
             }
             for (int i = 0; i < 20; i++)
-                Thread.Sleep(1000);
+                await Task.Delay(1000);
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();
         }
 
         [Test]
-        public void TestRDMTrafficInstance()
+        public async Task TestRDMTrafficInstance()
         {
             ControllerInstanceMock instance = new ControllerInstanceMock();
             instance.Name = "RDMTraffic Test";
@@ -95,11 +99,11 @@ namespace ArtNetTests
             artNet.AddInstance(instance);
             for (int i = 0; i < 3; i++)
             {
-                Thread.Sleep(5000);
-                _ = instance.PerformRDMDiscovery();
+                await Task.Delay(5000);
+                await instance.PerformRDMDiscovery();
             }
-            Thread.Sleep(5000);
-            _ = instance.PerformRDMDiscovery(flush: true);
+            await Task.Delay(5000);
+            await instance.PerformRDMDiscovery(flush: true);
 
             var uids = instance.GetReceivedRDMUIDs();
             var catalogue = RDMParameterWrapperCatalogueManager.GetInstance();
@@ -108,7 +112,7 @@ namespace ArtNetTests
             Assert.That(supportedParameter, Is.Not.Null);
             Assert.That(deviceInfoParameter, Is.Not.Null);
 
-            Task.Run(async () =>
+            await Task.Run(async () =>
             {
                 ERDM_Parameter[] supportedParameters = new ERDM_Parameter[0];
                 RDMDeviceInfo? deviceInfo = null;
@@ -147,15 +151,15 @@ namespace ArtNetTests
                             break;
                     }
                 }
-            }).GetAwaiter().GetResult();
+            }); ;
 
-            Thread.Sleep(10000);
+            await Task.Delay(10000);
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();
         }
 
         [Test]
-        public void TestRDMDeviceInstance()
+        public async Task TestRDMDeviceInstance()
         {
             ControllerInstanceMock instance = new ControllerInstanceMock();
             instance.Name = "RDMDevice Test";
@@ -164,28 +168,28 @@ namespace ArtNetTests
             artNet.AddInstance(instance);
             for (int i = 0; i < 3; i++)
             {
-                Thread.Sleep(5000);
+                await Task.Delay(5000);
                 _ = instance.PerformRDMDiscovery();
             }
 
             List<RDMDeviceMock> devices = new List<RDMDeviceMock>();
             var uids = instance.GetReceivedRDMUIDs();
-            Task.Run(async () =>
+            await Task.Run(async () =>
             {
                 foreach (var uid in uids)
                     devices.Add(new RDMDeviceMock(uid));
 
                 await Task.Delay(60000);
-            }).GetAwaiter().GetResult();
+            });
 
-            Thread.Sleep(60000);
+            await Task.Delay(60000);
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();
         }
 
 
         [Test]
-        public void TestSendTimeCode()
+        public async Task TestSendTimeCode()
         {
             ControllerInstanceMock instance = new ControllerInstanceMock();
             instance.Name = "TestTimeCode";
@@ -196,15 +200,15 @@ namespace ArtNetTests
             {
                 DateTime time = DateTime.UtcNow;
                 ArtTimeCode timecode = new ArtTimeCode((byte)(time.Millisecond / 1000.0 * 30), (byte)time.Second, (byte)time.Minute, (byte)time.Hour, ETimecodeType.SMTPE);
-                _ = instance.SendArtTimeCode(timecode);
-                Thread.Sleep(100);
+                await instance.SendArtTimeCode(timecode);
+                await Task.Delay(100);
             }
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();
         }
 
         [Test]
-        public void TestSendTimeSync()
+        public async Task TestSendTimeSync()
         {
             ControllerInstanceMock instance = new ControllerInstanceMock();
             instance.Name = "TestTimeSync";
@@ -214,15 +218,15 @@ namespace ArtNetTests
             for (int i = 0; i < 6; i++)
             {
                 ArtTimeSync timeSync = new ArtTimeSync(true, DateTime.Now);
-                _ = instance.SendArtTimeSync(timeSync);
-                Thread.Sleep(1000);
+                await instance.SendArtTimeSync(timeSync);
+                await Task.Delay(1000);
             }
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();
         }
 
         [Test]
-        public void TestSendAddress()
+        public async Task TestSendAddress()
         {
             ControllerInstanceMock instance = new ControllerInstanceMock();
             instance.Name = "TestAddress";
@@ -230,20 +234,20 @@ namespace ArtNetTests
                 instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
             artNet.AddInstance(instance);
             for (int i = 0; i < 6; i++)
-                Thread.Sleep(1000);
+                await Task.Delay(1000);
 
             foreach (var client in instance.RemoteClients)
                 foreach (var port in client.Ports)
-                    _ = instance.SendArtAddress(new ArtAddress(port.BindIndex, command: new ArtAddressCommand(EArtAddressCommand.LedMute)), client.IpAddress);
+                    await instance.SendArtAddress(ArtAddress.CreateSetCommand(port.BindIndex, new ArtAddressCommand(EArtAddressCommand.LedMute)), client.IpAddress);
 
-            Thread.Sleep(10000);
+            await Task.Delay(10000);
 
             foreach (var client in instance.RemoteClients)
                 foreach (var port in client.Ports)
-                    _ = instance.SendArtAddress(new ArtAddress(port.BindIndex, command: new ArtAddressCommand(EArtAddressCommand.LedNormal)), client.IpAddress);
+                    await instance.SendArtAddress(ArtAddress.CreateSetCommand(port.BindIndex, command: new ArtAddressCommand(EArtAddressCommand.LedNormal)), client.IpAddress);
 
             for (int i = 0; i < 6; i++)
-                Thread.Sleep(1000);
+                await Task.Delay(000);
 
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();

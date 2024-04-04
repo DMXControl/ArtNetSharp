@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace ArtNetSharp
@@ -19,9 +20,9 @@ namespace ArtNetSharp
         public readonly Universe?[] OutputUniverses;
         public readonly Universe?[] InputUniverses;
         public readonly byte? AcnPriority;
-        public ArtAddress(in byte bindIndex,
-                          in Net? net = null,
-                          in Subnet? subnet = null,
+        private ArtAddress(in byte bindIndex,
+                          in Net? net,
+                          in Subnet? subnet,
                           in string shortName = null,
                           in string longName = null,
                           in byte? acnPriority = null,
@@ -29,16 +30,15 @@ namespace ArtNetSharp
                           in ushort protocolVersion = Constants.PROTOCOL_VERSION) : this(bindIndex, net, subnet, new Universe?[0], new Universe?[0], shortName, longName, acnPriority, command, protocolVersion)
         {
         }
-
         public ArtAddress(in byte bindIndex,
                       in Net? net,
                       in Subnet? subnet,
                       in Universe?[] outputUniverses,
                       in Universe?[] inputUniverses,
-                      in string shortName = null,
-                      in string longName = null,
-                      in byte? acnPriority = null,
-                      in ArtAddressCommand? command = null,
+                      in string shortName,
+                      in string longName,
+                      in byte? acnPriority,
+                      in ArtAddressCommand? command,
                       in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(protocolVersion)
         {
 
@@ -93,6 +93,46 @@ namespace ArtNetSharp
                 AcnPriority = packet[105];
 
             Command = packet[106];
+        }
+        public static ArtAddress CreateSetNet(in byte bindIndex, in Net net, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, net, null, null, null, null, null, null, command);
+        }
+        public static ArtAddress CreateSetSubnet(in byte bindIndex, in Subnet subnet, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, null, subnet, null, null, null, null, null, command);
+        }
+        public static ArtAddress CreateSetNetSubnet(in byte bindIndex, in Net net, in Subnet subnet, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, net, subnet, null, null, null, null, null, command);
+        }
+        public static ArtAddress CreateSetOutputUniverse(in byte bindIndex, in Universe outputUniverse, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, null, null, new Universe?[] { outputUniverse }, null, null, null, null, command);
+        }
+        public static ArtAddress CreateSetOutputUniverse(in byte bindIndex, in Universe?[] outputUniverses, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, null, null, outputUniverses, null, null, null, null, command);
+        }
+        public static ArtAddress CreateSetInputUniverse(in byte bindIndex, in Universe inputUniverse, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, null, null, null, new Universe?[] { inputUniverse }, null, null, null, command);
+        }
+        public static ArtAddress CreateSetInputUniverse(in byte bindIndex, in Universe?[] inputUniverses, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, null, null, null, inputUniverses, null, null, null, command);
+        }
+        public static ArtAddress CreateSetName(in byte bindIndex, in string shortName = null, in string longName = null, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, null, null, null, null, shortName, longName, null, command);
+        }
+        public static ArtAddress CreateSetName(in byte bindIndex, in byte acnPriority, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, null, null, null, null, null, null, acnPriority, command);
+        }
+        public static ArtAddress CreateSetCommand(in byte bindIndex, ArtAddressCommand command)
+        {
+            return new ArtAddress(bindIndex, null, null, null, null, null, null, null, command);
         }
         protected sealed override void fillPacket(ref byte[] p)
         {

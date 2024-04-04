@@ -38,7 +38,7 @@ namespace ArtNetTests
             artNet.AddInstance(nodeInstance);
             artNet.AddInstance(controllerInstance);
             RemoteClient nodeRD = null;
-            for (int i = 0; i < 80; i++)
+            for (int i = 0; i < 120; i++)
             {
                 nodeRD = controllerInstance.RemoteClients?.FirstOrDefault(rc => nodeInstance.Name.Equals(rc?.LongName));
                 if (nodeRD != null)

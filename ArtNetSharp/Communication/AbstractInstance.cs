@@ -158,7 +158,7 @@ namespace ArtNetSharp.Communication
 
         private ConcurrentDictionary<string, RemoteClient> remoteClients = new ConcurrentDictionary<string, RemoteClient>();
         private ConcurrentDictionary<string, RemoteClient> remoteClientsTimeouted = new ConcurrentDictionary<string, RemoteClient>();
-        public IReadOnlyCollection<RemoteClient> RemoteClients { get; private set; }
+        public IReadOnlyCollection<RemoteClient> RemoteClients { get; private set; } =  new List<RemoteClient>();
         public IReadOnlyCollection<RemoteClientPort> RemoteClientsPorts { get { return remoteClients.SelectMany(rc => rc.Value.Ports).ToList().AsReadOnly(); } }
 
         public event EventHandler<PortAddress> DMXReceived;
@@ -671,13 +671,11 @@ namespace ArtNetSharp.Communication
                 && string.Equals(artPollReply.LongName, Name))
                 return; //break loopback
 
+            string id = RemoteClient.getIDOf(artPollReply);
+            RemoteClient remoteClient = null;
 
-            await semaphoreSlimAddRemoteClient.WaitAsync();
             try
             {
-                string id = RemoteClient.getIDOf(artPollReply);
-                RemoteClient remoteClient = null;
-
                 if (remoteClientsTimeouted.TryRemove(id, out remoteClient))
                 {
                     remoteClient.processArtPollReply(artPollReply);
@@ -694,27 +692,34 @@ namespace ArtNetSharp.Communication
                 }
                 async Task add()
                 {
-                    if (remoteClients.TryAdd(remoteClient.ID, remoteClient))
+                    await semaphoreSlimAddRemoteClient.WaitAsync();
+                    try
                     {
-                        //Delay, to give The Remote CLient time to send all ArtPollReplys
-                        await Task.Delay(1000);
-                        Logger.LogInformation($"Discovered: {remoteClient.ID}");
-                        RemoteClientDiscovered?.Invoke(this, remoteClient);
+                        if (remoteClients.TryAdd(remoteClient.ID, remoteClient))
+                        {
+                            //Delay, to give The Remote CLient time to send all ArtPollReplys
+                            await Task.Delay(1000);
+                            Logger.LogInformation($"Discovered: {remoteClient.ID}");
+                            RemoteClientDiscovered?.Invoke(this, remoteClient);
+                        }
+                    }
+                    finally
+                    {
+                        semaphoreSlimAddRemoteClient.Release();
                     }
                 }
             }
             catch (Exception ex) { Logger.LogError(ex); }
-            semaphoreSlimAddRemoteClient.Release();
 
             var deadline = 7500; // Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 1500 ms)
             var timoutedClients = remoteClients.Where(p => (DateTime.UtcNow - p.Value.LastSeen).TotalMilliseconds > deadline);
             if (timoutedClients.Count() != 0)
             {
                 timoutedClients = timoutedClients.ToList();
-                foreach (var remoteClient in timoutedClients)
+                foreach (var rc in timoutedClients)
                 {
 
-                    if (remoteClients.TryRemove(remoteClient.Key, out RemoteClient removed))
+                    if (remoteClients.TryRemove(rc.Key, out RemoteClient removed))
                         remoteClientsTimeouted.TryAdd(removed.ID, removed);
                     if (removed != null)
                     {
