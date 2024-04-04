@@ -48,7 +48,7 @@ namespace ArtNetSharp
             Data[0] = 0xcc;
             Array.Copy(packet, 24, Data, 1, Data.Length - 1);
 
-            RDMMessage = RDMMessageFactory.BuildResponse(Data);
+            RDMMessage = new RDMMessage(Data);
         }
         protected sealed override void fillPacket(ref byte[] p)
         {
