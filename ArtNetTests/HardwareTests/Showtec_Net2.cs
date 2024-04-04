@@ -106,8 +106,8 @@ namespace ArtNetTests.HardwareTests
             remoteClient = null;
         }
 
-        [Test]
-        public async Task Test1_Default()
+        [Test, Order(1)]
+        public async Task Test_Default()
         {
             Assert.That(remoteClient, Is.Not.Null);
             Assert.That(remoteClient.LongName, Is.EqualTo(testSubject.LongName));
@@ -125,9 +125,10 @@ namespace ArtNetTests.HardwareTests
             Assert.That(remoteClientPort2, Is.Not.Null);
 
         }
+        [Order(2)]
         [TestCase(1)]
         [TestCase(2)]
-        public async Task Test2_ArtAddressPort(byte port)
+        public async Task Test_ArtAddressPort(byte port)
         {
             RemoteClientPort rcp = remoteClient!.Ports.FirstOrDefault(p => p.BindIndex == port)!;
             ArtPollReply backup = rcp.ArtPollReply;
@@ -190,8 +191,8 @@ namespace ArtNetTests.HardwareTests
                 await instance.SendArtAddress(ArtAddress.CreateSetInputUniverse(rcp!.BindIndex, (Universe)backup?.InputUniverses[0]!, command), remoteClient!.IpAddress);// reset to Backup
             });
         }
-        [Test]
-        public async Task Test3_ArtAddressIndicate()
+        [Test, Order(3)]
+        public async Task Test_ArtAddressIndicate()
         {
             var command = new ArtAddressCommand(EArtAddressCommand.LedLocate);
             await Assert.MultipleAsync(async () => // Test Address Net;
