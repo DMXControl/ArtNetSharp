@@ -3,7 +3,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.IO;
 using System.Linq;
+#if NETSTANDARD
 using System.Runtime.InteropServices;
+#endif
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -69,6 +71,10 @@ namespace ArtNetSharp
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     return fileDirectoryLinux;
 #endif
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    return fileDirectoryWindows;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    return fileDirectoryLinux;
 
                 return null;
             }
