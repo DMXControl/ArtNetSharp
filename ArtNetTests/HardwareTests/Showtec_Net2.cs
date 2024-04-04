@@ -97,8 +97,11 @@ namespace ArtNetTests.HardwareTests
         [OneTimeTearDown]
         public void TearDown()
         {
-            artNet?.RemoveInstance(instance);
+            if (instance != null)
+            {
+                artNet?.RemoveInstance(instance);
                 ((IDisposable)instance).Dispose();
+            }
                 
             remoteClient = null;
         }

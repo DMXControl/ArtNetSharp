@@ -2,14 +2,8 @@ using ArtNetSharp;
 using ArtNetSharp.Communication;
 using ArtNetTests.Mocks;
 using ArtNetTests.Mocks.Instances;
-using NUnit.Framework.Constraints;
-using RDMSharp;
-using RDMSharp.ParameterWrapper;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Net;
 
 namespace ArtNetTests
 {
@@ -19,11 +13,14 @@ namespace ArtNetTests
         [SetUp]
         public void Setup()
         {
+#if DEBUG
+            Assert.Ignore("Skiped in Release!");
+#endif
             artNet = ArtNet.Instance;
         }
 
         [Test]
-        public async Task TestNodeInstance()
+        public async Task TestSendDMXLoopOverNetwork()
         {
             NodeInstance nodeInstance = new NodeMock();
             nodeInstance.Name = "Test Node";
