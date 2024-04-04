@@ -46,26 +46,43 @@ namespace ArtNetSharp
 
         internal class FileProvider : ILoggerProvider
         {
-            private static string fileDirectory = Path.Combine("C:", ".Debug", "ArtNetSharp");
+            private static string fileDirectoryWindows = Path.Combine("C:", ".Debug", "ArtNetSharp");
+            private static string fileDirectoryLinux = "/var/log/ArtNetSharp";
+            private static string fileDirectory = getOsDirectory();
+
             private static string filePath = Path.Combine(fileDirectory, "log.txt");
             private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+
+            private static string getOsDirectory()
+            {
+                if (OperatingSystem.IsWindows())
+                    return fileDirectoryWindows;
+                if (OperatingSystem.IsLinux())
+                    return fileDirectoryLinux;
+                if (OperatingSystem.IsAndroid())
+                    return fileDirectoryLinux;
+
+                return null;
+            }
             public FileProvider()
             {
-                //FileProvider.semaphore.WaitAsync();
-                //try
-                //{
-                //    if (!Directory.Exists(fileDirectory))
-                //    Directory.CreateDirectory(fileDirectory);
+                if (string.IsNullOrWhiteSpace(fileDirectory))
+                    return;
+                FileProvider.semaphore.WaitAsync();
+                try
+                {
+                    if (!Directory.Exists(fileDirectory))
+                        Directory.CreateDirectory(fileDirectory);
 
-                //if (File.Exists(filePath))
-                //    File.Delete(filePath);
+                    if (File.Exists(filePath))
+                        File.Delete(filePath);
 
-                //    using (var file = File.Create(filePath))
-                //    {
+                    using (var file = File.Create(filePath))
+                    {
 
-                //    }
-                //}
-                //finally { FileProvider.semaphore.Release(); }
+                    }
+                }
+                finally { FileProvider.semaphore.Release(); }
             }
 
             public ILogger CreateLogger(string categoryName)
@@ -101,6 +118,9 @@ namespace ArtNetSharp
 
                 public async void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
                 {
+                    if (string.IsNullOrWhiteSpace(fileDirectory))
+                        return;
+
                     await Task.Run(async () =>
                     {
                         StringBuilder stringBuilder = new StringBuilder();
