@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,12 +56,19 @@ namespace ArtNetSharp
 
             private static string getOsDirectory()
             {
+#if !NETSTANDARD
                 if (OperatingSystem.IsWindows())
                     return fileDirectoryWindows;
                 if (OperatingSystem.IsLinux())
                     return fileDirectoryLinux;
                 if (OperatingSystem.IsAndroid())
                     return fileDirectoryLinux;
+#else
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    return fileDirectoryWindows;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    return fileDirectoryLinux;
+#endif
 
                 return null;
             }
