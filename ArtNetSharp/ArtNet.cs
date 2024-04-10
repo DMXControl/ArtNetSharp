@@ -100,6 +100,7 @@ namespace ArtNetSharp
                     _client = new UdpClient();
                     _client.ExclusiveAddressUse = false;
                     _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                    _client.EnableBroadcast = true;
 
                     Socket testSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                     testSocket.EnableBroadcast = true;
