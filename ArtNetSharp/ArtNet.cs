@@ -91,7 +91,7 @@ namespace ArtNetSharp
                 catch (Exception e) { Logger.LogDebug(e); }
                 finally { semaphoreSlim?.Release(); }
 
-                while (!IsNetworkAvailable(0))
+                while (!IsNetworkAvailable())
                     await Task.Delay(100 + (int)(100 * _random.NextDouble()));
 
                 await semaphoreSlim.WaitAsync();
@@ -307,7 +307,7 @@ namespace ArtNetSharp
             instances.ForEach(_instance => { ((IInstance)_instance).PacketReceived(packet, localIp, sourceIp); });
         }
 
-        public static bool IsNetworkAvailable(long minimumSpeed)
+        public static bool IsNetworkAvailable(long? minimumSpeed=null)
         {
             try
             {
@@ -322,10 +322,13 @@ namespace ArtNetSharp
                         ni.NetworkInterfaceType == NetworkInterfaceType.Tunnel)
                         continue;
 
-                    // this allow to filter modems, serial, etc.
-                    // I use 10000000 as a minimum speed for most cases
-                    if (ni.Speed < minimumSpeed)
-                        continue;
+                    if (minimumSpeed != null)
+                    {
+                        // this allow to filter modems, serial, etc.
+                        // I use 10000000 as a minimum speed for most cases
+                        if (ni.Speed < minimumSpeed)
+                            continue;
+                    }
 
                     // discard virtual cards (virtual box, virtual pc, etc.)
                     if (ni.Description.IndexOf("virtual", StringComparison.OrdinalIgnoreCase) >= 0 ||
