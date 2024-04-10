@@ -160,6 +160,7 @@ namespace ArtNetSharp
                 try
                 {
                     Socket testSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    testSocket.EnableBroadcast = true;
                     await testSocket.ConnectAsync(ip, Constants.ARTNET_PORT);
                     IPAddress localIpAddress = ((IPEndPoint)testSocket.LocalEndPoint).Address;
                     return localIpAddress;
