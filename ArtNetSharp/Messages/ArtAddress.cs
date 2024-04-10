@@ -106,17 +106,41 @@ namespace ArtNetSharp
         {
             return new ArtAddress(bindIndex, net, subnet, null, null, null, null, null, command);
         }
+        public static ArtAddress CreateSetOutputUniverse(in byte bindIndex, in PortAddress outputPortAddress, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, outputPortAddress.Net, outputPortAddress.Subnet, new Universe?[] { outputPortAddress.Universe }, null, null, null, null, command);
+        }
+        public static ArtAddress CreateSetOutputUniverse(in byte bindIndex, in Net net, in Subnet subnet, in Universe outputUniverse, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, net, subnet, new Universe?[] { outputUniverse }, null, null, null, null, command);
+        }
         public static ArtAddress CreateSetOutputUniverse(in byte bindIndex, in Universe outputUniverse, ArtAddressCommand? command = null)
         {
             return new ArtAddress(bindIndex, null, null, new Universe?[] { outputUniverse }, null, null, null, null, command);
+        }
+        public static ArtAddress CreateSetOutputUniverse(in byte bindIndex, in Net net, in Subnet subnet, in Universe?[] outputUniverses, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, net, subnet, outputUniverses, null, null, null, null, command);
         }
         public static ArtAddress CreateSetOutputUniverse(in byte bindIndex, in Universe?[] outputUniverses, ArtAddressCommand? command = null)
         {
             return new ArtAddress(bindIndex, null, null, outputUniverses, null, null, null, null, command);
         }
+        public static ArtAddress CreateSetInputUniverse(in byte bindIndex, in PortAddress inputPortAddress, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, inputPortAddress.Net, inputPortAddress.Subnet, null, new Universe?[] { inputPortAddress.Universe }, null, null, null, command);
+        }
+        public static ArtAddress CreateSetInputUniverse(in byte bindIndex, in Net net, in Subnet subnet, in Universe inputUniverse, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, net, subnet, null, new Universe?[] { inputUniverse }, null, null, null, command);
+        }
         public static ArtAddress CreateSetInputUniverse(in byte bindIndex, in Universe inputUniverse, ArtAddressCommand? command = null)
         {
             return new ArtAddress(bindIndex, null, null, null, new Universe?[] { inputUniverse }, null, null, null, command);
+        }
+        public static ArtAddress CreateSetInputUniverse(in byte bindIndex, in Net net, in Subnet subnet, in Universe?[] inputUniverses, ArtAddressCommand? command = null)
+        {
+            return new ArtAddress(bindIndex, net, subnet, null, inputUniverses, null, null, null, command);
         }
         public static ArtAddress CreateSetInputUniverse(in byte bindIndex, in Universe?[] inputUniverses, ArtAddressCommand? command = null)
         {
