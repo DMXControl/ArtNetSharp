@@ -106,7 +106,7 @@ namespace ArtNetSharp
                     testSocket.EnableBroadcast = true;
                     await testSocket.ConnectAsync(BroadcastIpAddress, Constants.ARTNET_PORT);
                     LocalIpAddress = ((IPEndPoint)testSocket.LocalEndPoint).Address;
-                    IPEndPoint localEp = new IPEndPoint(LocalIpAddress, Constants.ARTNET_PORT);
+                    IPEndPoint localEp = new IPEndPoint(IPAddress.Any, Constants.ARTNET_PORT);
                     _client.Client.Bind(localEp);
                     _clientAlive = true;
                     _ = StartListening();

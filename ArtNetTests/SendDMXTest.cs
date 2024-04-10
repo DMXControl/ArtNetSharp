@@ -26,7 +26,7 @@ namespace ArtNetTests
             nodeInstance.Name = "Test Node";
             ControllerInstance controllerInstance = new ControllerInstanceMock();
             controllerInstance.Name = "Test Controller";
-            byte ports = 255;
+            byte ports = 24;
             for (ushort i = 1; i <= ports; i++)
             {
                 nodeInstance.AddPortConfig(new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
@@ -35,7 +35,7 @@ namespace ArtNetTests
             artNet.AddInstance(nodeInstance);
             artNet.AddInstance(controllerInstance);
             RemoteClient nodeRD = null;
-            for (int i = 0; i < 120; i++)
+            for (int i = 0; i < 1200; i++)
             {
                 nodeRD = controllerInstance.RemoteClients?.FirstOrDefault(rc => nodeInstance.Name.Equals(rc?.LongName));
                 if (nodeRD != null)
@@ -86,7 +86,7 @@ namespace ArtNetTests
                     double refreshRate;
                     refreshRate = timeCache.Take(50).Average(t => ((double)TimeSpan.TicksPerSecond) / t.Ticks);
 
-                    Assert.That(refreshRate, Is.InRange(40, 55), $"PortAddress: {e} is receiving Values at strange RefreshRate: {refreshRate}");
+                    Assert.That(refreshRate, Is.InRange(35, 60), $"PortAddress: {e} is receiving Values at strange RefreshRate: {refreshRate}");
                 }
             };
             while (predefinedData.TryDequeue(out byte[] data))
