@@ -50,7 +50,8 @@ namespace ArtNetSharp
         internal class FileProvider : ILoggerProvider
         {
             private static string fileDirectoryWindows = Path.Combine("C:", ".Debug", "ArtNetSharp");
-            private static string fileDirectoryLinux = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"ArtNetSharp");
+            private static string fileDirectoryLinux = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ArtNetSharp");
+            private static string fileDirectoryMacOS = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ArtNetSharp");
             private static string fileDirectory = getOsDirectory();
 
             private static string filePath = Path.Combine(fileDirectory, "log.txt");
@@ -65,11 +66,15 @@ namespace ArtNetSharp
                     return fileDirectoryLinux;
                 if (OperatingSystem.IsAndroid())
                     return fileDirectoryLinux;
+                if (OperatingSystem.IsMacOS())
+                    return fileDirectoryMacOS;
 #else
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     return fileDirectoryWindows;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     return fileDirectoryLinux;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    return fileDirectoryMacOS;
 #endif
 
                 return null;
