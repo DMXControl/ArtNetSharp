@@ -43,7 +43,7 @@ namespace ArtNetTests
         public async Task TestOnLinux()
         {
             if (!OperatingSystem.IsLinux())
-                Assert.Ignore("Skiped in Release!");
+                Assert.Ignore("Skiped, only run on Linux");
 
             await doTests();
         }
@@ -53,7 +53,17 @@ namespace ArtNetTests
         public async Task TestOnWindows()
         {
             if (!OperatingSystem.IsWindows())
-                Assert.Ignore("Skiped in Release!");
+                Assert.Ignore("Skiped, only run on Windows");
+
+            await doTests();
+        }
+
+        [Test]
+        [Timeout(10000)]
+        public async Task TestOnMackOS()
+        {
+            if (!OperatingSystem.IsMacOS())
+                Assert.Ignore("Skiped, only run on Mac OS");
 
             await doTests();
         }
