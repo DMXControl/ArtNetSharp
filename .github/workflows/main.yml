@@ -38,4 +38,5 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.3.1
       with:
+        name: Binarys-${{ matrix.os }} ${{ matrix.dotnet-version }}
         path: ArtNetSharp/bin/Release/**/ArtNetSharp.dll
