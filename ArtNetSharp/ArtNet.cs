@@ -270,9 +270,8 @@ namespace ArtNetSharp
 
         private ArtNet()
         {
-#if DEBUG
             ApplicationLogging.LoggerFactory = Tools.LoggerFactory;
-#endif
+
             Logger = ApplicationLogging.CreateLogger<ArtNet>();
             Logger.LogTrace("Initialized!");
 
@@ -289,10 +288,9 @@ namespace ArtNetSharp
             networkClients.Clear();
         }
 
-        public static void SetLoggerFectory(ILoggerFactory loggerFactory)
+        public static void AddLoggrovider(ILoggerProvider loggerProvider)
         {
-            Tools.LoggerFactory = loggerFactory;
-            ApplicationLogging.LoggerFactory = loggerFactory;
+            Tools.LoggerFactory.AddProvider(loggerProvider);
         }
 
         private void _updateNetworkClientsTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)

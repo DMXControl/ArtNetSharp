@@ -46,6 +46,7 @@ namespace ArtNetTests.HardwareTests
         {
             if (!await IsPingable())
                 return;
+            ArtNet.AddLoggrovider(TestLoggerProvider.Instance);
 
             instance = new ControllerInstanceMock
             {

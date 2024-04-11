@@ -3,12 +3,9 @@ using System.Text;
 
 namespace ArtNetTests
 {
-    internal class TestLoggerFactory
-    {
-        internal static readonly ILoggerFactory Instance = new LoggerFactory([new TestLoggerProvider()]);
-    }
     internal class TestLoggerProvider : ILoggerProvider
     {
+        internal static readonly ILoggerProvider Instance = new TestLoggerProvider();
         public ILogger CreateLogger(string categoryName)
         {
             return new ConsoleLogger(categoryName);

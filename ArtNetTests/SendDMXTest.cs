@@ -13,7 +13,7 @@ namespace ArtNetTests
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            ArtNet.SetLoggerFectory(TestLoggerFactory.Instance);
+            ArtNet.AddLoggrovider(TestLoggerProvider.Instance);
         }
         [SetUp]
         public void Setup()
