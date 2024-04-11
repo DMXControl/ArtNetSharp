@@ -31,7 +31,7 @@ jobs:
     - name: Upload dotnet test results
       uses: actions/upload-artifact@v4.3.1
       with:
-        name: dotnet-results-${{ matrix.dotnet-version }}
+        name: TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}
         path: TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}
         retention-days: 30
         # Use always() to always run this step to publish test results when there are test failures
@@ -42,3 +42,5 @@ jobs:
         name: Binarys-${{ matrix.os }} ${{ matrix.dotnet-version }}
         path: ArtNetSharp/bin/Release/**/ArtNetSharp.dll
         retention-days: 2
+      continue-on-error: true
+
