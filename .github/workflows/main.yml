@@ -25,16 +25,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set .NET version variable
-      run: |
-          if [[ "${{ matrix.dotnet-version }}" == "6.0.x" ]]; then
-            NET_VERSION=NET6
-          else if [[ "${{ matrix.dotnet-version }}" == "7.0.x" ]]; then
-            NET_VERSION=NET7
-          else
-            NET_VERSION=NET8
-          fi
-          echo "NET_VERSION=$NET_VERSION" >> $GITHUB_ENV
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v3
       with:
@@ -44,7 +34,14 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
     - name: Test
-      run: dotnet test -f ${{ env.NET_VERSION }} --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
+      run: |
+        if [ "${{ matrix.dotnet-version }}" == "6.0.x" ]; then
+          dotnet test --framework net6.0 --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
+        elif [ "${{ matrix.dotnet-version }}" == "7.0.x" ]; then
+          dotnet test --framework net7.0 --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
+        elif [ "${{ matrix.dotnet-version }}" == "8.0.x" ]; then
+          dotnet test --framework net8.0 --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
+        fi        
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.3.1
       with:
