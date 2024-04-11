@@ -1,4 +1,4 @@
-name: Build
+name: Build & Test
 
 on:
   push:
@@ -8,6 +8,11 @@ on:
     branches:
     - main
     
+env:
+  NET6: net6.0
+  NET7: net7.0
+  NET8: net8.0
+    
 jobs:
   build:
     strategy:
@@ -15,6 +20,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         dotnet-version: [ '6.0.x', '7.0.x', '8.0.x' ]
     runs-on: ${{ matrix.os }}
+    env:
+      NET_VERSION: net${{ matrix.dotnet-version }}
 
     steps:
     - uses: actions/checkout@v4
@@ -27,7 +34,7 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
     - name: Test
-      run: dotnet test --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
+      run: dotnet test -f ${{ env.NET_VERSION }} --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.3.1
       with:
