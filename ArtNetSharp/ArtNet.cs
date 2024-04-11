@@ -51,10 +51,12 @@ namespace ArtNetSharp
 
         public class NetworkClientBag
         {
+            private static ILogger<NetworkClientBag> Logger = ApplicationLogging.CreateLogger<NetworkClientBag>();
             private readonly IPEndPoint broadcastEndpoint;
             public readonly IPAddress BroadcastIpAddress;
             public readonly UnicastIPAddressInformation UnicastIPAddressInfo;
             public IPAddress LocalIpAddress => UnicastIPAddressInfo.Address;
+            public IPAddress IPv4Mask => UnicastIPAddressInfo.IPv4Mask;
 
             private UdpClient _client = null;
             private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
@@ -78,6 +80,7 @@ namespace ArtNetSharp
 
             internal NetworkClientBag(IPAddress broadcastIpAddress, UnicastIPAddressInformation unicastIPAddressInformation)
             {
+                Logger?.LogTrace($"Create Client ({LocalIpAddress})");
                 UnicastIPAddressInfo = unicastIPAddressInformation;
                 BroadcastIpAddress = broadcastIpAddress;
                 broadcastEndpoint = new IPEndPoint(broadcastIpAddress, Constants.ARTNET_PORT);
@@ -97,7 +100,7 @@ namespace ArtNetSharp
                     (_client as IDisposable)?.Dispose();
                     notMatchingIpAdddresses.Clear();
                     matchingIpAdddresses.Clear();
-                    Logger?.LogTrace($"Client ({LocalIpAddress ?? BroadcastIpAddress}) Cleared");
+                    Logger?.LogTrace($"Client ({LocalIpAddress}) Cleared");
                 }
                 catch (Exception e) { Logger.LogDebug(e); }
                 finally { semaphoreSlim?.Release(); }
