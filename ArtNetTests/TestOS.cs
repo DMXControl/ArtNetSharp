@@ -75,15 +75,17 @@ namespace ArtNetTests
             await doTests();
         }
 
-        //[Test]
-        //[Timeout(10000)]
-        //public async Task TestOnMackOS()
-        //{
-        //    if (!OperatingSystem.IsMacOS())
-        //        Assert.Ignore("Skiped, only run on Mac OS");
+        [Test]
+#pragma warning disable CS0618 // Typ oder Element ist veraltet
+        [Timeout(10000)]
+#pragma warning restore CS0618 // Typ oder Element ist veraltet
+        public async Task TestOnMackOS()
+        {
+            if (!OperatingSystem.IsMacOS())
+                Assert.Ignore("Skiped, only run on Mac OS");
 
-        //    await doTests();
-        //}
+            await doTests();
+        }
         private async Task doTests()
         {
             Debug.WriteLine("Do Test");

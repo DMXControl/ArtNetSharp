@@ -8,7 +8,7 @@ namespace ControlerRDMExample
     public abstract class AbstractRDMDeviceGeneratedMock : AbstractGeneratedRDMDevice
     {
         internal static ControllerInstance Controller = ArtNet.Instance.Instances.OfType<ControllerInstance>().First();
-        public AbstractRDMDeviceGeneratedMock(RDMUID uid, ERDM_Parameter[] parameters, string manufacturer = null) : base(uid, parameters, manufacturer)
+        public AbstractRDMDeviceGeneratedMock(RDMUID uid, ERDM_Parameter[] parameters, string? manufacturer = null) : base(uid, parameters, manufacturer)
         {
             Controller.ControllerRDMMessageReceived += Controller_ControllerRDMMessageReceived;
         }
@@ -22,19 +22,20 @@ namespace ControlerRDMExample
             }
         }
 
-        private async void Controller_ControllerRDMMessageReceived(object? sender, ArtNetSharp.Misc.ControllerRDMMessageReceivedEventArgs e)
+        private void Controller_ControllerRDMMessageReceived(object? sender, ArtNetSharp.Misc.ControllerRDMMessageReceivedEventArgs e)
         {
             if (e.Handled)
                 return;
             if (e.Request.DestUID.IsBroadcast || this.UID == e.Request.DestUID || this.UID == e.Request.SourceUID)
             {
-                RDMMessage response = null;
+                RDMMessage? response = null;
                 try
                 {
                     response = processRequestMessage(e.Request);
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine($"{ex.Message}");
                 }
                 if (response != null)
                     e.SetResponse(response);
