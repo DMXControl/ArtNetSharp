@@ -12,7 +12,7 @@ namespace ArtNetTests
         ControllerInstance controllerInstance;
         byte ports = 2;
         ArtNet artNet;
-        [OneTimeSetUp]
+        [SetUp]
         public void Setup()
         {
             ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
@@ -30,7 +30,7 @@ namespace ArtNetTests
             artNet.AddInstance(nodeInstance);
             artNet.AddInstance(controllerInstance);
         }
-        [OneTimeTearDown]
+        [TearDown]
         public void Teardown()
         {
             artNet.RemoveInstance(nodeInstance);
