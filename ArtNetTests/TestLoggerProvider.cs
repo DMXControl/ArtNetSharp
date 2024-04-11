@@ -8,6 +8,7 @@ namespace ArtNetTests
         internal static readonly ILoggerProvider Instance = new TestLoggerProvider();
         public ILogger CreateLogger(string categoryName)
         {
+            Console.WriteLine($"CreateLogger {categoryName}");
             return new ConsoleLogger(categoryName);
         }
 
