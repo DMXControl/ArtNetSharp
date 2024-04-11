@@ -421,7 +421,7 @@ namespace ArtNetSharp
 
                     var ncb = new NetworkClientBag(new IPAddress(bytes), ipInfo);
                     networkClients.Add(ncb);
-                    Logger.LogDebug($"Added NetworkClient {ncb.BroadcastIpAddress}");
+                    Logger.LogDebug($"Added NetworkClient {ncb.LocalIpAddress}");
                     ncb.ReceivedData += ReceivedData;
                 }
             }
