@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+
 #if NETSTANDARD
 using System.Runtime.InteropServices;
 #endif
@@ -56,9 +58,23 @@ namespace ArtNetSharp
 
             private static string filePath = Path.Combine(fileDirectory, "log.txt");
             private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
-
-            private static string getOsDirectory()
+            public static string AssemblyDirectory
             {
+                get
+                {
+                    string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+                    UriBuilder uri = new UriBuilder(codeBase);
+                    string path = Uri.UnescapeDataString(uri.Path);
+                    return Path.GetDirectoryName(path);
+                }
+            }
+            private static string getOsDirectory()
+            { var ad = AssemblyDirectory;
+                if (ad.Contains("runner/work")) // Linux and Mac Worker
+                    return ad;
+                if(ad.StartsWith(":\\a\\")) // Windows Worker
+                    return ad;
+
 #if !NETSTANDARD
                 if (OperatingSystem.IsWindows())
                     return fileDirectoryWindows;
