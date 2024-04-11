@@ -292,6 +292,7 @@ namespace ArtNetSharp
         private static List<ILoggerProvider> loggerProviders = new List<ILoggerProvider>();  
         public static void AddLoggProvider(ILoggerProvider loggerProvider)
         {
+            return;
             if (loggerProviders.Contains(loggerProvider))
                 return;
             Tools.LoggerFactory.AddProvider(loggerProvider);
