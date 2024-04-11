@@ -41,7 +41,7 @@ namespace ArtNetTests
         }
 
         [Test]
-        [Timeout(100000)]
+        [Timeout(10000)]
         public async Task TestOnLinux()
         {
             if (!OperatingSystem.IsLinux())
@@ -51,7 +51,7 @@ namespace ArtNetTests
         }
 
         [Test]
-        [Timeout(100000)]
+        [Timeout(10000)]
         public async Task TestOnWindows()
         {
             if (!OperatingSystem.IsWindows())
@@ -61,7 +61,7 @@ namespace ArtNetTests
         }
 
         [Test]
-        [Timeout(100000)]
+        [Timeout(10000)]
         public async Task TestOnMackOS()
         {
             if (!OperatingSystem.IsMacOS())
