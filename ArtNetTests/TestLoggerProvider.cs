@@ -36,14 +36,17 @@ namespace ArtNetTests
                 return true;
             }
 
-            public async void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.AppendLine($"{DateTime.UtcNow} [{logLevel}] <{CategoryName}> {formatter?.Invoke(state, exception)}");
-                if (exception != null)
-                    stringBuilder.AppendLine(exception.ToString());
+                _ = Task.Run(() =>
+                {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine($"{DateTime.UtcNow} [{logLevel}] <{CategoryName}> {formatter?.Invoke(state, exception)}");
+                    if (exception != null)
+                        stringBuilder.AppendLine(exception.ToString());
 
-                Console.WriteLine(stringBuilder.ToString());
+                    Console.WriteLine(stringBuilder.ToString());
+                });
             }
         }
     }
