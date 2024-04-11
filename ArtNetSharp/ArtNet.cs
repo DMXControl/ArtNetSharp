@@ -19,6 +19,7 @@ namespace ArtNetSharp
 {
     public class ArtNet
     {
+        private static readonly Random _random = new Random();
         private static ILogger<ArtNet> Logger = null;
         private static ArtNet instance;
         public static ArtNet Instance
@@ -36,8 +37,8 @@ namespace ArtNetSharp
         private ConcurrentDictionary<uint, AbstractInstance> instances = new ConcurrentDictionary<uint, AbstractInstance>();
         public ReadOnlyCollection<AbstractInstance> Instances { get => instances.Values.ToList().AsReadOnly(); }
 
-        private List<NetworkClientBag> networkClients = new List<NetworkClientBag>();
-        public IReadOnlyCollection<NetworkClientBag> NetworkClients => networkClients.AsReadOnly();
+        private ConcurrentDictionary<uint,NetworkClientBag> networkClients = new ConcurrentDictionary<uint, NetworkClientBag>();
+        public IReadOnlyCollection<NetworkClientBag> NetworkClients => networkClients.Values.ToList().AsReadOnly();
 
         private System.Timers.Timer _updateNetworkClientsTimer = null;
 
@@ -50,8 +51,6 @@ namespace ArtNetSharp
 
         public class NetworkClientBag
         {
-            private static Random _random = new Random();
-
             private readonly IPEndPoint broadcastEndpoint;
             public readonly IPAddress BroadcastIpAddress;
             public readonly UnicastIPAddressInformation UnicastIPAddressInfo;
@@ -428,7 +427,7 @@ namespace ArtNetSharp
                 UnicastIPAddressInformationCollection unicastIpInfoCol = @interface.GetIPProperties().UnicastAddresses;
                 foreach (UnicastIPAddressInformation ipInfo in unicastIpInfoCol)
                 {
-                    if (networkClients.Any(nc => nc.UnicastIPAddressInfo.Equals(ipInfo)))
+                    if (networkClients.Values.ToList().Any(nc => nc.UnicastIPAddressInfo.Equals(ipInfo)))
                         continue;
 
                     uint ipAddress = BitConverter.ToUInt32(ipInfo.Address.GetAddressBytes(), 0);
@@ -440,7 +439,7 @@ namespace ArtNetSharp
                         continue;// 1.4dh 19/7/2023 - 10 -
 
                     var ncb = new NetworkClientBag(new IPAddress(bytes), ipInfo);
-                    networkClients.Add(ncb);
+                    networkClients.TryAdd((uint)_random.Next(), ncb);
                     Logger.LogDebug($"Added NetworkClient {ncb.LocalIpAddress}");
                     ncb.ReceivedData += ReceivedData;
                 }
@@ -466,14 +465,14 @@ namespace ArtNetSharp
         internal async Task TrySendPacket(AbstractArtPacketCore packet, IPv4Address destinationIp)
         {
             List<Task> tasks = new List<Task>();
-            foreach (var ncb in networkClients)
+            foreach (var ncb in networkClients.Values)
                 tasks.Add(Task.Run(async () => await ncb.TrySendPacket(packet, destinationIp)));
             await Task.WhenAll(tasks);
         }
         internal async Task TrySendBroadcastPacket(AbstractArtPacketCore packet)
         {
             List<Task> tasks = new List<Task>();
-            foreach (var ncb in networkClients)
+            foreach (var ncb in networkClients.Values)
                 tasks.Add(Task.Run(async () => await ncb.TrySendBroadcastPacket(packet)));
             await Task.WhenAll(tasks);
         }
