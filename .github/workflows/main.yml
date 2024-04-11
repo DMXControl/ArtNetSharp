@@ -27,9 +27,9 @@ jobs:
     - uses: actions/checkout@v4
     - name: Set .NET version variable
       run: |
-          if [[ "${{ matrix.dotnet-version }}" == '6.0.x' ]]; then
+          if [[ "${{ matrix.dotnet-version }}" == "6.0.x" ]]; then
             NET_VERSION=NET6
-          else if [[ "${{ matrix.dotnet-version }}" == '7.0.x' ]]; then
+          else if [[ "${{ matrix.dotnet-version }}" == "7.0.x" ]]; then
             NET_VERSION=NET7
           else
             NET_VERSION=NET8
