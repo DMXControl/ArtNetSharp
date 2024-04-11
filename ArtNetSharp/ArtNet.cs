@@ -288,9 +288,13 @@ namespace ArtNetSharp
             networkClients.Clear();
         }
 
-        public static void AddLoggrovider(ILoggerProvider loggerProvider)
+        private static HashSet<ILoggerProvider> loggerProviders = new HashSet<ILoggerProvider>();  
+        public static void AddLoggProvider(ILoggerProvider loggerProvider)
         {
+            if (loggerProviders.Contains(loggerProvider))
+                return;
             Tools.LoggerFactory.AddProvider(loggerProvider);
+            loggerProviders.Add(loggerProvider);
         }
 
         private void _updateNetworkClientsTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)

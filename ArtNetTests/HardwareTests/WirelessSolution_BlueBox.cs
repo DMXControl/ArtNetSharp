@@ -44,7 +44,7 @@ namespace ArtNetTests.HardwareTests
         {
             if (!await IsPingable())
                 return;
-            ArtNet.AddLoggrovider(TestLoggerProvider.Instance);
+            ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
 
             var broadcastIp = new IPAddress(new byte[] { 2, 255, 255, 255 });
             ArtNet.Instance.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
