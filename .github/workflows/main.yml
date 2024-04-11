@@ -33,9 +33,9 @@ jobs:
       with:
         name: ${{ matrix.os }} ${{ matrix.dotnet-version }}
         path: |
+          ArtNetSharp/**
           TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}
           ArtNetSharp/bin/Release/net${{ matrix.dotnet-version }}/ArtNetSharp.dll
-          ArtNetSharp/ArtNetTests/*
           # ArtNetSharp/ArtNetTests/bin/*/net${{ matrix.dotnet-version }}/*
         retention-days: 2
       continue-on-error: true
