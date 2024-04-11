@@ -12,8 +12,8 @@ namespace ArtNetTests
         ControllerInstance controllerInstance;
         byte ports = 2;
         ArtNet artNet;
-        [SetUp]
-        public void Setup()
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
         {
             ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
             artNet = ArtNet.Instance;
@@ -27,9 +27,10 @@ namespace ArtNetTests
                 nodeInstance.AddPortConfig(new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
                 controllerInstance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
             }
-            artNet.AddInstance(nodeInstance);
-            artNet.AddInstance(controllerInstance);
         }
+
+
+
         [TearDown]
         public void Teardown()
         {
@@ -70,6 +71,9 @@ namespace ArtNetTests
         }
         private async Task doTests()
         {
+            artNet.AddInstance(nodeInstance);
+            artNet.AddInstance(controllerInstance);
+
             while (controllerInstance.RemoteClients?.FirstOrDefault(rc => nodeInstance.Name.Equals(rc?.LongName))?.Ports.Count != ports)
                 await Task.Delay(100);
 
