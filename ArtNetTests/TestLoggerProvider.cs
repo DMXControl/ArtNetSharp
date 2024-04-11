@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 
@@ -7,15 +8,29 @@ namespace ArtNetTests
     internal class TestLoggerProvider : ILoggerProvider
     {
         internal static readonly ILoggerProvider Instance = new TestLoggerProvider();
+
+        private static readonly ConcurrentQueue<string> loggs = new ConcurrentQueue<string>();
         public ILogger CreateLogger(string categoryName)
         {
             Console.WriteLine($"CreateLogger {categoryName}");
             return new ConsoleLogger(categoryName);
         }
 
+        public TestLoggerProvider()
+        {
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    if (loggs.TryDequeue(out string log))
+                        Console.WriteLine(log);
+                    await Task.Delay(1);
+                }
+            });
+        }
+
         public void Dispose()
         {
-            throw new NotImplementedException();
         }
         private class ConsoleLogger : ILogger
         {
@@ -46,7 +61,7 @@ namespace ArtNetTests
                     if (exception != null)
                         stringBuilder.AppendLine(exception.ToString());
 
-                    Debug.WriteLine(stringBuilder.ToString());
+                    TestLoggerProvider.loggs.Enqueue(stringBuilder.ToString());
                 //});
             }
         }
