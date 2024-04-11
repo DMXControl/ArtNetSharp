@@ -9,7 +9,9 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Runtime;
+#if NETSTANDARD
+using System.Runtime.InteropServices;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -111,6 +113,14 @@ namespace ArtNetSharp
                     _client.ExclusiveAddressUse = false;
                     _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                     _client.EnableBroadcast = true;
+                    var endpointIp = LocalIpAddress;
+#if !NETSTANDARD
+                    if (OperatingSystem.IsLinux())
+                        endpointIp = IPAddress.Any;
+#else
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        endpointIp = IPAddress.Any;
+#endif
                     IPEndPoint localEp = new IPEndPoint(IPAddress.Any, Constants.ARTNET_PORT);
                     _client.Client.Bind(localEp);
                     _clientAlive = true;
