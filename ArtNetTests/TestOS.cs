@@ -16,9 +16,23 @@ namespace ArtNetTests
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
+            ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
             Trace.Listeners.Add(new ConsoleTraceListener());
             Debug.WriteLine("Setup");
             artNet = ArtNet.Instance;
+        }
+        [SetUp]
+        public void SetUp()
+        {
+            nodeInstance = new NodeMock();
+            nodeInstance.Name = "Test Node";
+            controllerInstance = new ControllerInstanceMock();
+            controllerInstance.Name = "Test Controller";
+            for (ushort i = 1; i <= ports; i++)
+            {
+                nodeInstance.AddPortConfig(new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+                controllerInstance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
+            }
         }
 
 
@@ -26,6 +40,10 @@ namespace ArtNetTests
         [TearDown]
         public void Teardown()
         {
+            artNet.RemoveInstance(nodeInstance);
+            artNet.RemoveInstance(controllerInstance);
+            ((IDisposable)nodeInstance).Dispose();
+            ((IDisposable)controllerInstance).Dispose();
         }
         [OneTimeTearDown]
         public void OneTimeTearDown()
@@ -64,18 +82,8 @@ namespace ArtNetTests
         //}
         private async Task doTests()
         {
-            ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
             Debug.WriteLine("Do Test");
 
-            nodeInstance = new NodeMock();
-            nodeInstance.Name = "Test Node";
-            controllerInstance = new ControllerInstanceMock();
-            controllerInstance.Name = "Test Controller";
-            for (ushort i = 1; i <= ports; i++)
-            {
-                nodeInstance.AddPortConfig(new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
-                controllerInstance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
-            }
             artNet.AddInstance(nodeInstance);
             artNet.AddInstance(controllerInstance);
 
