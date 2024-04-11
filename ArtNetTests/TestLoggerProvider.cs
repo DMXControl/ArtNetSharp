@@ -18,11 +18,11 @@ namespace ArtNetTests
 
         public TestLoggerProvider()
         {
-            Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 while (true)
                 {
-                    if (loggs.TryDequeue(out string log))
+                    if (loggs.TryDequeue(out var log))
                         Console.WriteLine(log);
                     await Task.Delay(1);
                 }
@@ -42,7 +42,7 @@ namespace ArtNetTests
                 CategoryName = categoryName;
             }
 
-            public IDisposable BeginScope<TState>(TState state)
+            IDisposable? ILogger.BeginScope<TState>(TState state)
             {
                 return null;
             }
@@ -52,12 +52,12 @@ namespace ArtNetTests
                 return true;
             }
 
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception, string> formatter)
             {
                 //_ = Task.Run(() =>
                 //{
                     StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.AppendLine($"{DateTime.UtcNow} [{logLevel}] <{CategoryName}> {formatter?.Invoke(state, exception)}");
+                    stringBuilder.AppendLine($"{DateTime.UtcNow} [{logLevel}] <{CategoryName}> {formatter?.Invoke(state, exception!)}");
                     if (exception != null)
                         stringBuilder.AppendLine(exception.ToString());
 

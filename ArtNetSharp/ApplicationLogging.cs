@@ -97,7 +97,7 @@ namespace ArtNetSharp
 
                     }
                 }
-                catch (Exception e)
+                catch
                 {
 
                 }

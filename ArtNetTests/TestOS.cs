@@ -52,7 +52,9 @@ namespace ArtNetTests
         }
 
         [Test]
+#pragma warning disable CS0618 // Typ oder Element ist veraltet
         [Timeout(10000)]
+#pragma warning restore CS0618 // Typ oder Element ist veraltet
         public async Task TestOnLinux()
         {
             if (!OperatingSystem.IsLinux())
@@ -62,7 +64,9 @@ namespace ArtNetTests
         }
 
         [Test]
+#pragma warning disable CS0618 // Typ oder Element ist veraltet
         [Timeout(10000)]
+#pragma warning restore CS0618 // Typ oder Element ist veraltet
         public async Task TestOnWindows()
         {
             if (!OperatingSystem.IsWindows())

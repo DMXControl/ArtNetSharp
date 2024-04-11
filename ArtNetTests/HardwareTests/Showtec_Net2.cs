@@ -108,7 +108,7 @@ namespace ArtNetTests.HardwareTests
         }
 
         [Test, Order(1)]
-        public async Task Test_Default()
+        public void Test_Default()
         {
             Assert.That(remoteClient, Is.Not.Null);
             Assert.That(remoteClient.LongName, Is.EqualTo(testSubject.LongName));

@@ -39,7 +39,7 @@ namespace ArtNetTests
             }
             artNet.AddInstance(nodeInstance);
             artNet.AddInstance(controllerInstance);
-            RemoteClient nodeRD = null;
+            RemoteClient? nodeRD = null;
             for (int i = 0; i < 1200; i++)
             {
                 nodeRD = controllerInstance.RemoteClients?.FirstOrDefault(rc => nodeInstance.Name.Equals(rc?.LongName));
@@ -94,7 +94,7 @@ namespace ArtNetTests
                     Assert.That(refreshRate, Is.InRange(35, 60), $"PortAddress: {e} is receiving Values at strange RefreshRate: {refreshRate}");
                 }
             };
-            while (predefinedData.TryDequeue(out byte[] data))
+            while (predefinedData.TryDequeue(out var data))
             {
                 await Task.Delay(10);
                 predefinedData.Enqueue(data);//endless loop

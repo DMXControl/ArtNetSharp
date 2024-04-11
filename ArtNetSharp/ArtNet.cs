@@ -41,6 +41,13 @@ namespace ArtNetSharp
 
         private System.Timers.Timer _updateNetworkClientsTimer = null;
 
+        private static readonly bool IsLinux =
+#if !NETSTANDARD
+                    OperatingSystem.IsLinux();
+#else
+                   RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+#endif
+
         public class NetworkClientBag
         {
             private static Random _random = new Random();
@@ -113,14 +120,7 @@ namespace ArtNetSharp
                     _client.ExclusiveAddressUse = false;
                     _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                     _client.EnableBroadcast = true;
-                    var endpointIp = LocalIpAddress;
-#if !NETSTANDARD
-                    if (OperatingSystem.IsLinux())
-                        endpointIp = IPAddress.Any;
-#else
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                        endpointIp = IPAddress.Any;
-#endif
+                    var endpointIp = IsLinux ? IPAddress.Any : LocalIpAddress;
                     IPEndPoint localEp = new IPEndPoint(IPAddress.Any, Constants.ARTNET_PORT);
                     _client.Client.Bind(localEp);
                     _clientAlive = true;
@@ -139,11 +139,13 @@ namespace ArtNetSharp
                     {
                         UdpReceiveResult received = await _client.ReceiveAsync();
 
-                        if (!IsInSubnet(LocalIpAddress, UnicastIPAddressInfo.IPv4Mask, received.RemoteEndPoint.Address))
-                        {
-                            Logger?.LogTrace($"Drop Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
-                            return;
-                        }
+
+                        if (IsLinux)
+                            if (!IsInSubnet(LocalIpAddress, UnicastIPAddressInfo.IPv4Mask, received.RemoteEndPoint.Address))
+                            {
+                                Logger?.LogTrace($"Drop Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
+                                return;
+                            }
 
                         Logger?.LogTrace($"Allowed Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
                         if (Enabled)
