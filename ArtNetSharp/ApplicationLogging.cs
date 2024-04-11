@@ -69,10 +69,11 @@ namespace ArtNetSharp
                 }
             }
             private static string getOsDirectory()
-            { var ad = AssemblyDirectory;
+            {
+                var ad = AssemblyDirectory;
                 if (ad.Contains("runner/work")) // Linux and Mac Worker
                     return ad;
-                if(ad.StartsWith(":\\a\\")) // Windows Worker
+                if(ad.Contains(":\\a\\")) // Windows Worker
                     return ad;
 
 #if !NETSTANDARD
