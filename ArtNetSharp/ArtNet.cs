@@ -289,7 +289,7 @@ namespace ArtNetSharp
             networkClients.Clear();
         }
 
-        private static HashSet<ILoggerProvider> loggerProviders = new HashSet<ILoggerProvider>();  
+        private static List<ILoggerProvider> loggerProviders = new List<ILoggerProvider>();  
         public static void AddLoggProvider(ILoggerProvider loggerProvider)
         {
             if (loggerProviders.Contains(loggerProvider))
