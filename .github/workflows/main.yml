@@ -25,7 +25,7 @@ jobs:
     - name: Install dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build --framework net${{ matrix.dotnet-version }} --configuration Release --no-restore
     - name: Test
       run: dotnet test --framework net${{ matrix.dotnet-version }} --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"       
     - name: Upload a Build Artifact
