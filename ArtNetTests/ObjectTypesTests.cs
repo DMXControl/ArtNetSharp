@@ -8,7 +8,6 @@ namespace ArtNetTests
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
         }
         [SetUp]
         public void Setup()

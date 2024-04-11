@@ -16,9 +16,6 @@ namespace ArtNetTests
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
-            Trace.Listeners.Add(new ConsoleTraceListener());
-            Debug.WriteLine("Setup");
             artNet = ArtNet.Instance;
         }
         [SetUp]
@@ -88,11 +85,6 @@ namespace ArtNetTests
         }
         private async Task doTests()
         {
-            Debug.WriteLine("Do Test");
-            foreach(var nc in artNet.NetworkClients)
-            {
-                Debug.WriteLine($"Local: {nc.LocalIpAddress}, Broadcast: {nc.BroadcastIpAddress}, Mask: {nc.UnicastIPAddressInfo.IPv4Mask}");
-            }
 
             artNet.AddInstance(nodeInstance);
             artNet.AddInstance(controllerInstance);

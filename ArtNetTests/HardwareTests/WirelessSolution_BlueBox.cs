@@ -42,7 +42,6 @@ namespace ArtNetTests.HardwareTests
         [OneTimeSetUp]
         public async Task SetUp()
         {
-            ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
             if (!await IsPingable())
                 return;
 

@@ -18,7 +18,6 @@ namespace ArtNetTests
 #if DEBUG
             Assert.Ignore("Skiped in Release!");
 #endif
-            ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
             artNet = ArtNet.Instance;
             var broadcastIp = new IPAddress(new byte[] { 2, 255, 255, 255 });
             artNet.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));

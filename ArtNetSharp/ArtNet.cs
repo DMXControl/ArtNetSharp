@@ -416,33 +416,48 @@ namespace ArtNetSharp
             }
             return new MACAddress();
         }
-        private void updateNetworkClients()
+        private SemaphoreSlim updateNetworkSenaphoreSlim = new SemaphoreSlim(1);
+        private async void updateNetworkClients()
         {
-            NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
-            var tmp = new List<IPAddress>(interfaces.Length); //At least 1 IP per Interface
-            foreach (NetworkInterface @interface in interfaces)
+            if (updateNetworkSenaphoreSlim.CurrentCount == 0)
+                return;
+
+            await updateNetworkSenaphoreSlim.WaitAsync();
+            try
             {
-                if (@interface.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
-                if (@interface.OperationalStatus != OperationalStatus.Up) continue;
-                UnicastIPAddressInformationCollection unicastIpInfoCol = @interface.GetIPProperties().UnicastAddresses;
-                foreach (UnicastIPAddressInformation ipInfo in unicastIpInfoCol)
+                NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
+                foreach (NetworkInterface @interface in interfaces)
                 {
-                    if (networkClients.Values.ToList().Any(nc => nc.UnicastIPAddressInfo.Equals(ipInfo)))
-                        continue;
+                    if (@interface.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
+                    if (@interface.OperationalStatus != OperationalStatus.Up) continue;
+                    UnicastIPAddressInformationCollection unicastIpInfoCol = @interface.GetIPProperties().UnicastAddresses;
+                    foreach (UnicastIPAddressInformation ipInfo in unicastIpInfoCol)
+                    {
+                        if (networkClients.Values.ToList().Any(nc => nc.LocalIpAddress.Equals(ipInfo.Address)))
+                            continue;
 
-                    uint ipAddress = BitConverter.ToUInt32(ipInfo.Address.GetAddressBytes(), 0);
-                    uint ipMaskV4 = BitConverter.ToUInt32(ipInfo.IPv4Mask.GetAddressBytes(), 0);
-                    uint broadCastIpAddress = ipAddress | ~ipMaskV4;
+                        uint ipAddress = BitConverter.ToUInt32(ipInfo.Address.GetAddressBytes(), 0);
+                        uint ipMaskV4 = BitConverter.ToUInt32(ipInfo.IPv4Mask.GetAddressBytes(), 0);
+                        uint broadCastIpAddress = ipAddress | ~ipMaskV4;
 
-                    byte[] bytes = BitConverter.GetBytes(broadCastIpAddress);
-                    if (bytes[0] == 255 && bytes[1] == 255 && bytes[2] == 255 && bytes[3] == 255) // Limited Broadcast: Art-Net packets should not be broadcast to the Limited Broadcast address of 255.255.255.255.
-                        continue;// 1.4dh 19/7/2023 - 10 -
+                        byte[] bytes = BitConverter.GetBytes(broadCastIpAddress);
+                        if (bytes[0] == 255 && bytes[1] == 255 && bytes[2] == 255 && bytes[3] == 255) // Limited Broadcast: Art-Net packets should not be broadcast to the Limited Broadcast address of 255.255.255.255.
+                            continue;// 1.4dh 19/7/2023 - 10 -
 
-                    var ncb = new NetworkClientBag(new IPAddress(bytes), ipInfo);
-                    networkClients.TryAdd((uint)_random.Next(), ncb);
-                    Logger.LogDebug($"Added NetworkClient {ncb.LocalIpAddress}");
-                    ncb.ReceivedData += ReceivedData;
+                        var ncb = new NetworkClientBag(new IPAddress(bytes), ipInfo);
+                        networkClients.TryAdd((uint)_random.Next(), ncb);
+                        Logger.LogDebug($"Added NetworkClient {ncb.LocalIpAddress}");
+                        ncb.ReceivedData += ReceivedData;
+                    }
                 }
+            }
+            catch(Exception e)
+            {
+                Logger?.LogError(e);
+            }
+            finally
+            {
+                updateNetworkSenaphoreSlim.Release();
             }
         }
 
