@@ -29,12 +29,12 @@ jobs:
     - name: Test
       run: dotnet test --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.dotnet-version }}"
     - name: Upload dotnet test results
-          uses: actions/upload-artifact@v4.3.1
-          with:
-            name: dotnet-results-${{ matrix.dotnet-version }}
-            path: TestResults-${{ matrix.dotnet-version }}
-          # Use always() to always run this step to publish test results when there are test failures
-          if: ${{ always() }}
+      uses: actions/upload-artifact@v4.3.1
+      with:
+        name: dotnet-results-${{ matrix.dotnet-version }}
+        path: TestResults-${{ matrix.dotnet-version }}
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.3.1
       with:
