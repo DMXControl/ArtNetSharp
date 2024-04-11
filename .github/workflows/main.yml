@@ -27,22 +27,14 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
     - name: Test
-      run: dotnet test --framework net${{ matrix.dotnet-version }} --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
-      # run: |
-      #   if ( "${{ matrix.dotnet-version }}" == "6.0.x" ); then
-      #     dotnet test --framework net6.0 --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
-      #   elif ( "${{ matrix.dotnet-version }}" == "7.0.x" ); then
-      #     dotnet test --framework net7.0 --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
-      #   elif ( "${{ matrix.dotnet-version }}" == "8.0.x" ); then
-      #     dotnet test --framework net8.0 --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
-      #   fi        
+      run: dotnet test --framework net${{ matrix.dotnet-version }} --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"       
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.3.1
       with:
         name: ${{ matrix.os }} ${{ matrix.dotnet-version }}
         path: |
           TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}
-          ArtNetSharp/bin/Release/**/ArtNetSharp.dll
+          ArtNetSharp/bin/Release/*/net${{ matrix.dotnet-version }}/ArtNetSharp.dll
         retention-days: 2
       continue-on-error: true
 
