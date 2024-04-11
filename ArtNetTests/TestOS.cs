@@ -3,6 +3,7 @@ using ArtNetSharp.Communication;
 using ArtNetTests.Mocks;
 using ArtNetTests.Mocks.Instances;
 using NUnit.Framework.Internal;
+using System.Diagnostics;
 
 namespace ArtNetTests
 {
@@ -15,6 +16,8 @@ namespace ArtNetTests
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
+            Trace.Listeners.Add(new ConsoleTraceListener());
+            Debug.WriteLine("Setup");
             ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
             artNet = ArtNet.Instance;
 
@@ -38,6 +41,11 @@ namespace ArtNetTests
             artNet.RemoveInstance(controllerInstance);
             ((IDisposable)nodeInstance).Dispose();
             ((IDisposable)controllerInstance).Dispose();
+        }
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
+        {
+            Trace.Flush();
         }
 
         [Test]
@@ -71,6 +79,7 @@ namespace ArtNetTests
         }
         private async Task doTests()
         {
+            Debug.WriteLine("Do Test");
             artNet.AddInstance(nodeInstance);
             artNet.AddInstance(controllerInstance);
 
