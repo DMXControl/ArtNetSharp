@@ -18,7 +18,6 @@ namespace ArtNetTests
         {
             Trace.Listeners.Add(new ConsoleTraceListener());
             Debug.WriteLine("Setup");
-            ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
             artNet = ArtNet.Instance;
         }
 
@@ -65,6 +64,7 @@ namespace ArtNetTests
         //}
         private async Task doTests()
         {
+            ArtNet.AddLoggProvider(TestLoggerProvider.Instance);
             Debug.WriteLine("Do Test");
 
             nodeInstance = new NodeMock();

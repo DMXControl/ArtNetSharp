@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using System.Text;
 
 namespace ArtNetTests
@@ -38,15 +39,15 @@ namespace ArtNetTests
 
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
-                _ = Task.Run(() =>
-                {
+                //_ = Task.Run(() =>
+                //{
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.AppendLine($"{DateTime.UtcNow} [{logLevel}] <{CategoryName}> {formatter?.Invoke(state, exception)}");
                     if (exception != null)
                         stringBuilder.AppendLine(exception.ToString());
 
-                    Console.WriteLine(stringBuilder.ToString());
-                });
+                    Debug.WriteLine(stringBuilder.ToString());
+                //});
             }
         }
     }
