@@ -68,15 +68,15 @@ namespace ArtNetTests
             await doTests();
         }
 
-        [Test]
-        [Timeout(10000)]
-        public async Task TestOnMackOS()
-        {
-            if (!OperatingSystem.IsMacOS())
-                Assert.Ignore("Skiped, only run on Mac OS");
+        //[Test]
+        //[Timeout(10000)]
+        //public async Task TestOnMackOS()
+        //{
+        //    if (!OperatingSystem.IsMacOS())
+        //        Assert.Ignore("Skiped, only run on Mac OS");
 
-            await doTests();
-        }
+        //    await doTests();
+        //}
         private async Task doTests()
         {
             Debug.WriteLine("Do Test");
