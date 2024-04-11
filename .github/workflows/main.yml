@@ -28,12 +28,18 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     - name: Test
       run: |
-        if ( "${{ matrix.dotnet-version }}" == "6.0.x" ); then
+        if ( "${{ matrix.dotnet-version }}" == "6.0.x" )
+        {
           dotnet test --framework net6.0 --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
-        elif ( "${{ matrix.dotnet-version }}" == "7.0.x" ); then
+        }
+        elif ( "${{ matrix.dotnet-version }}" == "7.0.x" )
+        {
           dotnet test --framework net7.0 --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
-        elif ( "${{ matrix.dotnet-version }}" == "8.0.x" ); then
+        }
+        elif ( "${{ matrix.dotnet-version }}" == "8.0.x" )
+        {
           dotnet test --framework net8.0 --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
+        }
         fi        
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.3.1
