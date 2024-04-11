@@ -58,19 +58,9 @@ namespace ArtNetSharp
 
             private static string filePath = Path.Combine(fileDirectory, "log.txt");
             private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
-            public static string AssemblyDirectory
-            {
-                get
-                {
-                    string codeBase = Assembly.GetExecutingAssembly().CodeBase;
-                    UriBuilder uri = new UriBuilder(codeBase);
-                    string path = Uri.UnescapeDataString(uri.Path);
-                    return Path.GetDirectoryName(path);
-                }
-            }
             private static string getOsDirectory()
             {
-                var ad = AssemblyDirectory;
+                var ad = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 if (ad.Contains("runner/work")) // Linux and Mac Worker
                     return ad;
                 if(ad.Contains(":\\a\\")) // Windows Worker
