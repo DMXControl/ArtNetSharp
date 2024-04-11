@@ -5,6 +5,11 @@ namespace ArtNetTests
 {
     public class ObjectTypesTests
     {
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            ArtNet.SetLoggerFectory(TestLoggerFactory.Instance);
+        }
         [SetUp]
         public void Setup()
         {

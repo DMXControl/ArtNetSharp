@@ -14,8 +14,9 @@ namespace ArtNetTests
         ArtNet artNet;
         [OneTimeSetUp]
         public void Setup()
-        {
+        {            
             artNet = ArtNet.Instance;
+            ArtNet.SetLoggerFectory(TestLoggerFactory.Instance);
 
             nodeInstance = new NodeMock();
             nodeInstance.Name = "Test Node";

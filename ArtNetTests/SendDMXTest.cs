@@ -10,6 +10,11 @@ namespace ArtNetTests
     public class SendDMXTest
     {
         ArtNet artNet;
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            ArtNet.SetLoggerFectory(TestLoggerFactory.Instance);
+        }
         [SetUp]
         public void Setup()
         {

@@ -7,6 +7,13 @@ namespace ArtNetTests
 {
     public class PackagesSerializeDeserialize
     {
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            ArtNet.SetLoggerFectory(TestLoggerFactory.Instance);
+        }
+
+
         [SetUp]
         public void Setup()
         {
