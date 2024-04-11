@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,7 +28,6 @@ namespace ArtNetSharp
             }
         }
 
-        private IPAddress[] _broadcastIpAddresses = new IPAddress[0];
         private Dictionary<IPv4Address, MACAddress> ipTomacAddressCache = new Dictionary<IPv4Address, MACAddress>();
 
         private List<AbstractInstance> instances = new List<AbstractInstance>();
@@ -44,7 +44,8 @@ namespace ArtNetSharp
 
             private readonly IPEndPoint broadcastEndpoint;
             public readonly IPAddress BroadcastIpAddress;
-            public IPAddress LocalIpAddress { get; private set; } = null;
+            public readonly UnicastIPAddressInformation UnicastIPAddressInfo;
+            public IPAddress LocalIpAddress => UnicastIPAddressInfo.Address;
 
             private UdpClient _client = null;
             private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
@@ -66,8 +67,9 @@ namespace ArtNetSharp
 
             public event EventHandler<Tuple<IPv4Address, UdpReceiveResult>> ReceivedData;
 
-            internal NetworkClientBag(IPAddress broadcastIpAddress)
+            internal NetworkClientBag(IPAddress broadcastIpAddress, UnicastIPAddressInformation unicastIPAddressInformation)
             {
+                UnicastIPAddressInfo = unicastIPAddressInformation;
                 BroadcastIpAddress = broadcastIpAddress;
                 broadcastEndpoint = new IPEndPoint(broadcastIpAddress, Constants.ARTNET_PORT);
                 _ = openClient();
@@ -97,22 +99,24 @@ namespace ArtNetSharp
                 await semaphoreSlim.WaitAsync();
                 try
                 {
+                    Logger?.LogTrace($"Client ({LocalIpAddress}): Test Socket");
+                    Socket testSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    testSocket.EnableBroadcast = true;
+                    await testSocket.ConnectAsync(BroadcastIpAddress, Constants.ARTNET_PORT);
+                    Logger?.LogTrace($"Client ({LocalIpAddress}): Socket is active");
+
+                    Logger?.LogTrace($"Client ({LocalIpAddress}): initialize");
                     _client = new UdpClient();
                     _client.ExclusiveAddressUse = false;
                     _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                     _client.EnableBroadcast = true;
-
-                    Socket testSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                    testSocket.EnableBroadcast = true;
-                    await testSocket.ConnectAsync(BroadcastIpAddress, Constants.ARTNET_PORT);
-                    LocalIpAddress = ((IPEndPoint)testSocket.LocalEndPoint).Address;
                     IPEndPoint localEp = new IPEndPoint(IPAddress.Any, Constants.ARTNET_PORT);
                     _client.Client.Bind(localEp);
                     _clientAlive = true;
                     _ = StartListening();
-                    Logger?.LogTrace($"Client ({LocalIpAddress ?? BroadcastIpAddress}) Initialized");
+                    Logger?.LogTrace($"Client ({LocalIpAddress}): initialized!");
                 }
-                catch (Exception e) { Logger.LogDebug(e); }
+                catch (Exception e) { Logger?.LogError(e, $"Client ({LocalIpAddress}): Error on initialize"); }
                 finally { semaphoreSlim?.Release(); }
             }
 
@@ -263,18 +267,6 @@ namespace ArtNetSharp
         {
             updateNetworkClients();
         }
-        private void updateNetworkClients()
-        {
-            UpdateBroadcastEndpoints();
-            var ips = networkClients.Select(ncb => ncb.BroadcastIpAddress);
-            foreach (var b in _broadcastIpAddresses.Except(ips))
-            {
-                var ncb = new NetworkClientBag(b);
-                networkClients.Add(ncb);
-                Logger.LogDebug($"Added NetworkClient {ncb.BroadcastIpAddress}");
-                ncb.ReceivedData += ReceivedData;
-            }
-        }
 
         private void ReceivedData(object sender, Tuple<IPv4Address, UdpReceiveResult> e)
         {
@@ -376,7 +368,7 @@ namespace ArtNetSharp
             }
             return new MACAddress();
         }
-        private void UpdateBroadcastEndpoints()
+        private void updateNetworkClients()
         {
             NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
             var tmp = new List<IPAddress>(interfaces.Length); //At least 1 IP per Interface
@@ -387,6 +379,9 @@ namespace ArtNetSharp
                 UnicastIPAddressInformationCollection unicastIpInfoCol = @interface.GetIPProperties().UnicastAddresses;
                 foreach (UnicastIPAddressInformation ipInfo in unicastIpInfoCol)
                 {
+                    if (networkClients.Any(nc => nc.UnicastIPAddressInfo.Equals(ipInfo)))
+                        continue;
+
                     uint ipAddress = BitConverter.ToUInt32(ipInfo.Address.GetAddressBytes(), 0);
                     uint ipMaskV4 = BitConverter.ToUInt32(ipInfo.IPv4Mask.GetAddressBytes(), 0);
                     uint broadCastIpAddress = ipAddress | ~ipMaskV4;
@@ -395,10 +390,12 @@ namespace ArtNetSharp
                     if (bytes[0] == 255 && bytes[1] == 255 && bytes[2] == 255 && bytes[3] == 255) // Limited Broadcast: Art-Net packets should not be broadcast to the Limited Broadcast address of 255.255.255.255.
                         continue;// 1.4dh 19/7/2023 - 10 -
 
-                    tmp.Add(new IPAddress(bytes));
+                    var ncb = new NetworkClientBag(new IPAddress(bytes), ipInfo);
+                    networkClients.Add(ncb);
+                    Logger.LogDebug($"Added NetworkClient {ncb.BroadcastIpAddress}");
+                    ncb.ReceivedData += ReceivedData;
                 }
             }
-            _broadcastIpAddresses = tmp.Distinct().ToArray();
         }
 
         public void AddInstance(AbstractInstance instance)
