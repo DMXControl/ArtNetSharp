@@ -80,10 +80,10 @@ namespace ArtNetSharp
 
             internal NetworkClientBag(IPAddress broadcastIpAddress, UnicastIPAddressInformation unicastIPAddressInformation)
             {
-                Logger?.LogTrace($"Create Client ({LocalIpAddress})");
                 UnicastIPAddressInfo = unicastIPAddressInformation;
                 BroadcastIpAddress = broadcastIpAddress;
                 broadcastEndpoint = new IPEndPoint(broadcastIpAddress, Constants.ARTNET_PORT);
+                Logger?.LogTrace($"Create Client ({LocalIpAddress})");
                 _ = openClient();
             }
 
