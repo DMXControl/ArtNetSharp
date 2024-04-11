@@ -129,7 +129,10 @@ namespace ArtNetSharp
                         UdpReceiveResult received = await _client.ReceiveAsync();
 
                         if (!IsInSubnet(LocalIpAddress, UnicastIPAddressInfo.IPv4Mask, received.RemoteEndPoint.Address))
+                        {
+                            Logger?.LogTrace($"Drop Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
                             return;
+                        }
                         if (Enabled)
                             ReceivedData?.Invoke(this, new Tuple<IPv4Address, UdpReceiveResult>(LocalIpAddress, received));
                     }
@@ -321,12 +324,12 @@ namespace ArtNetSharp
                 Logger?.LogWarning($"Received Non-Art-Net packet from {sourceIp}, discarding");
                 return;
             }
-#if DEBUG
+//#if DEBUG
             //if (IPv4Address.Equals(localIp, sourceIp))
             //    return;
 
             Logger.LogTrace($"Received Packet from {sourceIp} -> {packet}");
-#endif
+//#endif
             instances.ForEach(_instance => { ((IInstance)_instance).PacketReceived(packet, localIp, sourceIp); });
         }
 
