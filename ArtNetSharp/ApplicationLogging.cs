@@ -103,6 +103,7 @@ namespace ArtNetSharp
                     {
 
                     }
+                    Console.WriteLine($"Log to File: {filePath}");
                 }
                 catch
                 {
@@ -149,8 +150,10 @@ namespace ArtNetSharp
                     if (!Directory.Exists(fileDirectory))
                         return;
 
+                    Console.WriteLine($"Log to File: {filePath}");
                     await Task.Run(async () =>
                     {
+                        Console.WriteLine($"Log to File: {filePath}");
                         StringBuilder stringBuilder = new StringBuilder();
                         stringBuilder.AppendLine($"{DateTime.UtcNow} [{logLevel}] <{CategoryName}> {formatter?.Invoke(state, exception)}");
                         if (exception != null)
