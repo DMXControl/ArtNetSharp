@@ -83,6 +83,10 @@ namespace ArtNetTests
         private async Task doTests()
         {
             Debug.WriteLine("Do Test");
+            foreach(var nc in artNet.NetworkClients)
+            {
+                Debug.WriteLine($"Local: {nc.LocalIpAddress}, Broadcast: {nc.BroadcastIpAddress}, Mask: {nc.UnicastIPAddressInfo.IPv4Mask}");
+            }
 
             artNet.AddInstance(nodeInstance);
             artNet.AddInstance(controllerInstance);
