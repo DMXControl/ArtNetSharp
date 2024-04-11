@@ -28,19 +28,21 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     - name: Test
       run: dotnet test --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
-    - name: Upload dotnet test results
-      uses: actions/upload-artifact@v4.3.1
-      with:
-        name: TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}
-        path: TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}
-        retention-days: 30
-        # Use always() to always run this step to publish test results when there are test failures
-      continue-on-error: true
+    # - name: Upload dotnet test results
+    #   uses: actions/upload-artifact@v4.3.1
+    #   with:
+    #     name: TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}
+    #     path: TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}
+    #     retention-days: 30
+    #     # Use always() to always run this step to publish test results when there are test failures
+    #   continue-on-error: true
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.3.1
       with:
-        name: Binarys-${{ matrix.os }} ${{ matrix.dotnet-version }}
-        path: ArtNetSharp/bin/Release/**/ArtNetSharp.dll
+        name: ${{ matrix.os }} ${{ matrix.dotnet-version }}
+        path: |
+          TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}
+          ArtNetSharp/bin/Release/**/ArtNetSharp.dll
         retention-days: 2
       continue-on-error: true
 
