@@ -36,7 +36,7 @@ for (ushort i = 1; i <= 4; i++)
     }
     catch (Exception ex)
     {
-
+        Console.WriteLine(ex.ToString());
     }
 }
 

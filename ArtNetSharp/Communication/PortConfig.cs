@@ -36,7 +36,7 @@ namespace ArtNetSharp.Communication
         private ConcurrentDictionary<RDMUID, RDMUID> additionalRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID>();
         public IReadOnlyCollection<RDMUID> AdditionalRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
-        public event EventHandler<RDMMessage> RDMMessageReceived;
+        //public event EventHandler<RDMMessage> RDMMessageReceived;
 
         public PortConfig(in byte bindIndex, in Net net, in Subnet subnet, in Universe universe, in bool output, in bool input)
             : this(bindIndex, new PortAddress(net, subnet, universe), output, input)
