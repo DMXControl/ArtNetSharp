@@ -128,11 +128,40 @@ namespace ArtNetSharp
                     {
                         UdpReceiveResult received = await _client.ReceiveAsync();
 
+                        if (!IsInSubnet(LocalIpAddress, UnicastIPAddressInfo.IPv4Mask, received.RemoteEndPoint.Address))
+                            return;
                         if (Enabled)
                             ReceivedData?.Invoke(this, new Tuple<IPv4Address, UdpReceiveResult>(LocalIpAddress, received));
                     }
                 }
                 catch (Exception e) { Logger.LogError(e); _ = openClient(); }
+            }
+            public static bool IsInSubnet(IPAddress ip, IPAddress mask, IPAddress target)
+            {
+                try
+                {
+                    // Get bytes of IP address and subnet mask
+                    byte[] ipBytes = ip.GetAddressBytes();
+                    byte[] maskBytes = mask.GetAddressBytes();
+                    byte[] targetBytes = target.GetAddressBytes();
+
+                    // Perform bitwise AND operation between IP address and subnet mask
+                    for (int i = 0; i < ipBytes.Length; i++)
+                    {
+                        if ((ipBytes[i] & maskBytes[i]) != (targetBytes[i] & maskBytes[i]))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    // Handle any parsing errors
+                    Console.WriteLine("Error: " + ex.Message);
+                    return false;
+                }
             }
 
             private List<IPAddress> notMatchingIpAdddresses = new List<IPAddress>();
