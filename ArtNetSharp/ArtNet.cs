@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using RDMSharp;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -30,8 +31,8 @@ namespace ArtNetSharp
 
         private Dictionary<IPv4Address, MACAddress> ipTomacAddressCache = new Dictionary<IPv4Address, MACAddress>();
 
-        private List<AbstractInstance> instances = new List<AbstractInstance>();
-        public ReadOnlyCollection<AbstractInstance> Instances { get => instances.AsReadOnly(); }
+        private ConcurrentDictionary<uint, AbstractInstance> instances = new ConcurrentDictionary<uint, AbstractInstance>();
+        public ReadOnlyCollection<AbstractInstance> Instances { get => instances.Values.ToList().AsReadOnly(); }
 
         private List<NetworkClientBag> networkClients = new List<NetworkClientBag>();
         public IReadOnlyCollection<NetworkClientBag> NetworkClients => networkClients.AsReadOnly();
@@ -332,7 +333,7 @@ namespace ArtNetSharp
 
             Logger.LogTrace($"Received Packet from {sourceIp} -> {packet}");
 //#endif
-            instances.ForEach(_instance => { ((IInstance)_instance).PacketReceived(packet, localIp, sourceIp); });
+            instances.Values.ToList().ForEach(_instance => { ((IInstance)_instance).PacketReceived(packet, localIp, sourceIp); });
         }
 
         public static bool IsNetworkAvailable(long? minimumSpeed=null)
@@ -434,12 +435,17 @@ namespace ArtNetSharp
 
         public void AddInstance(AbstractInstance instance)
         {
-            this.instances.Add(instance);
+            if (this.instances.Any(i => i.Value == instance))
+                return;
+            this.instances.TryAdd((uint)new Random().Next(), instance);
             Logger?.LogDebug($"Added instance {instance.GetType().Name}: {instance.Name} ({instance.ShortName})");
         }
         public void RemoveInstance(AbstractInstance instance)
         {
-            this.instances.Remove(instance);
+            var toRemove = this.instances.FirstOrDefault(i => i.Value == instance);
+            if (toRemove.Value == null)
+                return;
+            this.instances.TryRemove(toRemove.Key, out _);
             Logger?.LogDebug($"Removed instance {instance.ShortName}");
         }
 
