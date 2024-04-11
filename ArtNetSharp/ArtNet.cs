@@ -477,7 +477,7 @@ namespace ArtNetSharp
             if (toRemove.Value == null)
                 return;
             this.instances.TryRemove(toRemove.Key, out _);
-            Logger?.LogDebug($"Removed instance {instance.ShortName}");
+            Logger?.LogDebug($"Removed instance {instance.Name} ({instance.ShortName})");
         }
 
         internal async Task TrySendPacket(AbstractArtPacketCore packet, IPv4Address destinationIp)
