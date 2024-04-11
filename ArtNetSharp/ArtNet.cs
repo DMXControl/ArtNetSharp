@@ -159,7 +159,7 @@ namespace ArtNetSharp
                 catch (Exception ex)
                 {
                     // Handle any parsing errors
-                    Console.WriteLine("Error: " + ex.Message);
+                    Logger?.LogError(ex);
                     return false;
                 }
             }
