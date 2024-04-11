@@ -411,6 +411,7 @@ namespace ArtNetSharp
             var tmp = new List<IPAddress>(interfaces.Length); //At least 1 IP per Interface
             foreach (NetworkInterface @interface in interfaces)
             {
+                Console.WriteLine($"Console.WriteLine: Interface: {@interface}");
                 if (@interface.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
                 if (@interface.OperationalStatus != OperationalStatus.Up) continue;
                 UnicastIPAddressInformationCollection unicastIpInfoCol = @interface.GetIPProperties().UnicastAddresses;
@@ -429,6 +430,7 @@ namespace ArtNetSharp
 
                     var ncb = new NetworkClientBag(new IPAddress(bytes), ipInfo);
                     networkClients.Add(ncb);
+                    Console.WriteLine($"Console.WriteLine: Added NetworkClient {ncb.LocalIpAddress}");
                     Logger.LogDebug($"Added NetworkClient {ncb.LocalIpAddress}");
                     ncb.ReceivedData += ReceivedData;
                 }
