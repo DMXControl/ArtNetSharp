@@ -25,6 +25,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Set .NET version variable
+      run: |
+          if [[ "${{ matrix.dotnet-version }}" == '6.0.x' ]]; then
+            NET_VERSION=NET6
+          else if [[ "${{ matrix.dotnet-version }}" == '7.0.x' ]]; then
+            NET_VERSION=NET7
+          else
+            NET_VERSION=NET8
+          fi
+          echo "NET_VERSION=$NET_VERSION" >> $GITHUB_ENV
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v3
       with:
