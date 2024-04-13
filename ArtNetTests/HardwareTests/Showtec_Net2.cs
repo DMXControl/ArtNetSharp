@@ -77,6 +77,11 @@ namespace ArtNetTests.HardwareTests
         {
             if (!Pingable.HasValue)
             {
+                if (!artNet.NetworkClients.Any(nc => ArtNet.NetworkClientBag.IsInSubnet(nc.LocalIpAddress, nc.IPv4Mask, testSubject.IP)))
+                {
+                    Assert.Ignore($"TestSubject: {testSubject} no matching Network-Adapter found!");
+                    return false;
+                }
                 var ping = new Ping();
                 for (int i = 0; i < 5; i++)
                 {
