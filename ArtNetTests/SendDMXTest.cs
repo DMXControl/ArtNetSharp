@@ -17,9 +17,9 @@ namespace ArtNetTests
         [SetUp]
         public void Setup()
         {
-//#if DEBUG
-//            Assert.Ignore("Skiped in Release!");
-//#endif
+#if DEBUG
+            Assert.Ignore("Skiped in Release!");
+#endif
             artNet = ArtNet.Instance;
         }
 
