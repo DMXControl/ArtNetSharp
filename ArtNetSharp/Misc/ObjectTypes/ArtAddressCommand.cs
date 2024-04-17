@@ -4,7 +4,7 @@ namespace ArtNetSharp
 {
     public readonly struct ArtAddressCommand : IEquatable<ArtAddressCommand>
     {
-        public static ArtAddressCommand Default { get; } = new ArtAddressCommand();
+        public static readonly ArtAddressCommand Default = new ArtAddressCommand();
         public readonly EArtAddressCommand Command;
         public readonly byte? Port;
 
@@ -77,9 +77,7 @@ namespace ArtNetSharp
 
         public bool Equals(ArtAddressCommand other)
         {
-            return
-                Command == other.Command &&
-                Port == other.Port;
+            return Command == other.Command && Port == other.Port;
         }
     }
 }
