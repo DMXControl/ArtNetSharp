@@ -334,7 +334,10 @@ namespace ArtNetSharp
             if (length > 213)
             {
                 for (int i = 0; i < 4; i++)
-                    goodOutputB.Add((EGoodOutput)(ushort)(packet[213 + i] << 8));
+                    if (length > 213 + i)
+                        goodOutputB.Add((EGoodOutput)(ushort)(packet[213 + i] << 8));
+                    else
+                        goodOutputB.Add((EGoodOutput)(0));
             }
 
             byte status3 = 0;
@@ -361,15 +364,21 @@ namespace ArtNetSharp
             List<object> swIn = new List<object>();
             // 24 SwIn [4] Input Universe
             List<object> swOut = new List<object>();
-
+            byte portCount= Math.Min(Ports, (byte)4);
             Status = (ENodeStatus)((status3 << 16) + (status2 << 8) + status1);
             if (!Status.HasFlag(ENodeStatus.NodeSupports15BitPortAddress))
             {
                 for (int i = 0; i < 4; i++)
-                    swIn.Add((Address)packet[186 + i]);
+                    if (length > 186 + i)
+                        swIn.Add((Address)packet[186 + i]);
+                    else
+                        swIn.Add((Address)0);
 
                 for (int i = 0; i < 4; i++)
-                    swOut.Add((Address)packet[190 + i]);
+                    if (length > 190 + i)
+                        swOut.Add((Address)packet[190 + i]);
+                    else
+                        swOut.Add((Address)0);
 
                 Net = 0;
                 Subnet = 0;
@@ -377,10 +386,28 @@ namespace ArtNetSharp
             else
             {
                 for (int i = 0; i < 4; i++)
-                    swIn.Add((Universe)packet[186 + i]);
+                    if (length > 186)
+                        try
+                        {
+                            swIn.Add((Universe)packet[186 + i]);
+                        }
+                        catch
+                        {
+                            // drop;
+                        }
+                    else swIn.Add((Universe)0);
 
                 for (int i = 0; i < 4; i++)
-                    swOut.Add((Universe)packet[190 + i]);
+                    if (length > 190)
+                        try
+                        {
+                            swOut.Add((Universe)packet[190 + i]);
+                        }
+                        catch
+                        {
+                            // drop;
+                        }
+                    else swIn.Add((Universe)0);
             }
 
             List<EGoodOutput> goodOutput = new List<EGoodOutput>();
