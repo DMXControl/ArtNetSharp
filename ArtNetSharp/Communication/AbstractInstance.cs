@@ -296,7 +296,7 @@ namespace ArtNetSharp.Communication
             {
                 await Task.Delay((int)(800 * _random.NextDouble())); //Art-Net 4 Protocol Release V1.4 Document Revision 1.4dh 19/7/2023 - 23 -
                 MACAddress ownMacAddress = ArtNet.Instance.GetMacAdress(ownIp);
-                ENodeStatus nodeStatus = getOwnNodeStatus();
+                NodeStatus nodeStatus = getOwnNodeStatus();
                 NodeReport nodeReport = new NodeReport(ENodeReportCodes.RcPowerOk, "Everything ok.", artPollReplyCounter);
                 Net net = 0;
                 Subnet subnet = 0;
@@ -1073,16 +1073,16 @@ namespace ArtNetSharp.Communication
             await Task.Delay(500);
         }
 
-        protected virtual ENodeStatus GetOwnNodeStatus()
+        protected virtual NodeStatus GetOwnNodeStatus()
         {
-            return ENodeStatus.None;
+            return NodeStatus.None;
         }
-        private ENodeStatus getOwnNodeStatus()
+        private NodeStatus getOwnNodeStatus()
         {
-            ENodeStatus nodeStatus = GetOwnNodeStatus() | ENodeStatus.NodeSupports15BitPortAddress;
+            NodeStatus nodeStatus = GetOwnNodeStatus() | NodeStatus.NodeSupports15BitPortAddress;
 
             if (SupportRDM)
-                nodeStatus |= ENodeStatus.RDM_Supported;
+                nodeStatus |= NodeStatus.RDMSupported;
 
             return nodeStatus;
         }

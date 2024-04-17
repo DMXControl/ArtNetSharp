@@ -187,12 +187,12 @@ namespace ArtNetSharp.Communication
                 this.IpAddress = root.OwnIp;
                 this.ShortName = root.ShortName;
                 this.LongName = root.LongName;
-                this.IsRDMCapable = root.Status.HasFlag(ENodeStatus.RDM_Supported);
-                this.IsLLRPCapable = root.Status.HasFlag(ENodeStatus.NodeSupportLLRP);
-                this.IsDHCPCapable = root.Status.HasFlag(ENodeStatus.DHCP_ConfigurationSupported);
-                this.IsWebConfigurationCapable = root.Status.HasFlag(ENodeStatus.WebConfigurationSupported);
-                this.IsArtNet4Capable = root.Status.HasFlag(ENodeStatus.NodeSupports15BitPortAddress);
-                this.IsSACNCapable = root.Status.HasFlag(ENodeStatus.NodeSupportArtNet_sACN_Switching);
+                this.IsRDMCapable = root.Status.RDM_Supported;
+                this.IsLLRPCapable = root.Status.NodeSupportLLRP;
+                this.IsDHCPCapable = root.Status.DHCP_ConfigurationSupported;
+                this.IsWebConfigurationCapable = root.Status.WebConfigurationSupported;
+                this.IsArtNet4Capable = root.Status.PortAddressBitResolution == NodeStatus.EPortAddressBitResolution._15Bit;
+                this.IsSACNCapable = root.Status.NodeSupportArtNet_sACN_Switching;
             }
         }
         private ConcurrentDictionary<int, RemoteClientPort> ports = new ConcurrentDictionary<int, RemoteClientPort>();

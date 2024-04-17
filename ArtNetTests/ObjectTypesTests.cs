@@ -112,5 +112,28 @@ namespace ArtNetTests
             MACAddress dest = new MACAddress((byte[])src);
             Assert.That(dest, Is.EqualTo(src));
         }
+
+        [Test]
+        public void TestArtAddressCommand()
+        {
+            EArtAddressCommand[] commands = {
+                EArtAddressCommand.DirectionRx,
+                EArtAddressCommand.DirectionTx,
+                EArtAddressCommand.MergeHtp,
+                EArtAddressCommand.MergeLtp };
+
+            foreach (EArtAddressCommand command in commands)
+                for (byte port = 0; port < 4; port++)
+                {
+                    string state = $"Command: {command} Port: {port}";
+                    ArtAddressCommand artAddressCommand = new ArtAddressCommand(command, port);
+                    Assert.That(artAddressCommand.Command, Is.EqualTo(command), state);
+                    Assert.That(artAddressCommand.Port, Is.EqualTo(port), state);
+                    byte serialized = (byte)artAddressCommand;
+                    ArtAddressCommand artAddressCommandResult = new ArtAddressCommand(serialized);
+                    Assert.That(artAddressCommandResult.Command, Is.EqualTo(command), state);
+                    Assert.That(artAddressCommandResult.Port, Is.EqualTo(port), state);
+                }
+        }
     }
 }

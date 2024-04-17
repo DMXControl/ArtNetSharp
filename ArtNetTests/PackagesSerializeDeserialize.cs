@@ -52,11 +52,14 @@ namespace ArtNetTests
                                                 "UnitTest",
                                                 "This is a UnitTest for Testing this Packet.",
                                                 3,
-                                                ENodeStatus.DHCP_ConfigurationSupported
-                                                    | ENodeStatus.DHCP_ConfigurationUsed
-                                                    | ENodeStatus.IndicatorStateLocate
-                                                    | ENodeStatus.NodeSupports15BitPortAddress
-                                                    | ENodeStatus.RDM_Supported,
+                                                new NodeStatus(
+                                                    dHCP_ConfigurationSupported: true,
+                                                    dHCP_ConfigurationUsed: true,
+                                                    indicatorState: NodeStatus.EIndicatorState.Locate,
+                                                    portAddressBitResolution: NodeStatus.EPortAddressBitResolution._15Bit,
+                                                    rDM_Supported: true),
+
+
                                                 3,
                                                 6,
                                                 new Net(8),
@@ -67,14 +70,14 @@ namespace ArtNetTests
                                                 0x2345,
                                                 1,
                                                 new NodeReport(ENodeReportCodes.RcFactoryRes, "ewqewfffafdafafgg", 55),
-                                                new EPortType[] { EPortType.DMX512 
+                                                new EPortType[] { EPortType.DMX512
                                                                 | EPortType.OutputFromArtNet },
                                                 new EGoodInput[] { EGoodInput.None },
                                                 new EGoodOutput[] { EGoodOutput.ContiniuousOutput
                                                                  | EGoodOutput.RDMisDisabled
                                                                  | EGoodOutput.DataTransmitted
                                                                  | EGoodOutput.DMX_OutputShortCircuit },
-                                                EMacroState.Macro1Active    
+                                                EMacroState.Macro1Active
                                                     | EMacroState.Macro2Active,
                                                 ERemoteState.Remote3Active
                                                     | ERemoteState.Remote4Active,

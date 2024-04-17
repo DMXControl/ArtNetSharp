@@ -96,5 +96,10 @@ namespace ArtNetSharp
                 return null;
             }
         }
+        public static bool BitsMatch(byte value, byte mask)
+        {
+            byte result = (byte)(value & mask);
+            return result == mask;
+        }
     }
 }

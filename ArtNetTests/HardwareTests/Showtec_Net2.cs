@@ -38,7 +38,7 @@ namespace ArtNetTests.HardwareTests
         private ControllerInstanceMock instance;
         public Showtec_Net2(ShowtecNet2TestSubject _showtecNet2TestSubject)
         {
-            testSubject = _showtecNet2TestSubject; 
+            testSubject = _showtecNet2TestSubject;
         }
 
         [OneTimeSetUp]
@@ -107,7 +107,7 @@ namespace ArtNetTests.HardwareTests
                 artNet?.RemoveInstance(instance);
                 ((IDisposable)instance).Dispose();
             }
-                
+
             remoteClient = null;
         }
 
@@ -203,12 +203,12 @@ namespace ArtNetTests.HardwareTests
                 await instance.SendArtAddress(ArtAddress.CreateSetCommand(1, command), remoteClient!.IpAddress);
                 for (int i = 0; i < 10; i++)
                 {
-                    if (!remoteClient!.Root.Status.HasFlag(ENodeStatus.IndicatorStateNormal))
+                    if (remoteClient!.Root.Status.IndicatorState != NodeStatus.EIndicatorState.Normal)
                         break;
                     await Task.Delay(30);
                 }
                 command = new ArtAddressCommand(EArtAddressCommand.LedNormal);
-                Assert.That(remoteClient!.Root.Status.HasFlag(ENodeStatus.IndicatorStateNormal), Is.False);
+                Assert.That(remoteClient!.Root.Status.IndicatorState, Is.EqualTo(NodeStatus.EIndicatorState.Locate));
                 await instance.SendArtAddress(ArtAddress.CreateSetCommand(1, command), remoteClient!.IpAddress);// reset to Backup
             });
         }

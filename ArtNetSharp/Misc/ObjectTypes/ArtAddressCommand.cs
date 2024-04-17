@@ -18,7 +18,7 @@ namespace ArtNetSharp
                 throw new ArgumentOutOfRangeException($"{nameof(port)} has to be between 0 and 3");
 
             Command = command;
-            Port = null;
+            Port = port;
         }
         public ArtAddressCommand(in byte data) : this(getCommand(data), getPort(data))
         {

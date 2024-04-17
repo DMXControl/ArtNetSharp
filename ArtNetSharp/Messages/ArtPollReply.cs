@@ -45,7 +45,7 @@ namespace ArtNetSharp
         public readonly object[] OutputUniverses;
         public readonly object[] InputUniverses;
         public readonly byte UbeaVersion;
-        public readonly ENodeStatus Status;
+        public readonly NodeStatus Status;
         /// <summary>
         /// The sACN priority value that will be used when any received DMX is converted to sACN.
         /// </summary>
@@ -60,7 +60,7 @@ namespace ArtNetSharp
                             in string shortName,
                             in string longName,
                             in byte bindIndex,
-                            in ENodeStatus status,
+                            in NodeStatus status,
                             in byte majorVersion,
                             in byte minorVersion,
                             in Address outputUniverse,
@@ -85,7 +85,7 @@ namespace ArtNetSharp
                   shortName,
                   longName,
                   bindIndex,
-                  status & ~ENodeStatus.NodeSupports15BitPortAddress,
+                  status & ~NodeStatus.NodeSupports15BitPortAddress,
                   majorVersion,
                   minorVersion,
                   0,
@@ -115,7 +115,7 @@ namespace ArtNetSharp
                             in string shortName,
                             in string longName,
                             in byte bindIndex,
-                            in ENodeStatus status,
+                            in NodeStatus status,
                             in byte majorVersion,
                             in byte minorVersion,
                             in Net net,
@@ -142,7 +142,7 @@ namespace ArtNetSharp
                   shortName,
                   longName,
                   bindIndex,
-                  status | ENodeStatus.NodeSupports15BitPortAddress,
+                  status | NodeStatus.NodeSupports15BitPortAddress,
                   majorVersion,
                   minorVersion,
                   net,
@@ -172,7 +172,7 @@ namespace ArtNetSharp
                         in string shortName,
                         in string longName,
                         in byte bindIndex,
-                        in ENodeStatus status,
+                        in NodeStatus status,
                         in byte majorVersion,
                         in byte minorVersion,
                         in Net net,
@@ -268,6 +268,18 @@ namespace ArtNetSharp
             OemCode = (ushort)(packet[20] << 8 | packet[21]); // 9 & 10 OEM code
             UbeaVersion = packet[22]; // 11 UbeaVersion
             byte status1 = packet[23]; // 12 Status 1
+            byte status2 = 0;
+            byte status3 = 0;
+            if (length > 212) // 40 Status 2
+                status2 = packet[212];
+            if (length > 217) // 42 Status 3
+                status3 = packet[217];
+            Status = new NodeStatus(status1, status2, status3);
+            if (Status.PortAddressBitResolution == NodeStatus.EPortAddressBitResolution._8Bit)
+            {
+                Net = 0;
+                Subnet = 0;
+            }
             ManufacturerCode = (ushort)(packet[25] << 8 | packet[24]); // 13 & 14 ESTA manufacturer
             ShortName = Encoding.ASCII.GetString(packet, 26, 18).Split('\0')[0]; // 15 ShortName [18]
             LongName = Encoding.ASCII.GetString(packet, 44, 64).Split('\0')[0]; // 16 LongName  [64]
@@ -294,6 +306,8 @@ namespace ArtNetSharp
             List<EGoodInput> goodInput = new List<EGoodInput>(portCount);
             List<EGoodOutput> goodOutputA = new List<EGoodOutput>(portCount);
             List<EGoodOutput> goodOutputB = new List<EGoodOutput>(portCount);
+            List<object> swIn = new List<object>(portCount);
+            List<object> swOut = new List<object>(portCount);
             for (byte i = 0; i < portCount; i++)
             {
                 // 20 PortTypes [4]
@@ -310,6 +324,11 @@ namespace ArtNetSharp
                 if (length > 182 + i)
                     goodOutputA.Add((EGoodOutput)packet[182 + i]);
                 else goodOutputA.Add((EGoodOutput)0);
+
+                if (length > 186 + i) // 23 SwIn [4] Input Universe
+                    swIn.Add(getUniverseOrAddress(packet[186 + i]));
+                if (length > 190 + i) // 24 SwOut [4] Output Universe
+                    swOut.Add(getUniverseOrAddress(packet[190 + i]));
 
                 // 41 GoodOutputB [4]
                 if (length > 213 + i)
@@ -340,15 +359,7 @@ namespace ArtNetSharp
             if (length > 211) // 39 Bind Index
                 BindIndex = packet[211];
 
-            byte status2 = 0;
-            if (length > 212) // 40 Status 2
-                status2 = packet[212];
-
             // 41 GoodOutputB [4] see below 22 GoodOutputA [4]
-
-            byte status3 = 0;
-            if (length > 217) // 40 Status 2
-                status3 = packet[217];
 
             if (length > 218) // 43-48 DefaulRespUID
             {
@@ -366,53 +377,24 @@ namespace ArtNetSharp
 
             // 53 Filler 11x8
 
-            // 23 SwIn [4] Input Universe
-            List<object> swIn = new List<object>(portCount);
-            // 24 SwOut [4] Output Universe
-            List<object> swOut = new List<object>(portCount);
-            Status = (ENodeStatus)((status3 << 16) + (status2 << 8) + status1);
-
             for (byte i = 0; i < portCount; i++)
             {
-                if (!Status.HasFlag(ENodeStatus.NodeSupports15BitPortAddress))
-                {
-                    Net = 0;
-                    Subnet = 0;
-                }
-                if (length > 186 + i)
+                if (length > 186 + i) // 23 SwIn [4] Input Universe
                     swIn.Add(getUniverseOrAddress(packet[186 + i]));
-                if (length > 190 + i)
+                if (length > 190 + i) // 24 SwOut [4] Output Universe
                     swOut.Add(getUniverseOrAddress(packet[190 + i]));
             }
 
             object getUniverseOrAddress(byte b)
             {
-                if (Status.HasFlag(ENodeStatus.NodeSupports15BitPortAddress))
-                {
-                    try
-                    {
-                        return (Universe)b;
-                    }
-                    catch
-                    {
-                        return (Universe)0;
-                    }
-                }
-                try
-                {
-                    return (Address)b;
-                }
-                catch
-                {
-                    return (Address)0;
-                }
+                if (Status.PortAddressBitResolution == NodeStatus.EPortAddressBitResolution._15Bit)
+                    return (Universe)(b & 0xf);
+                return (Address)b;
             }
 
             List<EGoodOutput> goodOutput = new List<EGoodOutput>(portCount);
             for (int i = 0; i < goodOutputA.Count; i++)
-            {
                 goodOutput.Add(goodOutputA[i] | goodOutputB[i]);
-            }
 
             this.PortTypes = portTypes.Take(Ports).ToArray();
             this.GoodInput = goodInput.Take(Ports).ToArray();
@@ -438,7 +420,7 @@ namespace ArtNetSharp
             p[19] = Subnet;                                         // 8 SubSwitch
             Tools.FromUShort(OemCode, out p[21], out p[20]);        // 9 & 10 OEM code
             p[22] = UbeaVersion;                                    // 11 UbeaVersion
-            p[23] = (byte)(((uint)Status) & 255);//p[23] = 0xD0;    // 12 Status 1 - Indicator normal, addresses set by "front panel"
+            p[23] = Status.StatusByte1;//p[23] = 0xD0;    // 12 Status 1 - Indicator normal, addresses set by "front panel"
             Tools.FromUShort(ManufacturerCode, out p[24], out p[25]); // 13 & 14 ESTA manufacturer
             Encoding.ASCII.GetBytes(ShortName).CopyTo(p, 26);       // 15 ShortName [18]
             Encoding.ASCII.GetBytes(LongName).CopyTo(p, 44);        // 16 LongName  [64]
@@ -505,14 +487,14 @@ namespace ArtNetSharp
             p[211] = (byte)BindIndex; // 39 BindIndex (0 and 1 are equal)
 
 
-            p[212] = (byte)((uint)Status >> 8); // 40 Status 2
+            p[212] = Status.StatusByte2; // 40 Status 2
 
             // 41 GoodOutputB
             if (GoodOutput != null)
                 for (int i = 0; i < GoodOutput.Length; i++)
                     p[213 + i] = (byte)((ushort)GoodOutput[i] >> 8);
 
-            p[217] = (byte)((uint)Status >> 16); // 42 Status 3
+            p[217] = Status.StatusByte3; // 42 Status 3
 
             // 43-48 DefaulRespUID
             if (DefaulRespUID.HasValue)
