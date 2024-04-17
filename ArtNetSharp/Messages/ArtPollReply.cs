@@ -287,27 +287,42 @@ namespace ArtNetSharp
 
             // 18 NumPortsHi
             Ports = packet[173]; // 19 NumPortsLo
-
-            // 20 PortTypes [4]
-
-            List<EPortType> portTypes = new List<EPortType>();
-            for (int i = 0; i < 4; i++)
-                portTypes.Add((EPortType)packet[174 + i]);
-
-            // 21 GoodInput [4]
-            List<EGoodInput> goodInput = new List<EGoodInput>();
-            for (int i = 0; i < 4; i++)
-                goodInput.Add((EGoodInput)packet[178 + i]);
-
-            // 22 GoodOutputA [4]
-            List<EGoodOutput> goodOutputA = new List<EGoodOutput>();
-            for (int i = 0; i < 4; i++)
-                goodOutputA.Add((EGoodOutput)packet[182 + i]);
+            byte portCount = Math.Min(Ports, (byte)4);
 
 
-            AcnPriority = packet[194]; // 25 AcnPriority
-            Macro = (EMacroState)packet[195]; // 26 SwMacro
-            Remote = (ERemoteState)packet[196]; // 27 SwRemote
+            List<EPortType> portTypes = new List<EPortType>(portCount);
+            List<EGoodInput> goodInput = new List<EGoodInput>(portCount);
+            List<EGoodOutput> goodOutputA = new List<EGoodOutput>(portCount);
+            List<EGoodOutput> goodOutputB = new List<EGoodOutput>(portCount);
+            for (byte i = 0; i < portCount; i++)
+            {
+                // 20 PortTypes [4]
+                if (length > 174 + i)
+                    portTypes.Add((EPortType)packet[174 + i]);
+                else portTypes.Add((EPortType)0);
+
+                // 21 GoodInput [4]
+                if (length > 178 + i)
+                    goodInput.Add((EGoodInput)packet[178 + i]);
+                else goodInput.Add((EGoodInput)0);
+
+                // 22 GoodOutputA [4]
+                if (length > 182 + i)
+                    goodOutputA.Add((EGoodOutput)packet[182 + i]);
+                else goodOutputA.Add((EGoodOutput)0);
+
+                // 41 GoodOutputB [4]
+                if (length > 213 + i)
+                    goodOutputB.Add((EGoodOutput)(ushort)(packet[213 + i] << 8));
+                else goodOutputB.Add((EGoodOutput)(0));
+            }
+
+            if (length > 194) // 25 AcnPriority
+                AcnPriority = packet[194];
+            if (length > 195) // 26 SwMacro
+                Macro = (EMacroState)packet[195];
+            if (length > 196) // 27 SwRemote
+                Remote = (ERemoteState)packet[196];
 
             // 28 Spare
             // 29 Spare
@@ -329,16 +344,7 @@ namespace ArtNetSharp
             if (length > 212) // 40 Status 2
                 status2 = packet[212];
 
-            List<EGoodOutput> goodOutputB = new List<EGoodOutput>();
-            // 41 GoodOutputB
-            if (length > 213)
-            {
-                for (int i = 0; i < 4; i++)
-                    if (length > 213 + i)
-                        goodOutputB.Add((EGoodOutput)(ushort)(packet[213 + i] << 8));
-                    else
-                        goodOutputB.Add((EGoodOutput)(0));
-            }
+            // 41 GoodOutputB [4] see below 22 GoodOutputA [4]
 
             byte status3 = 0;
             if (length > 217) // 40 Status 2
@@ -361,56 +367,48 @@ namespace ArtNetSharp
             // 53 Filler 11x8
 
             // 23 SwIn [4] Input Universe
-            List<object> swIn = new List<object>();
-            // 24 SwIn [4] Input Universe
-            List<object> swOut = new List<object>();
-            byte portCount= Math.Min(Ports, (byte)4);
+            List<object> swIn = new List<object>(portCount);
+            // 24 SwOut [4] Output Universe
+            List<object> swOut = new List<object>(portCount);
             Status = (ENodeStatus)((status3 << 16) + (status2 << 8) + status1);
-            if (!Status.HasFlag(ENodeStatus.NodeSupports15BitPortAddress))
+
+            for (byte i = 0; i < portCount; i++)
             {
-                for (int i = 0; i < 4; i++)
-                    if (length > 186 + i)
-                        swIn.Add((Address)packet[186 + i]);
-                    else
-                        swIn.Add((Address)0);
-
-                for (int i = 0; i < 4; i++)
-                    if (length > 190 + i)
-                        swOut.Add((Address)packet[190 + i]);
-                    else
-                        swOut.Add((Address)0);
-
-                Net = 0;
-                Subnet = 0;
-            }
-            else
-            {
-                for (int i = 0; i < 4; i++)
-                    if (length > 186)
-                        try
-                        {
-                            swIn.Add((Universe)packet[186 + i]);
-                        }
-                        catch
-                        {
-                            // drop;
-                        }
-                    else swIn.Add((Universe)0);
-
-                for (int i = 0; i < 4; i++)
-                    if (length > 190)
-                        try
-                        {
-                            swOut.Add((Universe)packet[190 + i]);
-                        }
-                        catch
-                        {
-                            // drop;
-                        }
-                    else swIn.Add((Universe)0);
+                if (!Status.HasFlag(ENodeStatus.NodeSupports15BitPortAddress))
+                {
+                    Net = 0;
+                    Subnet = 0;
+                }
+                if (length > 186 + i)
+                    swIn.Add(getUniverseOrAddress(packet[186 + i]));
+                if (length > 190 + i)
+                    swOut.Add(getUniverseOrAddress(packet[190 + i]));
             }
 
-            List<EGoodOutput> goodOutput = new List<EGoodOutput>();
+            object getUniverseOrAddress(byte b)
+            {
+                if (Status.HasFlag(ENodeStatus.NodeSupports15BitPortAddress))
+                {
+                    try
+                    {
+                        return (Universe)b;
+                    }
+                    catch
+                    {
+                        return (Universe)0;
+                    }
+                }
+                try
+                {
+                    return (Address)b;
+                }
+                catch
+                {
+                    return (Address)0;
+                }
+            }
+
+            List<EGoodOutput> goodOutput = new List<EGoodOutput>(portCount);
             for (int i = 0; i < goodOutputA.Count; i++)
             {
                 goodOutput.Add(goodOutputA[i] | goodOutputB[i]);
