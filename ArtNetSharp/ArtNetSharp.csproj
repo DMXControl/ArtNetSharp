@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0</TargetFrameworks>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-		<Version>0.0.19</Version>
+		<Version>0.0.20</Version>
 		<RepositoryUrl>https://github.com/DMXControl/ArtNetSharp</RepositoryUrl>
 		<PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
 		<PackageTags>RDM; ArtNet; E1.20; E1.33; E1.37-1; E1.37-2; E1.37-7</PackageTags>
