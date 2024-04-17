@@ -1,8 +1,9 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Text.RegularExpressions;
 
 namespace ArtNetSharp
 {
-    public readonly struct NodeReport
+    public readonly struct NodeReport:IComparable<NodeReport>
     {
         public readonly ENodeReportCodes ReportCode;
         public readonly uint Counter;
@@ -61,6 +62,11 @@ namespace ArtNetSharp
         public override string ToString()
         {
             return $"#{(ushort)ReportCode:x4} [{Counter}] {Text}";
+        }
+
+        public int CompareTo(NodeReport other)
+        {
+            return Counter.CompareTo(other.Counter);
         }
     }
 }

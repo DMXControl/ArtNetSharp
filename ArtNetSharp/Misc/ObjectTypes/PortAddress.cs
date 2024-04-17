@@ -20,6 +20,8 @@ namespace ArtNetSharp
         }
         public PortAddress(in ushort combined)
         {
+            if ((ushort)(combined & 0x7fff) != combined)
+                throw new ArgumentException($"Value (0x{combined:x}) out of range! A valid value is between 0x0000 and 0x7fff.");
             Net = (Net)((combined >> 8) & 0x7f);
             Subnet = (Subnet)((combined >> 4) & 0xf);
             Universe = (Universe)(combined & 0xf);

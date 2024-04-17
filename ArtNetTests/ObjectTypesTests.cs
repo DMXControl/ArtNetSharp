@@ -163,11 +163,63 @@ namespace ArtNetTests
             Assert.That(new Net(1).Equals((Net)2), Is.False);
         }
         [Test]
+        public void TestPortAddress()
+        {
+            HashSet<PortAddress> portAddresses = new HashSet<PortAddress>();
+            ushort count = 0;
+            for (ushort b = 0; b < ushort.MaxValue; b++)
+            {
+                try
+                {
+                    PortAddress pa = new PortAddress(b);
+
+                    Assert.That(b, Is.LessThanOrEqualTo(0x7fff));
+                    Assert.That(pa.Combined, Is.EqualTo(b));
+                    Assert.That(pa.ToString(), Is.Not.Empty);
+                    portAddresses.Add(pa);
+                    count++;
+                }
+                catch
+                {
+                    Assert.That(b, Is.GreaterThan(0x7fff));
+                }
+            }
+            Assert.That(portAddresses, Has.Count.EqualTo(count));
+            Assert.That(portAddresses.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(count));
+
+            Assert.That(new PortAddress((ushort)1) == new PortAddress(0, 0, 1), Is.True);
+            Assert.That(new PortAddress((ushort)1) != new PortAddress(0, 1), Is.False);
+            Assert.That(new PortAddress(1) == new PortAddress(0, 0, 2), Is.False);
+            Assert.That(new PortAddress(1) != new PortAddress(0, 2), Is.True);
+            Assert.That(new PortAddress(1).GetHashCode(), Is.EqualTo(((PortAddress)1).GetHashCode()));
+            Assert.That(new PortAddress((ushort)1).GetHashCode(), Is.Not.EqualTo(((PortAddress)2).GetHashCode()));
+            Assert.That(new PortAddress(1).Equals(null), Is.False);
+            Assert.That(new PortAddress(1).Equals((object)1), Is.False);
+            Assert.That(new PortAddress(1).Equals((object)(PortAddress)1), Is.True);
+            Assert.That(new PortAddress(1).Equals((PortAddress)1), Is.True);
+            Assert.That(new PortAddress(1).Equals((PortAddress)2), Is.False);
+        }
+
+        [Test]
         public void TestNodeReport()
         {
-            NodeReport src = new NodeReport(ENodeReportCodes.RcFirmwareFail, "FAILED", 33);
+            HashSet<NodeReport> nodeReports= new HashSet<NodeReport>();
+            NodeReport src = new NodeReport(ENodeReportCodes.RcFirmwareFail, "FAILED", 337);
             NodeReport dest = new NodeReport(src.ToString());
             Assert.That(dest, Is.EqualTo(src));
+            Assert.That(dest.Equals(src), Is.True);
+            Assert.That(dest.Equals((object)src), Is.True);
+            Assert.That(dest.Equals(null), Is.False);
+
+            src = new NodeReport(ENodeReportCodes.RcDebug, "Test", 0);
+            for (byte i = 0; i < byte.MaxValue; i++)
+            {
+                src = src.Increment();
+                Assert.That(dest, Is.Not.EqualTo(src));
+                Assert.That(dest.Equals(src), Is.False);
+                nodeReports.Add(src);
+            }
+            Assert.That(nodeReports.OrderBy(n=>n).ToList(),Has.Count.EqualTo(byte.MaxValue));
         }
         [Test]
         public void TestIPv4Address()
