@@ -16,6 +16,7 @@ namespace ArtNetTests
         [Test]
         public void TestUniverse()
         {
+            HashSet<Universe> universes = new HashSet<Universe>();
             for (byte b = 0; b < byte.MaxValue; b++)
             {
                 try
@@ -24,17 +25,35 @@ namespace ArtNetTests
 
                     Assert.That(b, Is.LessThanOrEqualTo(0xf));
                     Assert.That(u.Value, Is.EqualTo(b));
+                    Assert.That(u.ToString(), Is.Not.Empty);
+                    universes.Add(u);
                 }
                 catch
                 {
                     Assert.That(b, Is.GreaterThan(0xf));
                 }
             }
+            Assert.That(universes, Has.Count.EqualTo(0xf + 1));
+            Assert.That(universes.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(0xf + 1));
+
+            Assert.That(new Universe(1) == (Universe)1, Is.True);
+            Assert.That(new Universe(1) != (Universe)1, Is.False);
+            Assert.That(new Universe(1) == (Universe)2, Is.False);
+            Assert.That(new Universe(1) != (Universe)2, Is.True);
+            Assert.That(new Universe(1).GetHashCode(), Is.EqualTo(((Universe)1).GetHashCode()));
+            Assert.That(new Universe(1).GetHashCode(), Is.Not.EqualTo(((Universe)2).GetHashCode()));
+            Assert.That(new Universe(1).Equals(null), Is.False);
+            Assert.That(new Universe(1).Equals((object)1), Is.False);
+            Assert.That(new Universe(1).Equals((object)(Universe)1), Is.True);
+            Assert.That(new Universe(1).Equals((Universe)1), Is.True);
+            Assert.That(new Universe(1).Equals((Universe)2), Is.False);
+            Assert.That(new Universe(0).Equals(Universe.Default), Is.True);
         }
 
         [Test]
         public void TestSubnet()
         {
+            HashSet<Subnet> subNets = new HashSet<Subnet>();
             for (byte b = 0; b < byte.MaxValue; b++)
             {
                 try
@@ -43,12 +62,29 @@ namespace ArtNetTests
 
                     Assert.That(b, Is.LessThanOrEqualTo(0xf));
                     Assert.That(s.Value, Is.EqualTo(b));
+                    Assert.That(s.ToString(), Is.Not.Empty);
+                    subNets.Add(s);
                 }
                 catch
                 {
                     Assert.That(b, Is.GreaterThan(0xf));
                 }
             }
+            Assert.That(subNets, Has.Count.EqualTo(0xf + 1));
+            Assert.That(subNets.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(0xf + 1));
+
+            Assert.That(new Subnet(1) == (Subnet)1, Is.True);
+            Assert.That(new Subnet(1) != (Subnet)1, Is.False);
+            Assert.That(new Subnet(1) == (Subnet)2, Is.False);
+            Assert.That(new Subnet(1) != (Subnet)2, Is.True);
+            Assert.That(new Subnet(1).GetHashCode(), Is.EqualTo(((Subnet)1).GetHashCode()));
+            Assert.That(new Subnet(1).GetHashCode(), Is.Not.EqualTo(((Subnet)2).GetHashCode()));
+            Assert.That(new Subnet(1).Equals(null), Is.False);
+            Assert.That(new Subnet(1).Equals((object)1), Is.False);
+            Assert.That(new Subnet(1).Equals((object)(Subnet)1), Is.True);
+            Assert.That(new Subnet(1).Equals((Subnet)1), Is.True);
+            Assert.That(new Subnet(1).Equals((Subnet)2), Is.False);
+            Assert.That(new Subnet(0).Equals(Subnet.Default), Is.True);
         }
 
         [Test]
@@ -71,11 +107,30 @@ namespace ArtNetTests
             Assert.That(a.Universe.Value, Is.EqualTo(15));
             Assert.That(a.Subnet.Value, Is.EqualTo(15));
             Assert.That(a.Combined, Is.EqualTo(0xff));
+            Assert.That(new Address(16) == new Address(1, 0));
+            Assert.That(new Address(16) != new Address(0, 1));
+            Assert.That(new Address(16), Is.EqualTo(new Address(1, 0)));
+            Assert.That(new Address(16), Is.Not.EqualTo(new Address(0, 1)));
+            Assert.That(new Address(16), Is.EqualTo((object)new Address(1, 0)));
+            Assert.That(new Address(16).GetHashCode(), Is.Not.EqualTo(new Address(0, 1).GetHashCode()));
+            Assert.That(new Address(16).Equals((object)new Address(1, 0)), Is.True);
+            Assert.That(new Address(16).Equals((object)new Address(0, 1)), Is.False);
+            Assert.That(new Address(16).Equals(null), Is.False);
+            Assert.That(new Address(16), Is.Not.EqualTo(null));
+            Assert.That(new Address(16).ToString(), Is.Not.Empty);
+
+            HashSet<Address> addresses = new HashSet<Address>();
+            for (byte b = 0; b < byte.MaxValue; b++)
+                addresses.Add(new Address(b));
+            Assert.That(addresses, Has.Count.EqualTo(byte.MaxValue));
+
+            Assert.That(addresses.OrderByDescending(s=>s.Universe).ThenBy(s=>s).ToArray(), Has.Length.EqualTo(byte.MaxValue));
         }
 
         [Test]
         public void TestNet()
         {
+            HashSet<Net> nets = new HashSet<Net>();
             for (byte b = 0; b < byte.MaxValue; b++)
             {
                 try
@@ -84,12 +139,28 @@ namespace ArtNetTests
 
                     Assert.That(b, Is.LessThanOrEqualTo(0x7f));
                     Assert.That(n.Value, Is.EqualTo(b));
+                    Assert.That(n.ToString(), Is.Not.Empty);
+                    nets.Add(n);
                 }
                 catch
                 {
-                    Assert.That(b, Is.GreaterThan(0xf));
+                    Assert.That(b, Is.GreaterThan(0x7f));
                 }
             }
+            Assert.That(nets, Has.Count.EqualTo(0x7f + 1));
+            Assert.That(nets.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(0x7f + 1));
+
+            Assert.That(new Net(1) == (Net)1, Is.True);
+            Assert.That(new Net(1) != (Net)1, Is.False);
+            Assert.That(new Net(1) == (Net)2, Is.False);
+            Assert.That(new Net(1) != (Net)2, Is.True);
+            Assert.That(new Net(1).GetHashCode(), Is.EqualTo(((Net)1).GetHashCode()));
+            Assert.That(new Net(1).GetHashCode(), Is.Not.EqualTo(((Net)2).GetHashCode()));
+            Assert.That(new Net(1).Equals(null), Is.False);
+            Assert.That(new Net(1).Equals((object)1), Is.False);
+            Assert.That(new Net(1).Equals((object)(Net)1), Is.True);
+            Assert.That(new Net(1).Equals((Net)1), Is.True);
+            Assert.That(new Net(1).Equals((Net)2), Is.False);
         }
         [Test]
         public void TestNodeReport()

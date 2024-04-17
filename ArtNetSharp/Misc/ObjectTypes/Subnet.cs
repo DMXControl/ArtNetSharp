@@ -4,6 +4,7 @@ namespace ArtNetSharp
 {
     public readonly struct Subnet : IEquatable<Subnet>, IComparable<Subnet>
     {
+        public static readonly Subnet Default = new Subnet();
         public readonly byte Value;
 
         public Subnet(in byte value)
