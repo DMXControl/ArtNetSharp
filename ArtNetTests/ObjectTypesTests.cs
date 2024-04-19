@@ -460,11 +460,11 @@ namespace ArtNetTests
             Assert.That(a.Equals((object)b), Is.False);
             Assert.That(a.Equals(b), Is.False);
             Assert.That(a.Equals(null), Is.False);
-            Assert.That(b.Equals((object)a), Is.False);
+            Assert.That(b.Equals((object)a!), Is.False);
             Assert.That(b.Equals(a), Is.False);
             Assert.That(b.Equals(null), Is.False);
-            Assert.That(a.GetHashCode(), Is.EqualTo(a2.GetHashCode()));
-            Assert.That(b.GetHashCode(), Is.Not.EqualTo(a.GetHashCode()));
+            Assert.That(a!.GetHashCode(), Is.EqualTo(a2.GetHashCode()));
+            Assert.That(b!.GetHashCode(), Is.Not.EqualTo(a.GetHashCode()));
             var e = new ControllerRDMUID_Bag(new RDMUID(123141), new PortAddress(1, 2, 3), IPv4Address.LocalHost);
 
             Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.Now.Date));
