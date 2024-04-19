@@ -11,14 +11,14 @@ namespace ArtNetSharp
         public override sealed EOpCodes OpCode => EOpCodes.OpRdm;
         protected override sealed ushort PacketMinLength => 24;
         protected override sealed ushort PacketMaxLength => ushort.MaxValue;
-        protected override sealed ushort PacketBuildLength => (ushort)(PacketMinLength + (Data?.Length - 1 ?? 0));
+        protected override sealed ushort PacketBuildLength => (ushort)(PacketMinLength + (Data.Length - 1));
         protected override sealed ushort NetByte => 21;
         protected override sealed ushort CommandByte => 22;
         protected override sealed ushort AddressByte => 23;
 
-        public RDMUID Source => RDMMessage?.SourceUID ?? default;
-        public RDMUID Destination => RDMMessage?.DestUID ?? default;
-        public byte Transaction => RDMMessage?.TransactionCounter ?? default;
+        public RDMUID Source => RDMMessage.SourceUID;
+        public RDMUID Destination => RDMMessage.DestUID;
+        public byte Transaction => RDMMessage.TransactionCounter;
 
         public readonly byte[] Data;
         public readonly RDMMessage RDMMessage;
@@ -37,6 +37,9 @@ namespace ArtNetSharp
                   in ERDMVersion rdmVersion = ERDMVersion.STANDARD_V1_0,
                   in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net, address, command, protocolVersion)
         {
+            if(rdmMessage == null)
+                throw new ArgumentNullException(nameof(rdmMessage));
+
             RDMMessage = rdmMessage;
             RdmVersion = rdmVersion;
             Data = RDMMessage.BuildMessage();
@@ -80,7 +83,7 @@ namespace ArtNetSharp
 
         public override string ToString()
         {
-            return $"{nameof(ArtRDM)}: {PortAddress.Combined:x4} Command: {RDMMessage?.Command}, Parameter: {RDMMessage?.Parameter}, ResponseType: {RDMMessage?.ResponseType}, Transaction: {Transaction}, Source: {Source}, Destination: {Destination}";
+            return $"{nameof(ArtRDM)}: {PortAddress.Combined:x4} Command: {RDMMessage.Command}, Parameter: {RDMMessage.Parameter}, ResponseType: {RDMMessage.ResponseType}, Transaction: {Transaction}, Source: {Source}, Destination: {Destination}";
         }
     }
 }

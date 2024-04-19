@@ -1,6 +1,8 @@
 ﻿using RDMSharp;
 using System;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("ArtNetTests")]
 namespace ArtNetSharp.Communication
 {
     public sealed class RDMUID_ReceivedBag
@@ -20,11 +22,13 @@ namespace ArtNetSharp.Communication
         {
             LastSeen = DateTime.UtcNow;
         }
+
         internal bool Timouted()
         {
             var now = DateTime.UtcNow.AddSeconds(-30);
             return LastSeen <= now;
         }
+
         internal byte NewTransactionNumber()
         {
             TransactionNumber++;

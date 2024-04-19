@@ -1,7 +1,9 @@
 ﻿using RDMSharp;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("ArtNetTests")]
 namespace ArtNetSharp.Communication
 {
     public sealed class ControllerRDMUID_Bag : IEquatable<ControllerRDMUID_Bag>

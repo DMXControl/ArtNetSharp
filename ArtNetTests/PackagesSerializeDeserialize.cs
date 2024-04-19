@@ -318,6 +318,7 @@ namespace ArtNetTests
         {
             doTests(new ArtRDM(1, new Address(3, 4), new RDMMessage() { SourceUID = new RDMUID(0x1122, 0x33445566), DestUID = new RDMUID(0x3344, 0x55667788) }));
             doTests(new ArtRDM(new PortAddress(1, 2, 5), new RDMMessage() { SourceUID = new RDMUID(0x1122, 0x33445566), DestUID = new RDMUID(0x3344, 0x55667788) }));
+            Assert.Throws(typeof(ArgumentNullException), () => new ArtRDM(new PortAddress(1, 2, 5), null));
         }
         [Test]
         public void ArtRDMSub()
@@ -409,6 +410,8 @@ namespace ArtNetTests
 
             ArtTimeSync src2 = new ArtTimeSync(true, DateTime.Now, EDaylightSaving.Inactive);
             Assert.That(src.GetHashCode(), Is.Not.EqualTo(src2.GetHashCode()));
+
+            doTests(new ArtTimeSync(false, DateTime.Now, EDaylightSaving.Active));
         }
         [Test]
         public void ArtAddress_Test()
@@ -420,8 +423,8 @@ namespace ArtNetTests
             Assert.That(src.GetHashCode(), Is.Not.EqualTo(src2.GetHashCode()));
 
             doTests(ArtAddress.CreateSetName(1, "Test Short", "Test Long", new ArtAddressCommand(EArtAddressCommand.FailFull)));
-            doTests(ArtAddress.CreateSetAcnPriority(2, 199, new ArtAddressCommand(EArtAddressCommand.FailHold)));
-            Assert.Throws(typeof(ArgumentOutOfRangeException), () => ArtAddress.CreateSetAcnPriority(3, 255, new ArtAddressCommand(EArtAddressCommand.FailRecord)));
+            Assert.DoesNotThrow(() => doTests(ArtAddress.CreateSetAcnPriority(2, 255, new ArtAddressCommand(EArtAddressCommand.FailHold))));
+            Assert.Throws(typeof(ArgumentOutOfRangeException), () => ArtAddress.CreateSetAcnPriority(3, 250, new ArtAddressCommand(EArtAddressCommand.FailRecord)));
             doTests(ArtAddress.CreateSetCommand(4, new ArtAddressCommand(EArtAddressCommand.DirectionRx, 3)));
             doTests(ArtAddress.CreateSetNet(5, 3));
             doTests(ArtAddress.CreateSetSubnet(6, 3));

@@ -11,7 +11,7 @@ namespace ArtNetSharp
         public override sealed EOpCodes OpCode => EOpCodes.OpDataReply;
         protected override sealed ushort PacketMinLength => 42;
         protected override sealed ushort PacketMaxLength => (ushort)(PacketMinLength + 512);
-        protected override sealed ushort PacketBuildLength => (ushort)(PacketMinLength + (Data?.Length ?? 0));
+        protected override sealed ushort PacketBuildLength => (ushort)(PacketMinLength + Data.Length);
 
         public readonly EDataRequest Request;
         public readonly ushort OemCode;

@@ -47,7 +47,10 @@ namespace ArtNetSharp
             if (acnPriority.HasValue && acnPriority.Value > 200)
             {
                 if (acnPriority == 255)
+                {
                     AcnPriority = null;
+                    return;
+                }
                 throw new ArgumentOutOfRangeException($"{nameof(acnPriority)}");
             }
             else

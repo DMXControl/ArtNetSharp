@@ -1,4 +1,5 @@
 using ArtNetSharp;
+using ArtNetSharp.Communication;
 using ArtNetSharp.Misc;
 using RDMSharp;
 
@@ -429,6 +430,52 @@ namespace ArtNetTests
             Assert.That(e.Handled, Is.True);
             e.SetResponse(new RDMMessage() { Command = ERDM_Command.SET_COMMAND_RESPONSE, Parameter = ERDM_Parameter.CURVE });
             Assert.That(e.Handled, Is.True);
+        }
+        [Test]
+        public async Task TestRDMUID_ReceivedBag()
+        {
+            var e = new RDMUID_ReceivedBag(new RDMUID(123141));
+
+            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.Now.Date));
+            e.Seen();
+
+            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.Now.Date));
+            Assert.That(e.Timouted(), Is.False);
+            byte number = e.NewTransactionNumber();
+            Assert.That(e.TransactionNumber, Is.EqualTo(number));
+
+            e.Seen();
+            await Task.Delay(30500);
+            Assert.That(e.Timouted(), Is.True);
+        }
+        [Test]
+        public async Task TestControllerRDMUID_Bag()
+        {
+            var a = new ControllerRDMUID_Bag(new RDMUID(123155541), new PortAddress(1, 2, 3), IPv4Address.LocalHost);
+            var a2 = new ControllerRDMUID_Bag(new RDMUID(123155541), new PortAddress(1, 2, 3), IPv4Address.LocalHost);
+            var b = new ControllerRDMUID_Bag(new RDMUID(1112), new PortAddress(1, 2, 3), IPv4Address.LocalHost);
+
+            Assert.That(a == b, Is.False);
+            Assert.That(a != b, Is.True);
+            Assert.That(a.Equals((object)b), Is.False);
+            Assert.That(a.Equals(b), Is.False);
+            Assert.That(a.Equals(null), Is.False);
+            Assert.That(b.Equals((object)a), Is.False);
+            Assert.That(b.Equals(a), Is.False);
+            Assert.That(b.Equals(null), Is.False);
+            Assert.That(a.GetHashCode(), Is.EqualTo(a2.GetHashCode()));
+            Assert.That(b.GetHashCode(), Is.Not.EqualTo(a.GetHashCode()));
+            var e = new ControllerRDMUID_Bag(new RDMUID(123141), new PortAddress(1, 2, 3), IPv4Address.LocalHost);
+
+            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.Now.Date));
+            e.Seen();
+
+            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.Now.Date));
+            Assert.That(e.Timouted(), Is.False);
+
+            e.Seen();
+            await Task.Delay(30500);
+            Assert.That(e.Timouted(), Is.True);
         }
     }
 }
