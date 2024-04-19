@@ -57,10 +57,10 @@ namespace ArtNetSharp
 
             var ad = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            if ((IsAndroid() || IsLinux() || IsMac()) && ad.Contains("runner/work"))// Linux and Mac Worker
-                _isRunningOnGithubWorker = true;
-            else if (IsWindows() && ad.Contains(":\\a\\")) // Windows Worker
-                _isRunningOnGithubWorker = true;
+            if (IsAndroid() || IsLinux() || IsMac())// Linux and Mac Worker
+                _isRunningOnGithubWorker = ad.Contains("runner/work");
+            else if (IsWindows()) // Windows Worker
+                _isRunningOnGithubWorker = ad.Contains(":\\a\\");
             else 
                 _isRunningOnGithubWorker = false;
 

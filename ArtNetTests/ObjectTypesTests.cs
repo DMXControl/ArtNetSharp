@@ -437,10 +437,10 @@ namespace ArtNetTests
         {
             var e = new RDMUID_ReceivedBag(new RDMUID(123141));
 
-            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.Now.Date));
+            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.UtcNow.Date));
             e.Seen();
 
-            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.Now.Date));
+            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.UtcNow.Date));
             Assert.That(e.Timouted(), Is.False);
             byte number = e.NewTransactionNumber();
             Assert.That(e.TransactionNumber, Is.EqualTo(number));
@@ -469,10 +469,10 @@ namespace ArtNetTests
             Assert.That(b!.GetHashCode(), Is.Not.EqualTo(a.GetHashCode()));
             var e = new ControllerRDMUID_Bag(new RDMUID(123141), new PortAddress(1, 2, 3), IPv4Address.LocalHost);
 
-            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.Now.Date));
+            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.UtcNow.Date));
             e.Seen();
 
-            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.Now.Date));
+            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.UtcNow.Date));
             Assert.That(e.Timouted(), Is.False);
 
             e.Seen();

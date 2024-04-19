@@ -31,8 +31,8 @@ namespace ArtNetTests
             for (ushort i = 1; i <= 32; i++)
                 instance.AddPortConfig(new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
             artNet.AddInstance(instance);
-            for (int i = 0; i < 10; i++)
-                await Task.Delay(1000);
+            for (int i = 0; i < 80; i++)
+                await Task.Delay(100);
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();
         }
@@ -45,8 +45,8 @@ namespace ArtNetTests
             for (ushort i = 1; i <= 32; i++)
                 instance.AddPortConfig(new PortConfig((byte)i,i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
             artNet.AddInstance(instance);
-            for (int i = 0; i < 10; i++)
-                await Task.Delay(1000);
+            for (int i = 0; i < 80; i++)
+                await Task.Delay(100);
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();
         }
@@ -67,7 +67,7 @@ namespace ArtNetTests
                 for (ushort b = 0; b < data.Length; b++)
                     data[b] += 5;
 
-                await Task.Delay(100);
+                await Task.Delay(10);
 
                 for (ushort pa = 0; pa < 2; pa++)
                     instance.WriteDMXValues(pa, data);
@@ -77,13 +77,13 @@ namespace ArtNetTests
                 for (ushort b = 0; b < data.Length; b++)
                     data[b] += 5;
 
-                await Task.Delay(1000);
+                await Task.Delay(100);
 
                 for (ushort pa = 0; pa < 2; pa++)
                     instance.WriteDMXValues(pa, data);
             }
             for (int i = 0; i < 20; i++)
-                await Task.Delay(1000);
+                await Task.Delay(100);
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();
         }
@@ -216,7 +216,7 @@ namespace ArtNetTests
             artNet.AddInstance(instance);
             for (int i = 0; i < 6; i++)
             {
-                ArtTimeSync timeSync = new ArtTimeSync(true, DateTime.Now);
+                ArtTimeSync timeSync = new ArtTimeSync(true, DateTime.UtcNow);
                 await instance.SendArtTimeSync(timeSync);
                 await Task.Delay(1000);
             }

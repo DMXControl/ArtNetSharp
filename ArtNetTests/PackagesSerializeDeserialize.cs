@@ -405,13 +405,13 @@ namespace ArtNetTests
         [Test]
         public void ArtTimeSync()
         {
-            ArtTimeSync src = new ArtTimeSync(true, DateTime.Now, EDaylightSaving.Active);
+            ArtTimeSync src = new ArtTimeSync(true, DateTime.UtcNow, EDaylightSaving.Active);
             doTests(src);
 
-            ArtTimeSync src2 = new ArtTimeSync(true, DateTime.Now, EDaylightSaving.Inactive);
+            ArtTimeSync src2 = new ArtTimeSync(true, DateTime.UtcNow, EDaylightSaving.Inactive);
             Assert.That(src.GetHashCode(), Is.Not.EqualTo(src2.GetHashCode()));
 
-            doTests(new ArtTimeSync(false, DateTime.Now, EDaylightSaving.Active));
+            doTests(new ArtTimeSync(false, DateTime.UtcNow, EDaylightSaving.Active));
         }
         [Test]
         public void ArtAddress_Test()
