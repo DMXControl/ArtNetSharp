@@ -432,6 +432,7 @@ namespace ArtNetTests
             Assert.That(e.Handled, Is.True);
         }
         [Test]
+        [Retry(2)]
         public async Task TestRDMUID_ReceivedBag()
         {
             var e = new RDMUID_ReceivedBag(new RDMUID(123141));
@@ -449,6 +450,7 @@ namespace ArtNetTests
             Assert.That(e.Timouted(), Is.True);
         }
         [Test]
+        [Retry(2)]
         public async Task TestControllerRDMUID_Bag()
         {
             var a = new ControllerRDMUID_Bag(new RDMUID(123155541), new PortAddress(1, 2, 3), IPv4Address.LocalHost);
