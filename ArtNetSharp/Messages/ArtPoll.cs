@@ -1,6 +1,8 @@
 ﻿namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtPoll : AbstractArtPacket
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpPoll;
         protected override sealed ushort PacketMinLength => 12;
@@ -18,10 +20,6 @@
         /// </summary>
         public readonly ushort ManufacturerCode;
 
-        private ArtPoll()
-        {
-
-        }
         public ArtPoll(in ushort oemCode = Constants.DEFAULT_OEM_CODE,
                        in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
                        in PortAddress targetPortTop = default,
@@ -82,18 +80,6 @@
                 && TargetPortBottom == other.TargetPortBottom
                 && Flags == other.Flags
                 && Priority == other.Priority;
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + ManufacturerCode.GetHashCode();
-            hashCode = hashCode * -1521134295 + OemCode.GetHashCode();
-            hashCode = hashCode * -1521134295 + TargetPortTop.GetHashCode();
-            hashCode = hashCode * -1521134295 + TargetPortBottom.GetHashCode();
-            hashCode = hashCode * -1521134295 + Priority.GetHashCode();
-            hashCode = hashCode * -1521134295 + Flags.GetHashCode();
-            return hashCode;
         }
 
         public override string ToString()

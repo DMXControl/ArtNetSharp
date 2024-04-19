@@ -1,6 +1,8 @@
 ﻿namespace ArtNetSharp
 {
-    public abstract class AbstractArtPacketNetCommand<T> : AbstractArtPacketNet
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
+    public abstract class AbstractArtPacketNetCommand<T> : AbstractArtPacketNet, IArtPacketWithCommand<T>
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         protected abstract ushort CommandByte { get; }
 
@@ -23,23 +25,11 @@
             p[CommandByte] = (byte)(object)Command;
         }
 
-        public static implicit operator byte[](AbstractArtPacketNetCommand<T> abstractArtPacketNetCommand)
-        {
-            return abstractArtPacketNetCommand.GetPacket();
-        }
-
         public override bool Equals(object obj)
         {
             return base.Equals(obj) &&
                    obj is AbstractArtPacketNetCommand<T> other &&
                    Command.Equals(other.Command);
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + Command.GetHashCode();
-            return hashCode;
         }
     }
 }

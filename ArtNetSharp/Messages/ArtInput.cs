@@ -2,7 +2,9 @@
 
 namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtInput : AbstractArtPacket
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpInput;
         protected override sealed ushort PacketMinLength => 20;
@@ -66,15 +68,6 @@ namespace ArtNetSharp
                 && BindIndex == data.BindIndex
                 && NumPortsHi == data.NumPortsHi
                 && NumPortsLo == data.NumPortsLo;
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + BindIndex.GetHashCode();
-            hashCode = hashCode * -1521134295 + NumPortsHi.GetHashCode();
-            hashCode = hashCode * -1521134295 + NumPortsLo.GetHashCode();
-            return hashCode;
         }
 
         public static implicit operator byte[](ArtInput artInput)

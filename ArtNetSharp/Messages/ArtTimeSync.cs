@@ -2,7 +2,9 @@
 
 namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtTimeSync : AbstractArtPacket
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpTimeSync;
         protected override sealed ushort PacketMinLength => 24;
@@ -61,15 +63,6 @@ namespace ArtNetSharp
                 && Programming == other.Programming
                 && DateTime == other.DateTime
                 && DaylightSaving == other.DaylightSaving;
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + Programming.GetHashCode();
-            hashCode = hashCode * -1521134295 + DateTime.GetHashCode();
-            hashCode = hashCode * -1521134295 + DaylightSaving.GetHashCode();
-            return hashCode;
         }
 
         public override string ToString()

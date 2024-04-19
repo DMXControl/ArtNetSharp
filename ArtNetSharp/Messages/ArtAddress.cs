@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
 
 namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtAddress : AbstractArtPacket
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpAddress;
         protected override sealed ushort PacketMinLength => 107;
@@ -217,18 +218,6 @@ namespace ArtNetSharp
                 && InputUniverses.SequenceEqual(other.InputUniverses)
                 && AcnPriority == other.AcnPriority
                 && Command.Equals(other.Command);
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + BindIndex.GetHashCode();
-            hashCode = hashCode * -1521134295 + ShortName.GetHashCode();
-            hashCode = hashCode * -1521134295 + LongName.GetHashCode();
-            hashCode = hashCode * -1521134295 + AcnPriority.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<Universe?[]>.Default.GetHashCode(OutputUniverses);
-            hashCode = hashCode * -1521134295 + EqualityComparer<Universe?[]>.Default.GetHashCode(InputUniverses);
-            return hashCode;
         }
 
         public override string ToString()

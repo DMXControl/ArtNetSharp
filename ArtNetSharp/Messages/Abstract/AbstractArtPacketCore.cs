@@ -18,8 +18,9 @@ namespace ArtNetSharp
         bool IDisposableExtended.IsDisposed { get => IsDisposed; }
 
         protected int? HashCode { get; private set; }
+        private byte[] packetData { get; set; }
 
-        protected AbstractArtPacketCore()
+    protected AbstractArtPacketCore()
         {
         }
         public AbstractArtPacketCore(in byte[] packet) : this()
@@ -46,10 +47,14 @@ namespace ArtNetSharp
             if (this.IsDisposing || this.IsDisposed)
                 throw new ObjectDisposedException(this.GetType().FullName);
 
+            if (packetData != null)
+                return packetData;
+
             byte[] p = new byte[(int)PacketBuildLength];
 
             Tools.FillDefaultPacket(OpCode, ref p);
             fillPacketCore(ref p);
+            packetData = p;
             return p;
         }
 
@@ -59,19 +64,39 @@ namespace ArtNetSharp
         {
             return abstractArtPacketCore.GetPacket();
         }
+        public static bool operator ==(AbstractArtPacketCore a, AbstractArtPacketCore b)
+        {
+            if (a is null && b is null)
+                return true;
 
+            return a?.Equals(b) ?? b.Equals(a);
+        }
+
+        public static bool operator !=(AbstractArtPacketCore a, AbstractArtPacketCore b)
+        {
+            if (a is null && b is null)
+                return false;
+
+            return !(a?.Equals(b) ?? b.Equals(a));
+        }
         public override bool Equals(object obj)
         {
             return obj is AbstractArtPacketCore other
                 && OpCode == other.OpCode;
         }
 
-        public override int GetHashCode()
+        public sealed override int GetHashCode()
         {
             if (HashCode.HasValue)
                 return HashCode.Value;
 
-            HashCode = 483245663 + OpCode.GetHashCode();
+            unchecked
+            {
+                var result = 0;
+                foreach (byte b in GetPacket())
+                    result = (result * 31) ^ b;
+                HashCode = result;
+            }
             return HashCode.Value;
         }
 

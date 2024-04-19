@@ -6,7 +6,9 @@ using System.Text;
 
 namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtTodData : AbstractArtPacketNetAddressCommand<EArtTodDataCommandResponse>
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpTodData;
         protected override sealed ushort PacketMinLength => 28;
@@ -147,18 +149,6 @@ namespace ArtNetSharp
                 && BindIndex == data.BindIndex
                 && UidTotalCount == data.UidTotalCount
                 && BlockCount == data.BlockCount;
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<RDMUID[]>.Default.GetHashCode(Uids);
-            hashCode = hashCode * -1521134295 + RdmVersion.GetHashCode();
-            hashCode = hashCode * -1521134295 + Port.GetHashCode();
-            hashCode = hashCode * -1521134295 + BindIndex.GetHashCode();
-            hashCode = hashCode * -1521134295 + UidTotalCount.GetHashCode();
-            hashCode = hashCode * -1521134295 + BlockCount.GetHashCode();
-            return hashCode;
         }
 
         public static implicit operator byte[](ArtTodData artTodData)

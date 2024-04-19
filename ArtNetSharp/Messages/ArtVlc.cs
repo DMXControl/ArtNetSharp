@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtVlc : AbstractArtPacketNetAddress
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         /// <summary>
         /// The sequence number is used to ensure that ArtDmx packets are used in the correct order.
@@ -171,23 +172,6 @@ namespace ArtNetSharp
                 && this.PayloadLanguageCode == other.PayloadLanguageCode
                 && this.BeaconModeRepeatFrequency == other.BeaconModeRepeatFrequency
                 && this.Payload.SequenceEqual(other.Payload);
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + Sequence.GetHashCode();
-            hashCode = hashCode * -1521134295 + Flags.GetHashCode();
-            hashCode = hashCode * -1521134295 + Transaction.GetHashCode();
-            hashCode = hashCode * -1521134295 + SlotAddress.GetHashCode();
-            hashCode = hashCode * -1521134295 + PayloadChecksum.GetHashCode();
-            hashCode = hashCode * -1521134295 + Depth.GetHashCode();
-            hashCode = hashCode * -1521134295 + ModulationFrequency.GetHashCode();
-            hashCode = hashCode * -1521134295 + ModulationType.GetHashCode();
-            hashCode = hashCode * -1521134295 + PayloadLanguageCode.GetHashCode();
-            hashCode = hashCode * -1521134295 + BeaconModeRepeatFrequency.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<byte[]>.Default.GetHashCode(Payload);
-            return hashCode;
         }
 
         public static bool IsArtVlc(byte[] p)

@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtNzs : AbstractArtPacketNetAddress
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         /// <summary>
         /// The sequence number is used to ensure that ArtDmx packets are used in the correct order.
@@ -79,15 +80,6 @@ namespace ArtNetSharp
                 && this.Sequence == other.Sequence
                 && this.StartCode == other.StartCode
                 && this.Data.SequenceEqual(other.Data);
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + Sequence.GetHashCode();
-            hashCode = hashCode * -1521134295 + StartCode.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<byte[]>.Default.GetHashCode(Data);
-            return hashCode;
         }
     }
 }

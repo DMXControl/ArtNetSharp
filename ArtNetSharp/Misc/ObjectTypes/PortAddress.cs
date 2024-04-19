@@ -10,7 +10,7 @@ namespace ArtNetSharp
         public readonly Address Address;
         public readonly ushort Combined;
 
-        public PortAddress(in Net net, in Subnet subnet, Universe universe)
+        public PortAddress(in Net net, in Subnet subnet, in Universe universe)
         {
             Net = net;
             Subnet = subnet;

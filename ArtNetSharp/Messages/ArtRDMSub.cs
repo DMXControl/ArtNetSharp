@@ -1,11 +1,12 @@
 ﻿using RDMSharp;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtRDMSub : AbstractArtPacket
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpRdmSub;
         protected override sealed ushort PacketMinLength => 32;
@@ -87,19 +88,6 @@ namespace ArtNetSharp
                 && SubDevice == other.SubDevice
                 && SubCount == other.SubCount
                 && Data.SequenceEqual(other.Data);
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<byte[]>.Default.GetHashCode(Data);
-            hashCode = hashCode * -1521134295 + RdmVersion.GetHashCode();
-            hashCode = hashCode * -1521134295 + UID.GetHashCode();
-            hashCode = hashCode * -1521134295 + CommandClass.GetHashCode();
-            hashCode = hashCode * -1521134295 + ParameterId.GetHashCode();
-            hashCode = hashCode * -1521134295 + SubDevice.GetHashCode();
-            hashCode = hashCode * -1521134295 + SubCount.GetHashCode();
-            return hashCode;
         }
     }
 }

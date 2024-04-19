@@ -330,7 +330,12 @@ namespace ArtNetSharp
             try
             {
                 IPv4Address sourceIp = RemoteIpEndPoint.Address;
-                processPacket(Tools.DeserializePacket(received), localIpAddress, sourceIp);
+                if (Tools.TryDeserializePacket(received, out var packet))
+                {
+                    processPacket(packet, localIpAddress, sourceIp);
+                    return;
+                }
+                Logger.LogWarning($"Can't deserialize Data to ArtNet-Packet");
             }
             catch (ObjectDisposedException ed) { Logger.LogTrace(ed); }
             catch (SocketException se) { Logger.LogTrace(se); }

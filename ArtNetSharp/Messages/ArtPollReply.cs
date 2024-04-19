@@ -6,7 +6,9 @@ using System.Text;
 
 namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtPollReply : AbstractArtPacketCore
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         public override EOpCodes OpCode => EOpCodes.OpPollReply;
         protected override ushort PacketMinLength => 198;
@@ -539,40 +541,6 @@ namespace ArtNetSharp
                 && Style == other.Style
                 && RDMUID.Equals(DefaulRespUID, other.DefaulRespUID);
             ;
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + OwnIp.GetHashCode();
-            hashCode = hashCode * -1521134295 + MAC.GetHashCode();
-            hashCode = hashCode * -1521134295 + BindIp.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(ShortName);
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(LongName);
-            hashCode = hashCode * -1521134295 + OemCode.GetHashCode();
-            hashCode = hashCode * -1521134295 + ManufacturerCode.GetHashCode();
-            hashCode = hashCode * -1521134295 + NodeReport.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<EPortType[]>.Default.GetHashCode(PortTypes);
-            hashCode = hashCode * -1521134295 + EqualityComparer<EGoodInput[]>.Default.GetHashCode(GoodInput);
-            hashCode = hashCode * -1521134295 + EqualityComparer<EGoodOutput[]>.Default.GetHashCode(GoodOutput);
-            hashCode = hashCode * -1521134295 + Macro.GetHashCode();
-            hashCode = hashCode * -1521134295 + Remote.GetHashCode();
-            hashCode = hashCode * -1521134295 + BindIndex.GetHashCode();
-            hashCode = hashCode * -1521134295 + Ports.GetHashCode();
-            hashCode = hashCode * -1521134295 + MajorVersion.GetHashCode();
-            hashCode = hashCode * -1521134295 + MinorVersion.GetHashCode();
-            hashCode = hashCode * -1521134295 + User.GetHashCode();
-            hashCode = hashCode * -1521134295 + RefreshRate.GetHashCode();
-            hashCode = hashCode * -1521134295 + Net.GetHashCode();
-            hashCode = hashCode * -1521134295 + Subnet.GetHashCode();
-            hashCode = hashCode * -1521134295 + OutputUniverses.GetHashCode();
-            hashCode = hashCode * -1521134295 + InputUniverses.GetHashCode();
-            hashCode = hashCode * -1521134295 + UbeaVersion.GetHashCode();
-            hashCode = hashCode * -1521134295 + Status.GetHashCode();
-            hashCode = hashCode * -1521134295 + AcnPriority.GetHashCode();
-            hashCode = hashCode * -1521134295 + Style.GetHashCode();
-            hashCode = hashCode * -1521134295 + DefaulRespUID.GetHashCode();
-            return hashCode;
         }
 
         public static implicit operator byte[](ArtPollReply artPollReply)

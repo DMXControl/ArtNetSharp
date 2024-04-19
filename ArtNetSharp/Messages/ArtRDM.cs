@@ -1,11 +1,12 @@
 ﻿using RDMSharp;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtRDM : AbstractArtPacketNetAddressCommand<EArtRDMCommand>
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpRdm;
         protected override sealed ushort PacketMinLength => 24;
@@ -80,14 +81,6 @@ namespace ArtNetSharp
                 && obj is ArtRDM other
                 && RdmVersion == other.RdmVersion
                 && Data.SequenceEqual(other.Data);
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<byte[]>.Default.GetHashCode(Data);
-            hashCode = hashCode * -1521134295 + RdmVersion.GetHashCode();
-            return hashCode;
         }
 
         public override string ToString()

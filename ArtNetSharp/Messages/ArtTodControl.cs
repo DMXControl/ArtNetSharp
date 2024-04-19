@@ -1,6 +1,8 @@
 ﻿namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtTodControl : AbstractArtPacketNetAddressCommand<EArtTodControlCommand>
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         public sealed override EOpCodes OpCode => EOpCodes.OpTodControl;
         protected sealed override ushort PacketMinLength => 24;
@@ -49,13 +51,6 @@
             return base.Equals(obj)
                 && obj is ArtTodControl other
                 && Command == other.Command;
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + Command.GetHashCode();
-            return hashCode;
         }
         public override string ToString()
         {

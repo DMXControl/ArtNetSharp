@@ -3,7 +3,9 @@ using System.Linq;
 
 namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtIpProgReply : AbstractArtPacket
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpIpProgReply;
         protected override sealed ushort PacketMinLength => 34;
@@ -72,17 +74,6 @@ namespace ArtNetSharp
                 && DefaultGateway.Equals(other.DefaultGateway)
                 && Port == other.Port
                 && Status == other.Status;
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + Ip.GetHashCode();
-            hashCode = hashCode * -1521134295 + SubnetMask.GetHashCode();
-            hashCode = hashCode * -1521134295 + DefaultGateway.GetHashCode();
-            hashCode = hashCode * -1521134295 + Port.GetHashCode();
-            hashCode = hashCode * -1521134295 + Status.GetHashCode();
-            return hashCode;
         }
 
         public static implicit operator byte[](ArtIpProgReply artIpProgReply)

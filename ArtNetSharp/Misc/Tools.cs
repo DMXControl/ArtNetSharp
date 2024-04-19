@@ -18,83 +18,105 @@ namespace ArtNetSharp
             high = (byte)(number >> 8);
             low = (byte)(number & 255);
         }
-        public static AbstractArtPacketCore DeserializePacket(byte[] packet)
+        public static bool TryDeserializePacket(byte[] data,out AbstractArtPacketCore packet)
         {
+            packet = null;
             try
             {
-                if (packet == null)
-                    return null;
-                if (packet.Length < 10)
-                    return null;
+                if (data == null)
+                    return false;
+                if (data.Length < 10)
+                    return false;
 
-                if (packet[0] == 'A'
-                    && packet[1] == 'r'
-                    && packet[2] == 't'
-                    && packet[3] == '-'
-                    && packet[4] == 'N'
-                    && packet[5] == 'e'
-                    && packet[6] == 't'
-                    && packet[7] == 0x00)
+                if (data[0] == 'A'
+                    && data[1] == 'r'
+                    && data[2] == 't'
+                    && data[3] == '-'
+                    && data[4] == 'N'
+                    && data[5] == 'e'
+                    && data[6] == 't'
+                    && data[7] == 0x00)
                 {
-                    EOpCodes opCode = (EOpCodes)(packet[9] << 8 | packet[8]);
+                    EOpCodes opCode = (EOpCodes)(data[9] << 8 | data[8]);
                     switch (opCode)
                     {
                         case EOpCodes.OpPoll:
-                            return new ArtPoll(packet);
+                            packet = new ArtPoll(data);
+                            break;
                         case EOpCodes.OpPollReply:
-                            return new ArtPollReply(packet);
+                            packet = new ArtPollReply(data);
+                            break;
 
                         case EOpCodes.OpInput:
-                            return new ArtInput(packet);
+                            packet = new ArtInput(data);
+                            break;
 
                         case EOpCodes.OpSync:
-                            return new ArtSync(packet);
+                            packet = new ArtSync(data);
+                            break;
                         case EOpCodes.OpOutput:
-                            return new ArtDMX(packet);
+                            packet = new ArtDMX(data);
+                            break;
 
                         case EOpCodes.OpNzs:
-                            if (ArtVlc.IsArtVlc(packet))
-                                return new ArtVlc(packet);
-                            return new ArtNzs(packet);
+                            if (ArtVlc.IsArtVlc(data))
+                            {
+                                packet = new ArtVlc(data);
+                                break;
+                            }
+                            packet = new ArtNzs(data);
+                            break;
 
                         case EOpCodes.OpRdm:
-                            return new ArtRDM(packet);
+                            packet = new ArtRDM(data);
+                            break;
                         case EOpCodes.OpRdmSub:
-                            return new ArtRDMSub(packet);
+                            packet = new ArtRDMSub(data);
+                            break;
                         case EOpCodes.OpTodControl:
-                            return new ArtTodControl(packet);
+                            packet = new ArtTodControl(data);
+                            break;
                         case EOpCodes.OpTodRequest:
-                            return new ArtTodRequest(packet);
+                            packet = new ArtTodRequest(data);
+                            break;
                         case EOpCodes.OpTodData:
-                            return new ArtTodData(packet);
+                            packet = new ArtTodData(data);
+                            break;
 
 
                         case EOpCodes.OpIpProg:
-                            return new ArtIpProg(packet);
+                            packet = new ArtIpProg(data);
+                            break;
                         case EOpCodes.OpIpProgReply:
-                            return new ArtIpProgReply(packet);
+                            packet = new ArtIpProgReply(data);
+                            break;
 
                         case EOpCodes.OpTimeCode:
-                            return new ArtTimeCode(packet);
+                            packet = new ArtTimeCode(data);
+                            break;
                         case EOpCodes.OpTimeSync:
-                            return new ArtTimeSync(packet);
+                            packet = new ArtTimeSync(data);
+                            break;
 
                         case EOpCodes.OpAddress:
-                            return new ArtAddress(packet);
+                            packet = new ArtAddress(data);
+                            break;
 
                         case EOpCodes.OpDataRequest:
-                            return new ArtData(packet);
+                            packet = new ArtData(data);
+                            break;
                         case EOpCodes.OpDataReply:
-                            return new ArtDataReply(packet);
+                            packet = new ArtDataReply(data);
+                            break;
                     }
                 }
-                return null;
             }
             catch (Exception e)
             {
                 Logger.LogError(e);
-                return null;
+                return false;
             }
+            return packet != null;
         }
         public static bool BitsMatch(byte value, byte mask)
         {

@@ -1,6 +1,8 @@
 ﻿namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public abstract class AbstractArtPacketNet : AbstractArtPacket
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         protected abstract ushort NetByte { get; }
         /// <summary>
@@ -32,13 +34,6 @@
             return base.Equals(obj) &&
                    obj is AbstractArtPacketNet other &&
                    Net == other.Net;
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + Net.GetHashCode();
-            return hashCode;
         }
     }
 }

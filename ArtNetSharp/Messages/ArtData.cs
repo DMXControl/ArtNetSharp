@@ -1,6 +1,8 @@
 ﻿namespace ArtNetSharp
 {
+#pragma warning disable CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     public sealed class ArtData : AbstractArtPacket
+#pragma warning restore CS0659 // Typ überschreibt Object.Equals(object o), überschreibt jedoch nicht Object.GetHashCode()
     {
         public override sealed EOpCodes OpCode => EOpCodes.OpDataRequest;
         protected override sealed ushort PacketMinLength => 40;
@@ -53,15 +55,6 @@
                 && ManufacturerCode == other.ManufacturerCode
                 && OemCode == other.OemCode
                 && Request == other.Request;
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = base.GetHashCode();
-            hashCode = hashCode * -1521134295 + ManufacturerCode.GetHashCode();
-            hashCode = hashCode * -1521134295 + OemCode.GetHashCode();
-            hashCode = hashCode * -1521134295 + Request.GetHashCode();
-            return hashCode;
         }
 
         public override string ToString()
