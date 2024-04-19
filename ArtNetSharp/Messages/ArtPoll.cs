@@ -65,10 +65,6 @@
             Tools.FromUShort(ManufacturerCode, out p[19], out p[18]);// manufacturer code
             Tools.FromUShort(OemCode, out p[21], out p[20]);// OEM code
         }
-        public static implicit operator byte[](ArtPoll artPoll)
-        {
-            return artPoll.GetPacket();
-        }
 
         public override bool Equals(object obj)
         {

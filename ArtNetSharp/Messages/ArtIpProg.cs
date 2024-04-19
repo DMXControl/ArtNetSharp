@@ -73,10 +73,5 @@ namespace ArtNetSharp
                 && Port == other.Port
                 && Command == other.Command;
         }
-
-        public static implicit operator byte[](ArtIpProg artIpProg)
-        {
-            return artIpProg.GetPacket();
-        }
     }
 }

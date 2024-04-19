@@ -70,11 +70,6 @@ namespace ArtNetSharp
             Array.Copy(Data, 1, p, 24, Data.Length - 1);
         }
 
-        public static implicit operator byte[](ArtRDM artRDM)
-        {
-            return artRDM.GetPacket();
-        }
-
         public override bool Equals(object obj)
         {
             return base.Equals(obj)

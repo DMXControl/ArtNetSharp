@@ -69,10 +69,5 @@ namespace ArtNetSharp
                 && NumPortsHi == data.NumPortsHi
                 && NumPortsLo == data.NumPortsLo;
         }
-
-        public static implicit operator byte[](ArtInput artInput)
-        {
-            return artInput.GetPacket();
-        }
     }
 }

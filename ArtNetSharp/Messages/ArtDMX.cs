@@ -24,7 +24,7 @@ namespace ArtNetSharp
         public override sealed EOpCodes OpCode => EOpCodes.OpOutput;
         protected override sealed ushort PacketMinLength => 20;
         protected override sealed ushort PacketMaxLength => 18 + 512;
-        protected override sealed ushort PacketBuildLength => (ushort)(18 + (Data?.Length ?? 0));
+        protected override sealed ushort PacketBuildLength => (ushort)(18 + Data.Length);
 
         protected override ushort NetByte => 15;
         protected override ushort AddressByte => 14;
@@ -38,6 +38,11 @@ namespace ArtNetSharp
         {
             Sequence = sequence;
             Physical = physical;
+            if (data.Length > 512)
+            {
+                Data = data.Take(512).ToArray();
+                return;
+            }
             Data = data;
         }
         public ArtDMX(in byte[] packet) : base(packet)
@@ -51,7 +56,6 @@ namespace ArtNetSharp
                 Data = new byte[length];
                 Array.Copy(packet, 18, Data, 0, length);
             }
-            else Data = default;
         }
 
         protected sealed override void fillPacket(ref byte[] p)
@@ -64,10 +68,6 @@ namespace ArtNetSharp
             p[16] = (byte)((Data.Length >> 8) & 0xff); // LengthHi
             p[17] = (byte)(Data.Length & 0xff);        // LengthLo
             Array.Copy(Data, 0, p, 18, Data.Length);
-        }
-        public static implicit operator byte[](ArtDMX artDMX)
-        {
-            return artDMX.GetPacket();
         }
         public override bool Equals(object obj)
         {

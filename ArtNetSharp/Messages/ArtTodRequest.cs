@@ -68,11 +68,6 @@ namespace ArtNetSharp
                 p[24 + i] = Addresses[i];
         }
 
-        public static implicit operator byte[](ArtTodRequest artTodRequest)
-        {
-            return artTodRequest.GetPacket();
-        }
-
         public override bool Equals(object obj)
         {
             return base.Equals(obj)

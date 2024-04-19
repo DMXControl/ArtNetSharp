@@ -26,10 +26,6 @@ namespace ArtNetSharp
 
         public readonly object PayloadObject = null;
 
-        private ArtDataReply()
-        {
-
-        }
         public ArtDataReply(in ushort oemCode = Constants.DEFAULT_OEM_CODE,
                        in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
                        in EDataRequest request = EDataRequest.Poll,
@@ -72,10 +68,6 @@ namespace ArtNetSharp
             Tools.FromUShort((ushort)Data.Length, out p[19], out p[18]);// PayloadLength
             Array.Copy(Data, 0, p, 20, Data.Length);
 
-        }
-        public static implicit operator byte[](ArtDataReply artDataReply)
-        {
-            return artDataReply.GetPacket();
         }
 
         public override bool Equals(object obj)

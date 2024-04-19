@@ -16,10 +16,6 @@
         /// </summary>
         public readonly ushort ManufacturerCode;
 
-        private ArtData()
-        {
-
-        }
         public ArtData(in ushort oemCode = Constants.DEFAULT_OEM_CODE,
                        in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
                        in EDataRequest request = EDataRequest.Poll,
@@ -42,10 +38,6 @@
             Tools.FromUShort(ManufacturerCode, out p[13], out p[12]);// manufacturer code
             Tools.FromUShort(OemCode, out p[15], out p[14]);// OEM code
             Tools.FromUShort((ushort)Request, out p[17], out p[16]);// Request
-        }
-        public static implicit operator byte[](ArtData artData)
-        {
-            return artData.GetPacket();
         }
 
         public override bool Equals(object obj)

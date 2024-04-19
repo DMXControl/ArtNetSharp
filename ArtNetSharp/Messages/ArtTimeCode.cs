@@ -57,11 +57,6 @@ namespace ArtNetSharp
             p[18] = (byte)Type; // Type
         }
 
-        public static implicit operator byte[](ArtTimeCode artTimeCode)
-        {
-            return artTimeCode.GetPacket();
-        }
-
         public override bool Equals(object obj)
         {
             return base.Equals(obj)

@@ -41,11 +41,6 @@
             //p[23] = 0; // Address (done by Abstract part)
         }
 
-        public static implicit operator byte[](ArtTodControl artTodControl)
-        {
-            return artTodControl.GetPacket();
-        }
-
         public override bool Equals(object obj)
         {
             return base.Equals(obj)

@@ -1,4 +1,5 @@
 using ArtNetSharp;
+using ArtNetSharp.Misc;
 using RDMSharp;
 
 namespace ArtNetTests
@@ -220,6 +221,8 @@ namespace ArtNetTests
                 nodeReports.Add(src);
             }
             Assert.That(nodeReports.OrderBy(n=>n).ToList(),Has.Count.EqualTo(byte.MaxValue));
+
+            Assert.DoesNotThrow(() => dest = new NodeReport(null));
         }
         [Test]
         public void TestIPv4Address()
@@ -414,6 +417,18 @@ namespace ArtNetTests
             Assert.That(c, Is.EqualTo(a));
             c = ~a & b;
             Assert.That(c, Is.EqualTo(b));
+        }
+
+        [Test]
+        public void TestControllerRDMMessageReceivedEventArgs()
+        {
+            var e = new ControllerRDMMessageReceivedEventArgs(new RDMMessage() { Command = ERDM_Command.SET_COMMAND, Parameter = ERDM_Parameter.CURVE });
+
+            Assert.That(e.Handled, Is.False);
+            e.SetResponse(new RDMMessage() { Command = ERDM_Command.SET_COMMAND_RESPONSE, Parameter = ERDM_Parameter.CURVE });
+            Assert.That(e.Handled, Is.True);
+            e.SetResponse(new RDMMessage() { Command = ERDM_Command.SET_COMMAND_RESPONSE, Parameter = ERDM_Parameter.CURVE });
+            Assert.That(e.Handled, Is.True);
         }
     }
 }

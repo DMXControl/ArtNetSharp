@@ -292,11 +292,7 @@ namespace ArtNetSharp
             {
                 nodeReport = nodeReport.TrimEnd('\0');
                 if (!string.IsNullOrWhiteSpace(nodeReport))
-                    try
-                    {
-                        NodeReport = new NodeReport(nodeReport);
-                    }
-                    catch { }
+                    NodeReport = new NodeReport(nodeReport);
             }
 
             // 18 NumPortsHi
@@ -313,19 +309,22 @@ namespace ArtNetSharp
             for (byte i = 0; i < portCount; i++)
             {
                 // 20 PortTypes [4]
+                EPortType _portType = default;
                 if (length > 174 + i)
-                    portTypes.Add((EPortType)packet[174 + i]);
-                else portTypes.Add((EPortType)0);
+                    _portType = (EPortType)packet[174 + i];
+                portTypes.Add(_portType);
 
                 // 21 GoodInput [4]
+                EGoodInput _goodInput = default;
                 if (length > 178 + i)
-                    goodInput.Add((EGoodInput)packet[178 + i]);
-                else goodInput.Add((EGoodInput)0);
+                    _goodInput = (EGoodInput)packet[178 + i];
+                goodInput.Add(_goodInput);
 
                 // 22 GoodOutputA [4]
+                EGoodOutput _goodOutputA = default;
                 if (length > 182 + i)
-                    goodOutputA.Add((EGoodOutput)packet[182 + i]);
-                else goodOutputA.Add((EGoodOutput)0);
+                    _goodOutputA=(EGoodOutput)packet[182 + i];
+                goodOutputA.Add(_goodOutputA);
 
                 if (length > 186 + i) // 23 SwIn [4] Input Universe
                     swIn.Add(getUniverseOrAddress(packet[186 + i]));
@@ -333,9 +332,10 @@ namespace ArtNetSharp
                     swOut.Add(getUniverseOrAddress(packet[190 + i]));
 
                 // 41 GoodOutputB [4]
+                EGoodOutput _goodOutputB = default;
                 if (length > 213 + i)
-                    goodOutputB.Add((EGoodOutput)(ushort)(packet[213 + i] << 8));
-                else goodOutputB.Add((EGoodOutput)(0));
+                    _goodOutputB = (EGoodOutput)(ushort)(packet[213 + i] << 8);
+                goodOutputB.Add(_goodOutputB);
             }
 
             if (length > 194) // 25 AcnPriority
@@ -352,10 +352,10 @@ namespace ArtNetSharp
             if (length > 200) // 31 Style
                 Style = (EStCodes)packet[200];
 
-            if (length > 201) // 32-37 MAC
+            if (/*length > 201 && */length >= 206) // 32-37 MAC
                 MAC = new MACAddress(packet.Skip(201).Take(6).ToArray());
 
-            if (length > 207) // 38 Bind IP
+            if (/*length > 207 && */length >= 210) // 38 Bind IP
                 BindIp = new IPv4Address(packet[207], packet[208], packet[209], packet[210]);
 
             if (length > 211) // 39 Bind Index
@@ -541,11 +541,6 @@ namespace ArtNetSharp
                 && Style == other.Style
                 && RDMUID.Equals(DefaulRespUID, other.DefaulRespUID);
             ;
-        }
-
-        public static implicit operator byte[](ArtPollReply artPollReply)
-        {
-            return artPollReply.GetPacket();
         }
         public override string ToString()
         {

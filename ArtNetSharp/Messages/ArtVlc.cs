@@ -58,7 +58,7 @@ namespace ArtNetSharp
         public override sealed EOpCodes OpCode => EOpCodes.OpNzs;
         protected override sealed ushort PacketMinLength => 40;
         protected override sealed ushort PacketMaxLength => 40 + MaxPayloadLength;
-        protected override sealed ushort PacketBuildLength => (ushort)(40 + (Payload?.Length ?? 0));
+        protected override sealed ushort PacketBuildLength => (ushort)(40 + Payload.Length);
 
         protected override ushort NetByte => 15;
         protected override ushort AddressByte => 14;
@@ -116,7 +116,6 @@ namespace ArtNetSharp
                 Payload = new byte[vlcPayloadLength];
                 Array.Copy(packet, 40, Payload, 0, vlcPayloadLength);
             }
-            else Payload = default;
         }
 
         protected sealed override void fillPacket(ref byte[] p)
@@ -151,10 +150,6 @@ namespace ArtNetSharp
             p[38] = (byte)((BeaconModeRepeatFrequency >> 8) & 0xff); // 31 BeacRepHi
             p[39] = (byte)(BeaconModeRepeatFrequency & 0xff);        // 32 BeacRepLo
             Array.Copy(Payload, 0, p, 40, Payload.Length);
-        }
-        public static implicit operator byte[](ArtVlc artVlc)
-        {
-            return artVlc.GetPacket();
         }
         public override bool Equals(object obj)
         {

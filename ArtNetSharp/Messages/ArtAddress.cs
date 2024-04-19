@@ -21,16 +21,7 @@ namespace ArtNetSharp
         public readonly Universe?[] OutputUniverses;
         public readonly Universe?[] InputUniverses;
         public readonly byte? AcnPriority;
-        private ArtAddress(in byte bindIndex,
-                          in Net? net,
-                          in Subnet? subnet,
-                          in string shortName = null,
-                          in string longName = null,
-                          in byte? acnPriority = null,
-                          in ArtAddressCommand? command = null,
-                          in ushort protocolVersion = Constants.PROTOCOL_VERSION) : this(bindIndex, net, subnet, new Universe?[0], new Universe?[0], shortName, longName, acnPriority, command, protocolVersion)
-        {
-        }
+
         public ArtAddress(in byte bindIndex,
                       in Net? net,
                       in Subnet? subnet,
@@ -69,8 +60,14 @@ namespace ArtNetSharp
 
             BindIndex = packet[13];
 
-            ShortName = Encoding.ASCII.GetString(packet, 14, 18).TrimEnd('\0'); // 7 ShortName [18]
-            LongName = Encoding.ASCII.GetString(packet, 32, 64).TrimEnd('\0'); // 8 LongName  [64]
+            var shortName= Encoding.ASCII.GetString(packet, 14, 18).TrimEnd('\0'); // 7 ShortName [18]
+            var longName= Encoding.ASCII.GetString(packet, 32, 64).TrimEnd('\0'); // 8 LongName  [64]
+            if (!string.IsNullOrWhiteSpace(shortName))
+                ShortName = shortName;
+            if (!string.IsNullOrWhiteSpace(longName))
+                LongName = longName;
+
+
 
             // 9 SwIn [4] Input Universe
             List<Universe?> swIn = new List<Universe?>();
@@ -151,7 +148,7 @@ namespace ArtNetSharp
         {
             return new ArtAddress(bindIndex, null, null, null, null, shortName, longName, null, command);
         }
-        public static ArtAddress CreateSetName(in byte bindIndex, in byte acnPriority, ArtAddressCommand? command = null)
+        public static ArtAddress CreateSetAcnPriority(in byte bindIndex, in byte acnPriority, ArtAddressCommand? command = null)
         {
             return new ArtAddress(bindIndex, null, null, null, null, null, null, acnPriority, command);
         }
@@ -200,11 +197,6 @@ namespace ArtNetSharp
                 p[105] = AcnPriority.Value; // 12 AcnPriority
 
             p[106] = Command; // 13 Command (done by Abstract part)
-        }
-
-        public static implicit operator byte[](ArtAddress artAddress)
-        {
-            return artAddress.GetPacket();
         }
 
         public override bool Equals(object obj)

@@ -12,10 +12,6 @@
         public ArtSync(in byte[] packet) : base(packet)
         {
         }
-        public static implicit operator byte[](ArtSync artSync)
-        {
-            return artSync.GetPacket();
-        }
 
         protected sealed override void fillPacket(ref byte[] packet)
         {

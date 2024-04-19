@@ -150,11 +150,6 @@ namespace ArtNetSharp
                 && UidTotalCount == data.UidTotalCount
                 && BlockCount == data.BlockCount;
         }
-
-        public static implicit operator byte[](ArtTodData artTodData)
-        {
-            return artTodData.GetPacket();
-        }
         public override string ToString()
         {
             string uids = string.Empty;

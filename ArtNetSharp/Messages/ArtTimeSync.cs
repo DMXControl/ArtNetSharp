@@ -51,11 +51,6 @@ namespace ArtNetSharp
             p[23] = (byte)DaylightSaving; // DaylightSaving
         }
 
-        public static implicit operator byte[](ArtTimeSync artTimeCode)
-        {
-            return artTimeCode.GetPacket();
-        }
-
         public override bool Equals(object obj)
         {
             return base.Equals(obj)
