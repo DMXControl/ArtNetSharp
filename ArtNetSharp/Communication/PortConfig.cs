@@ -57,7 +57,7 @@ namespace ArtNetSharp.Communication
         public PortConfig(in byte bindIndex, in PortAddress portAddress, in bool output, in bool input)
         {
             if(bindIndex==0)
-                throw new ArgumentOutOfRangeException("VAluje has to bee within 1 and 255", nameof(bindIndex));
+                throw new ArgumentOutOfRangeException("Value has to bee within 1 and 255", nameof(bindIndex));
             
             BindIndex = bindIndex;
             PortAddress = portAddress;
@@ -157,39 +157,6 @@ namespace ArtNetSharp.Communication
                 return $"{nameof(PortConfig)}: Input Port {PortAddress.Combined}";
 
             return $"{nameof(PortConfig)}: Unknown Port {PortAddress.Combined}";
-        }
-    }
-    public class OutputPortConfig : PortConfig
-    {
-        public override EPortType Type
-        {
-            get
-            {
-                return base.Type | EPortType.OutputFromArtNet;
-            }
-            set
-            {
-                base.Type = value | EPortType.OutputFromArtNet;
-            }
-        }
-        public OutputPortConfig(in byte bindIndex, in Address address) : base(bindIndex, address, true, false)
-        {
-        }
-
-        public OutputPortConfig(in byte bindIndex, in PortAddress portAddress) : base(bindIndex, portAddress, true, false)
-        {
-        }
-
-        public OutputPortConfig(in byte bindIndex, in Subnet subnet, in Universe universe) : base(bindIndex, subnet, universe, true, false)
-        {
-        }
-
-        public OutputPortConfig(in byte bindIndex, in Net net, in Address address) : base(bindIndex, net, address, true, false)
-        {
-        }
-
-        public OutputPortConfig(in byte bindIndex, in Net net, in Subnet subnet, in Universe universe) : base(bindIndex, net, subnet, universe, true, false)
-        {
         }
     }
 }

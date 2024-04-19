@@ -343,17 +343,9 @@ namespace ArtNetSharp
         }
         private void processPacket(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
         {
-            if (packet == null)
-            {
-                Logger?.LogWarning($"Received Non-Art-Net packet from {sourceIp}, discarding");
-                return;
-            }
-//#if DEBUG
-            //if (IPv4Address.Equals(localIp, sourceIp))
-            //    return;
-
+#if DEBUG
             Logger.LogTrace($"Received Packet from {sourceIp} -> {packet}");
-//#endif
+#endif
             instances.Values.ToList().ForEach(_instance => { ((IInstance)_instance).PacketReceived(packet, localIp, sourceIp); });
         }
 
