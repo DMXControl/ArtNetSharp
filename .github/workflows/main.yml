@@ -27,7 +27,7 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
     - name: Test
-      run: dotnet test --framework net${{ matrix.dotnet-version }} --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
+      run: dotnet test --framework net${{ matrix.dotnet-version }} --collect:"XPlat Code Coverage" --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
     - name: Upload a Build Artifact
       if: ${{ failure() || success() }}
       uses: actions/upload-artifact@v4.3.1
