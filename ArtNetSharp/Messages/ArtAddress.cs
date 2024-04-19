@@ -46,7 +46,7 @@ namespace ArtNetSharp
 
             if (acnPriority.HasValue && acnPriority.Value > 200)
             {
-                if (acnPriority == 255)
+                if (acnPriority.Value.Equals(255))
                 {
                     AcnPriority = null;
                     return;

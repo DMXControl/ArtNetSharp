@@ -4,7 +4,6 @@ using ArtNetTests.Mocks;
 using ArtNetTests.Mocks.Instances;
 using RDMSharp;
 using RDMSharp.ParameterWrapper;
-using System.Linq;
 using System.Net;
 
 namespace ArtNetTests
@@ -15,12 +14,12 @@ namespace ArtNetTests
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-#if DEBUG
-            Assert.Ignore("Skiped in Release!");
-#endif
+
+//            Assert.Ignore("Skiped in Release!");
+
             artNet = ArtNet.Instance;
-            var broadcastIp = new IPAddress(new byte[] { 2, 255, 255, 255 });
-            artNet.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
+            //var broadcastIp = new IPAddress(new byte[] { 2, 255, 255, 255 });
+            //artNet.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
         }
 
 
@@ -32,7 +31,7 @@ namespace ArtNetTests
             for (ushort i = 1; i <= 32; i++)
                 instance.AddPortConfig(new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
             artNet.AddInstance(instance);
-            for (int i = 0; i < 60; i++)
+            for (int i = 0; i < 10; i++)
                 await Task.Delay(1000);
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();
@@ -46,7 +45,7 @@ namespace ArtNetTests
             for (ushort i = 1; i <= 32; i++)
                 instance.AddPortConfig(new PortConfig((byte)i,i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
             artNet.AddInstance(instance);
-            for (int i = 0; i < 60; i++)
+            for (int i = 0; i < 10; i++)
                 await Task.Delay(1000);
             artNet.RemoveInstance(instance);
             ((IDisposable)instance).Dispose();

@@ -75,6 +75,9 @@ namespace ArtNetTests.HardwareTests
 
         private async Task<bool> IsPingable()
         {
+            if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
+                return false;
+
             if (!Pingable.HasValue)
             {
                 if (!artNet.NetworkClients.Any(nc => ArtNet.NetworkClientBag.IsInSubnet(nc.LocalIpAddress, nc.IPv4Mask, testSubject.IP)))

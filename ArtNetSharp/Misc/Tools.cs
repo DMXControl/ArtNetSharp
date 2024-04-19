@@ -1,13 +1,71 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using static ArtNetSharp.ApplicationLogging;
 
 namespace ArtNetSharp
 {
     public static class Tools
     {
-        internal static ILoggerFactory LoggerFactory = new LoggerFactory(new[] { new FileProvider() });
         private static ILogger Logger = ApplicationLogging.CreateLogger("Tools");
+        public static bool IsAndroid()
+        {
+            return
+#if !NETSTANDARD
+                    OperatingSystem.IsAndroid();
+#else
+           false;
+#endif
+        }
+        public static bool IsLinux()
+        {
+            return
+#if !NETSTANDARD
+                    OperatingSystem.IsLinux();
+#else
+           RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+#endif
+        }
+
+        public static bool IsWindows()
+        {
+            return
+#if !NETSTANDARD
+                    OperatingSystem.IsWindows();
+#else
+           RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#endif
+        }
+
+        public static bool IsMac()
+        {
+            return
+#if !NETSTANDARD
+                    OperatingSystem.IsMacOS();
+#else
+           RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+#endif
+        }
+
+        public static bool? _isRunningOnGithubWorker;
+        public static bool IsRunningOnGithubWorker()
+        {
+            if(_isRunningOnGithubWorker.HasValue)
+                return _isRunningOnGithubWorker.Value;
+
+            var ad = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+            if ((IsAndroid() || IsLinux() || IsMac()) && ad.Contains("runner/work"))// Linux and Mac Worker
+                _isRunningOnGithubWorker = true;
+            else if (IsWindows() && ad.Contains(":\\a\\")) // Windows Worker
+                _isRunningOnGithubWorker = true;
+            else 
+                _isRunningOnGithubWorker = false;
+
+            return _isRunningOnGithubWorker.Value;
+        }
         public static void FillDefaultPacket(EOpCodes opCode, ref byte[] packet)
         {
             packet[0] = (byte)'A'; packet[1] = (byte)'r'; packet[2] = (byte)'t'; packet[3] = (byte)'-'; packet[4] = (byte)'N'; packet[5] = (byte)'e'; packet[6] = (byte)'t'; packet[7] = 0x0; // ID

@@ -9,9 +9,6 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-#if NETSTANDARD
-using System.Runtime.InteropServices;
-#endif
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,13 +38,6 @@ namespace ArtNetSharp
         public IReadOnlyCollection<NetworkClientBag> NetworkClients => networkClients.Values.ToList().AsReadOnly();
 
         private System.Timers.Timer _updateNetworkClientsTimer = null;
-
-        private static readonly bool IsLinux =
-#if !NETSTANDARD
-                    OperatingSystem.IsLinux();
-#else
-                   RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
-#endif
 
         public class NetworkClientBag
         {
@@ -122,7 +112,7 @@ namespace ArtNetSharp
                     _client.ExclusiveAddressUse = false;
                     _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                     _client.EnableBroadcast = true;
-                    var endpointIp = IsLinux ? IPAddress.Any : LocalIpAddress;
+                    var endpointIp = Tools.IsLinux() ? IPAddress.Any : LocalIpAddress;
                     IPEndPoint localEp = new IPEndPoint(IPAddress.Any, Constants.ARTNET_PORT);
                     _client.Client.Bind(localEp);
                     _clientAlive = true;
@@ -142,7 +132,7 @@ namespace ArtNetSharp
                         UdpReceiveResult received = await _client.ReceiveAsync();
 
 
-                        if (IsLinux)
+                        if (Tools.IsLinux())
                             if (!IsInSubnet(LocalIpAddress, UnicastIPAddressInfo.IPv4Mask, received.RemoteEndPoint.Address))
                             {
                                 Logger?.LogTrace($"Drop Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
@@ -287,7 +277,7 @@ namespace ArtNetSharp
 
         private ArtNet()
         {
-            ApplicationLogging.LoggerFactory = Tools.LoggerFactory;
+            ApplicationLogging.LoggerFactory.AddProvider(new FileProvider());
 
             Logger = ApplicationLogging.CreateLogger<ArtNet>();
             Logger.LogTrace("Initialized!");
@@ -310,7 +300,7 @@ namespace ArtNetSharp
         {
             if (loggerProviders.Contains(loggerProvider))
                 return;
-            Tools.LoggerFactory.AddProvider(loggerProvider);
+            ApplicationLogging.LoggerFactory.AddProvider(loggerProvider);
             loggerProviders.Add(loggerProvider);
         }
 
