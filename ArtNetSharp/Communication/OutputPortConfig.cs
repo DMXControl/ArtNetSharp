@@ -10,7 +10,7 @@
             }
             set
             {
-                base.Type = value | EPortType.OutputFromArtNet;
+                base.Type = (value | EPortType.OutputFromArtNet) & ~EPortType.InputToArtNet;
             }
         }
         public OutputPortConfig(in byte bindIndex, in Address address) : base(bindIndex, address, true, false)

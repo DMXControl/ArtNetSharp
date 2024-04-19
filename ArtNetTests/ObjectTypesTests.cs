@@ -477,5 +477,153 @@ namespace ArtNetTests
             await Task.Delay(30500);
             Assert.That(e.Timouted(), Is.True);
         }
+
+        [Test]
+        public async Task TestPortConfig()
+        {
+            HashSet<PortConfig> portConfigs = new HashSet<PortConfig>();
+            for (byte i = 1; i < byte.MaxValue; i++)
+            {
+                bool _in = i % 2 == 0;
+                bool _out = i % 3 == 0;
+                var pa = new PortAddress((byte)(i & 0x7f),(Address)(byte)(i & 0x00ff));
+                doTest(new PortConfig(i, pa.Address, _out, _in));
+                doTest(new PortConfig(i, pa, _out, _in));
+                doTest(new PortConfig(i, pa.Net,pa.Subnet,pa.Universe, _out, _in));
+                doTest(new PortConfig(i, pa.Net, pa.Address, _out, _in));
+                doTest(new PortConfig(i, pa.Subnet, pa.Universe, _out, _in));
+            }
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => new PortConfig(0, new PortAddress(1, 2, 3), false, false));
+            var portConfig = new PortConfig(1, new PortAddress(1, 2, 3), true, false);
+            portConfig.AddDiscoveredRdmUIDs(new RDMUID(0x12345678));
+            Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(1));
+            await Task.Delay(500);
+            portConfig.AddDiscoveredRdmUIDs(new RDMUID(0x12345678));
+            Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(1));
+            await Task.Delay(500);
+            portConfig.AddDiscoveredRdmUIDs(new RDMUID(0xff345678));
+            Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(2));
+            await Task.Delay(500);
+            portConfig.AddDiscoveredRdmUIDs(new RDMUID(0xff345678));
+            Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(2));
+            await Task.Delay(29600);
+            Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(1));
+            Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(2));
+            portConfig.RemoveOutdatedRdmUIDs();
+            Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(1));
+
+            await Task.Delay(1000);
+            Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(0));
+            Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(1));
+            portConfig.RemoveOutdatedRdmUIDs();
+            Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(0));
+
+            portConfig.AddDiscoveredRdmUIDs([]);
+            Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(0));
+
+            bool received = false;
+            portConfig.RDMUIDReceived += (o, e) => { received = true; };
+            portConfig.AddDiscoveredRdmUIDs(new RDMUID(0xff345678));
+            Assert.That(received, Is.True);
+
+
+            void doTest(PortConfig portConfig)
+            {
+                Assert.That(portConfig, Is.Not.Null);
+                Assert.That(portConfig.ToString(), Is.Not.Null);
+                Assert.That(portConfig.ForceBroadcast, Is.False);
+                portConfig.ForceBroadcast = true;
+                Assert.That(portConfig.ForceBroadcast, Is.True);
+                portConfig.ForceBroadcast = false;
+                Assert.That(portConfig.ForceBroadcast, Is.False);
+                portConfigs.Add(portConfig);
+
+                Assert.That(portConfig.Address, Is.Not.Zero);
+                Assert.That(portConfig.Universe, Is.Not.Zero);
+                Assert.That(portConfig.Net, Is.Not.Zero);
+
+                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
+                portConfig.AddAdditionalIPEndpoints([new IPv4Address("192.168.0.1"), new IPv4Address("192.168.0.2")]);
+                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(2));
+                portConfig.AddAdditionalIPEndpoints([new IPv4Address("192.168.0.3"), new IPv4Address("192.168.0.2")]);
+                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(3));
+                portConfig.RemoveAdditionalIPEndpoints([new IPv4Address("192.168.0.2")]);
+                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(2));
+                portConfig.ClearAdditionalIPEndpoints();
+                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
+                portConfig.AddAdditionalIPEndpoints([]);
+                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
+                portConfig.RemoveAdditionalIPEndpoints([new IPv4Address("192.168.0.2")]);
+                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
+
+
+                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
+                portConfig.AddAdditionalRdmUIDs([new RDMUID(123456), new RDMUID(22123456)]);
+                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(2));
+                portConfig.RemoveAdditionalRdmUIDs([new RDMUID(22123456)]);
+                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(1));
+                portConfig.RemoveAdditionalRdmUIDs([new RDMUID(123456)]);
+                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
+                portConfig.AddAdditionalRdmUIDs([]);
+                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
+                portConfig.RemoveAdditionalRdmUIDs([new RDMUID(123456)]);
+                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
+
+                Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(0));
+
+            }
+        }
+
+        [Test]
+        public void TestOutputPortConfig()
+        {
+            for (byte i = 1; i < byte.MaxValue; i++)
+            {
+                var pa = new PortAddress((byte)(i & 0x7f), (Address)(byte)(i & 0x00ff));
+                doTest(new OutputPortConfig(i, pa.Address));
+                doTest(new OutputPortConfig(i, pa));
+                doTest(new OutputPortConfig(i, pa.Net, pa.Subnet, pa.Universe));
+                doTest(new OutputPortConfig(i, pa.Net, pa.Address));
+                doTest(new OutputPortConfig(i, pa.Subnet, pa.Universe));
+            }
+            void doTest(OutputPortConfig portConfig)
+            {
+                Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.True);
+                portConfig.Type = EPortType.DMX512;
+                Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.True);
+                Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
+
+                portConfig.Type = EPortType.DMX512 | EPortType.InputToArtNet;
+                Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.True);
+                Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
+                Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.False);
+            }
+        }
+        [Test]
+        public void TestInputPortConfig()
+        {
+            for (byte i = 1; i < byte.MaxValue; i++)
+            {
+                var pa = new PortAddress((byte)(i & 0x7f), (Address)(byte)(i & 0x00ff));
+                doTest(new InputPortConfig(i, pa.Address));
+                doTest(new InputPortConfig(i, pa));
+                doTest(new InputPortConfig(i, pa.Net, pa.Subnet, pa.Universe));
+                doTest(new InputPortConfig(i, pa.Net, pa.Address));
+                doTest(new InputPortConfig(i, pa.Subnet, pa.Universe));
+            }
+
+            void doTest(InputPortConfig portConfig)
+            {
+                Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.True);
+                portConfig.Type = EPortType.DMX512;
+                Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.True);
+                Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
+                portConfig.Type = EPortType.DMX512 | EPortType.OutputFromArtNet;
+                Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.True);
+                Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
+                Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.False);
+            }
+        }
     }
 }

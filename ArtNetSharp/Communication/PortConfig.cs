@@ -4,7 +4,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("ArtNetTests")]
 namespace ArtNetSharp.Communication
 {
     public class PortConfig
