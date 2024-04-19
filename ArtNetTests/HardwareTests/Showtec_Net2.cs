@@ -76,7 +76,7 @@ namespace ArtNetTests.HardwareTests
         private async Task<bool> IsPingable()
         {
             if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
-                return false;
+                Pingable = false;
 
             if (!Pingable.HasValue)
             {
