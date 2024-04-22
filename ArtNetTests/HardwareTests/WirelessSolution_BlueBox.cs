@@ -48,7 +48,7 @@ namespace ArtNetTests.HardwareTests
             var broadcastIp = new IPAddress(new byte[] { 2, 255, 255, 255 });
             ArtNet.Instance.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
 
-            instance = new ControllerInstanceMock
+            instance = new ControllerInstanceMock(0x3334)
             {
                 Name = $"Test: {nameof(WirelessSolution_BlueBox)}"
             };

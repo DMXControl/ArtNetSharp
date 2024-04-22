@@ -28,7 +28,7 @@ namespace ArtNetTests
         {
             NodeInstance nodeInstance = new NodeMock();
             nodeInstance.Name = "Test Node";
-            ControllerInstance controllerInstance = new ControllerInstanceMock();
+            ControllerInstance controllerInstance = new ControllerInstanceMock(0x69);
             controllerInstance.Name = "Test Controller";
             byte ports = 24;
             for (ushort i = 1; i <= ports; i++)
@@ -61,7 +61,7 @@ namespace ArtNetTests
         private async Task SendReceiveDMX(ControllerInstance controllerInstance, NodeInstance nodeInstance)
         {
             int count = 0;
-            ConcurrentQueue<byte[]> predefinedData=new ConcurrentQueue<byte[]>();
+            ConcurrentQueue<byte[]> predefinedData = new ConcurrentQueue<byte[]>();
             for (byte b = 0; b < byte.MaxValue; b++)
             {
                 byte[] data = new byte[512];

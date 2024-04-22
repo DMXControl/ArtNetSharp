@@ -47,7 +47,7 @@ namespace ArtNetTests.HardwareTests
             if (!await IsPingable())
                 return;
 
-            instance = new ControllerInstanceMock
+            instance = new ControllerInstanceMock(0x1234)
             {
                 Name = $"Test: {nameof(Luminex_Luminode1)}"
             };

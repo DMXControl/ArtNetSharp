@@ -29,6 +29,9 @@ namespace ArtNetSharp
             }
         }
 
+        public event EventHandler<AbstractInstance> OnInstanceAdded;
+        public event EventHandler<AbstractInstance> OnInstanceRemoved;
+
         private Dictionary<IPv4Address, MACAddress> ipTomacAddressCache = new Dictionary<IPv4Address, MACAddress>();
 
         private ConcurrentDictionary<uint, AbstractInstance> instances = new ConcurrentDictionary<uint, AbstractInstance>();
@@ -451,20 +454,32 @@ namespace ArtNetSharp
             }
         }
 
-        public void AddInstance(AbstractInstance instance)
+        public void AddInstance(params AbstractInstance[] instances)
         {
-            if (this.instances.Any(i => i.Value == instance))
-                return;
-            this.instances.TryAdd((uint)new Random().Next(), instance);
-            Logger?.LogDebug($"Added instance {instance.GetType().Name}: {instance.Name} ({instance.ShortName})");
+            foreach (var instance in instances)
+            {
+                if (this.instances.Any(i => i.Value == instance))
+                    return;
+                if (this.instances.TryAdd((uint)new Random().Next(), instance))
+                {
+                    Logger?.LogDebug($"Added instance {instance.GetType().Name}: {instance.Name} ({instance.ShortName})");
+                    OnInstanceAdded(this, instance);
+                }
+            }
         }
-        public void RemoveInstance(AbstractInstance instance)
+        public void RemoveInstance(params AbstractInstance[] instances)
         {
-            var toRemove = this.instances.FirstOrDefault(i => i.Value == instance);
-            if (toRemove.Value == null)
-                return;
-            this.instances.TryRemove(toRemove.Key, out _);
-            Logger?.LogDebug($"Removed instance {instance.Name} ({instance.ShortName})");
+            foreach (var instance in instances)
+            {
+                var toRemove = this.instances.FirstOrDefault(i => i.Value == instance);
+                if (toRemove.Value == null)
+                    return;
+                if (this.instances.TryRemove(toRemove.Key, out _))
+                {
+                    Logger?.LogDebug($"Removed instance {instance.Name} ({instance.ShortName})");
+                    OnInstanceRemoved(this, instance);
+                }
+            }
         }
 
         internal async Task TrySendPacket(AbstractArtPacketCore packet, IPv4Address destinationIp)

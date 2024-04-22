@@ -23,7 +23,7 @@ namespace ArtNetTests
         {
             nodeInstance = new NodeMock();
             nodeInstance.Name = "Test Node";
-            controllerInstance = new ControllerInstanceMock();
+            controllerInstance = new ControllerInstanceMock(0x42);
             controllerInstance.Name = "Test Controller";
             for (ushort i = 1; i <= ports; i++)
             {

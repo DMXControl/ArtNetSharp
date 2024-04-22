@@ -115,6 +115,10 @@ namespace ArtNetSharp
                     {
                         File.AppendAllText(FileProvider.filePath, stringBuilder.ToString());
                     }
+                    catch(Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
                     finally { FileProvider.semaphore.Release(); }
                 });
             }

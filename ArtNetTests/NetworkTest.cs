@@ -15,7 +15,7 @@ namespace ArtNetTests
         public void OneTimeSetUp()
         {
 
-//            Assert.Ignore("Skiped in Release!");
+            //            Assert.Ignore("Skiped in Release!");
 
             artNet = ArtNet.Instance;
             //var broadcastIp = new IPAddress(new byte[] { 2, 255, 255, 255 });
@@ -40,10 +40,10 @@ namespace ArtNetTests
         [Test]
         public async Task TestControllerInstance()
         {
-            ControllerInstanceMock instance = new ControllerInstanceMock();
+            ControllerInstanceMock instance = new ControllerInstanceMock(0x1434);
             instance.Name = "Test";
             for (ushort i = 1; i <= 32; i++)
-                instance.AddPortConfig(new PortConfig((byte)i,i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
             artNet.AddInstance(instance);
             for (int i = 0; i < 80; i++)
                 await Task.Delay(100);
@@ -55,7 +55,7 @@ namespace ArtNetTests
         [Test]
         public async Task TestDMXTrafficInstance()
         {
-            ControllerInstanceMock instance = new ControllerInstanceMock();
+            ControllerInstanceMock instance = new ControllerInstanceMock(0x7234);
             instance.Name = "DMXTraffic Test";
             for (ushort i = 1; i <= 4; i++)
                 instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
@@ -91,7 +91,7 @@ namespace ArtNetTests
         [Test]
         public async Task TestRDMTrafficInstance()
         {
-            ControllerInstanceMock instance = new ControllerInstanceMock();
+            ControllerInstanceMock instance = new ControllerInstanceMock(0x1934);
             instance.Name = "RDMTraffic Test";
             for (ushort i = 1; i <= 4; i++)
                 instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
@@ -160,7 +160,7 @@ namespace ArtNetTests
         [Test]
         public async Task TestRDMDeviceInstance()
         {
-            ControllerInstanceMock instance = new ControllerInstanceMock();
+            ControllerInstanceMock instance = new ControllerInstanceMock(0x1284);
             instance.Name = "RDMDevice Test";
             for (ushort i = 1; i <= 4; i++)
                 instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
@@ -190,7 +190,7 @@ namespace ArtNetTests
         [Test]
         public async Task TestSendTimeCode()
         {
-            ControllerInstanceMock instance = new ControllerInstanceMock();
+            ControllerInstanceMock instance = new ControllerInstanceMock(0x1230);
             instance.Name = "TestTimeCode";
             for (ushort i = 1; i <= 32; i++)
                 instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
@@ -209,10 +209,10 @@ namespace ArtNetTests
         [Test]
         public async Task TestSendTimeSync()
         {
-            ControllerInstanceMock instance = new ControllerInstanceMock();
+            ControllerInstanceMock instance = new ControllerInstanceMock(0x0815);
             instance.Name = "TestTimeSync";
             for (ushort i = 1; i <= 32; i++)
-                instance.AddPortConfig(new PortConfig((byte)i,i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
             artNet.AddInstance(instance);
             for (int i = 0; i < 6; i++)
             {
@@ -227,7 +227,7 @@ namespace ArtNetTests
         [Test]
         public async Task TestSendAddress()
         {
-            ControllerInstanceMock instance = new ControllerInstanceMock();
+            ControllerInstanceMock instance = new ControllerInstanceMock(11880);
             instance.Name = "TestAddress";
             for (ushort i = 1; i <= 32; i++)
                 instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });

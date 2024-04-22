@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -180,12 +181,14 @@ namespace ArtNetSharp.Communication
             artNet = ArtNet.Instance;
             Logger = ApplicationLogging.CreateLogger(this.GetType());
 
+            artNet.OnInstanceAdded += ArtNet_OnInstanceAdded;
+            artNet.OnInstanceRemoved += ArtNet_OnInstanceRemoved;
+
             _timerSendPoll = new System.Timers.Timer
             {
                 Interval = 2500, // Spec 1.4dd page 13
             };
             _timerSendPoll.Elapsed += _timerSendPoll_Elapsed;
-            _timerSendPoll.Enabled = true;
 
             _timerSendDMX = new System.Timers.Timer
             {
@@ -201,9 +204,29 @@ namespace ArtNetSharp.Communication
 
             KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
         }
+
         ~AbstractInstance()
         {
             ((IDisposable)this).Dispose();
+        }
+
+        private async void ArtNet_OnInstanceAdded(object sender, AbstractInstance e)
+        {
+            if (e != this)
+                return;
+
+            _timerSendPoll.Enabled = true;
+            checkForMatchingPortConfiguration();
+            await triggerSendArtPoll();
+        }
+
+        private void ArtNet_OnInstanceRemoved(object sender, AbstractInstance e)
+        {
+            if (e != this)
+                return;
+
+            _timerSendPoll.Enabled = false;
+            checkForMatchingPortConfiguration();
         }
 
         void IInstance.PacketReceived(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
@@ -665,6 +688,8 @@ namespace ArtNetSharp.Communication
 
             if (MajorVersion == artPollReply.MajorVersion
                 && MinorVersion == artPollReply.MinorVersion
+                && OEMProductCode == artPollReply.OemCode
+                && ESTAManufacturerCode == artPollReply.ManufacturerCode
                 && IPv4Address.Equals(sourceIp, localIp)
                 && IPv4Address.Equals(artPollReply.OwnIp, localIp)
                 && string.Equals(artPollReply.ShortName, ShortName)
@@ -759,7 +784,11 @@ namespace ArtNetSharp.Communication
                     success = bag.Update(artDMX, sourceIp);
             }
             if (success)
+            {
                 DMXReceived?.Invoke(this, port.PortAddress);
+                if (port.Type.HasFlag(EPortType.OutputFromArtNet))
+                    port.GoodOutput |= EGoodOutput.DataTransmitted;
+            }
         }
 
 
@@ -899,21 +928,27 @@ namespace ArtNetSharp.Communication
         }
         #endregion
 
-        public void AddPortConfig(PortConfig portConfig)
+        public void AddPortConfig(params PortConfig[] portConfigs)
         {
             if (this.IsDisposing || this.IsDisposed)
                 return;
 
-            this.portConfigs.Add(portConfig);
-            Logger?.LogDebug($"Added instance {portConfig}");
+            foreach (var portConfig in portConfigs)
+            {
+                this.portConfigs.Add(portConfig);
+                Logger?.LogDebug($"Added PortConfig {portConfig}");
+            }
         }
-        public void RemovePortConfig(PortConfig portConfig)
+        public void RemovePortConfig(params PortConfig[] portConfigs)
         {
             if (this.IsDisposing || this.IsDisposed)
                 return;
 
-            this.portConfigs.Remove(portConfig);
-            Logger?.LogDebug($"Removed instance {portConfig}");
+            foreach (var portConfig in portConfigs)
+            {
+                this.portConfigs.Remove(portConfig);
+                Logger?.LogDebug($"Removed instance {portConfig}");
+            }
         }
 
         public void WriteDMXValues(PortAddress portAddress, in byte[] data, in ushort? startindex = null, in ushort? count = null)
@@ -1091,6 +1126,12 @@ namespace ArtNetSharp.Communication
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
 
+            if (!this._timerSendPoll.Enabled)
+            {
+                _timerSendDMX.Enabled = false;
+                _timerSendDMXKeepAlive.Enabled = false;
+            }
+
             bool match = EnabelDmxOutput && RemoteClientsPorts.Any(p => p.OutputPortAddress.HasValue && sendDMXBuffer.ContainsKey(p.OutputPortAddress.Value));
 
             if (_timerSendDMX.Enabled == match && _timerSendDMXKeepAlive.Enabled == match)
@@ -1139,7 +1180,7 @@ namespace ArtNetSharp.Communication
                 KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
         }
 
-        private async void _timerSendPoll_Elapsed(object sender, ElapsedEventArgs e)
+        private async Task triggerSendArtPoll()
         {
             if (this.IsDisposed || this.IsDisposing || this.IsDeactivated)
                 return;
@@ -1147,11 +1188,11 @@ namespace ArtNetSharp.Communication
                 await sendArtPoll();
             else if (SendArtPollTargeted)
             {
-                var ports=portConfigs.Where(p => p.Type.HasFlag(EPortType.InputToArtNet)).OrderBy(p=>p.PortAddress).ToList();
+                var ports = portConfigs.Where(p => p.Type.HasFlag(EPortType.InputToArtNet)).OrderBy(p => p.PortAddress).ToList();
                 PortAddress? bottom = null;
                 PortAddress? top = null;
 
-                for (int i=0;i< ports.Count;i++)
+                for (int i = 0; i < ports.Count; i++)
                 {
                     PortConfig port = ports[i];
                     PortConfig nextPort = null;
@@ -1175,6 +1216,11 @@ namespace ArtNetSharp.Communication
                     }
                 }
             }
+        }
+
+        private async void _timerSendPoll_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            await triggerSendArtPoll();
         }
         private async void _timerSendDMX_Elapsed(object sender, ElapsedEventArgs e)
         {
@@ -1207,6 +1253,9 @@ namespace ArtNetSharp.Communication
 
                 if (!this.IsDeactivated)
                     artNet.RemoveInstance(this);
+
+                artNet.OnInstanceAdded -= ArtNet_OnInstanceAdded;
+                artNet.OnInstanceRemoved -= ArtNet_OnInstanceRemoved;
 
                 _timerSendDMX.Elapsed -= _timerSendDMX_Elapsed;
                 _timerSendDMX.Enabled = false;

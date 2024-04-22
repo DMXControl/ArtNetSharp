@@ -47,7 +47,7 @@ namespace ArtNetTests.HardwareTests
             if (!await IsPingable())
                 return;
 
-            instance = new ControllerInstanceMock
+            instance = new ControllerInstanceMock(0x1255)
             {
                 Name = $"Test: {nameof(Showtec_Net2)}"
             };
