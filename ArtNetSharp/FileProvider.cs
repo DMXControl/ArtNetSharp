@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -18,6 +19,10 @@ namespace ArtNetSharp
 
         private static readonly string filePath = Path.Combine(fileDirectory, "log.txt");
         private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+
+        private readonly ConcurrentQueue<string> queue= new ConcurrentQueue<string>();
+        private readonly Thread thread;
+        private bool isDisposing = false;
         private static string getOsDirectory()
         {
             if (Tools.IsRunningOnGithubWorker())
@@ -63,7 +68,37 @@ namespace ArtNetSharp
             {
 
             }
-            finally { FileProvider.semaphore.Release(); }
+            finally { 
+                FileProvider.semaphore.Release();
+                thread = new Thread(runFileThread);
+                thread.Name = $"{nameof(FileProvider)}-Logging Thread";
+                thread.IsBackground = true ;
+                thread.Priority = ThreadPriority.BelowNormal;
+                thread.Start();
+            }
+        }
+
+        private void runFileThread()
+        {
+            while (!isDisposing)
+            {
+                if(queue.TryDequeue(out var message))
+                {
+                    try
+                    {
+                        File.AppendAllText(FileProvider.filePath, message.ToString());
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
+                }
+            }
+        }
+
+        private void Log(string message)
+        {
+            queue.Enqueue(message);
         }
 
         public ILogger CreateLogger(string categoryName)
@@ -73,6 +108,7 @@ namespace ArtNetSharp
 
         public void Dispose()
         {
+            isDisposing=true;
         }
 
         private class TextLogger : ILogger
@@ -110,16 +146,8 @@ namespace ArtNetSharp
                     stringBuilder.AppendLine($"{DateTime.UtcNow} [{logLevel}] <{CategoryName}> {formatter?.Invoke(state, exception)}");
                     if (exception != null)
                         stringBuilder.AppendLine(exception.ToString());
-                    await FileProvider.semaphore.WaitAsync();
-                    try
-                    {
-                        File.AppendAllText(FileProvider.filePath, stringBuilder.ToString());
-                    }
-                    catch(Exception e)
-                    {
-                        Console.WriteLine(e);
-                    }
-                    finally { FileProvider.semaphore.Release(); }
+
+                    Provider.Log(stringBuilder.ToString());
                 });
             }
         }

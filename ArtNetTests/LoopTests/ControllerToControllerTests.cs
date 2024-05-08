@@ -1,6 +1,7 @@
 using ArtNetSharp;
 using ArtNetSharp.Communication;
 using ArtNetTests.Mocks;
+using System.Diagnostics;
 
 namespace ArtNetTests.LoopTests
 {
@@ -20,6 +21,8 @@ namespace ArtNetTests.LoopTests
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
+            ArtNet.Clear();
+
             artNet = ArtNet.Instance;
             foreach(var inst in artNet.Instances)
                 artNet.RemoveInstance(inst);
@@ -54,9 +57,8 @@ namespace ArtNetTests.LoopTests
         [OneTimeTearDown]
         public void OneTimeTearDown()
         {
-            artNet.RemoveInstance([instanceTX, instanceRX]);
-            ((IDisposable)instanceTX).Dispose();
-            ((IDisposable)instanceRX).Dispose();
+            ArtNet.Clear();
+            Trace.Flush();
         }
 
         [Test, Order(1)]
@@ -73,6 +75,7 @@ namespace ArtNetTests.LoopTests
             Assert.That(rxPort.PortType, Is.EqualTo(EPortType.OutputFromArtNet));
             Assert.That(rxPort.OutputPortAddress, Is.EqualTo(portAddress));
             Assert.That(txPort.InputPortAddress, Is.EqualTo(portAddress));
+            Assert.That(rxPort.GoodOutput.HasFlag(EGoodOutput.DataTransmitted), Is.False);
         }
 
         [Test, Order(2), Retry(3)]
@@ -81,6 +84,7 @@ namespace ArtNetTests.LoopTests
             Assert.That(rcRX, Is.Not.Null);
             Assert.That(rcTX, Is.Not.Null);
             byte[] data = new byte[512];
+            bool receiveFlag = false;
 
             var txPort = rcTX.Ports.First(p => p.InputPortAddress.Equals(portAddress));
             var rxPort = rcRX.Ports.First(p => p.OutputPortAddress.Equals(portAddress));
@@ -89,8 +93,17 @@ namespace ArtNetTests.LoopTests
             Assert.That(rxPort.GoodOutput.HasFlag(EGoodOutput.DMX_OutputShortCircuit), Is.False);
             Assert.That(rxPort.GoodOutput.HasFlag(EGoodOutput.DataTransmitted), Is.False);
 
-            for (byte b = 0; b < byte.MaxValue; b++)
-                await doDmxStuff(b);
+            instanceRX.DMXReceived += InstanceRX_DMXReceived;
+            var cts=new CancellationTokenSource(100);
+            for (byte b = 1; b < byte.MaxValue; b++)
+            {
+                var token=cts.Token;
+                await Task.Run(async () => await doDmxStuff(b), token);
+                if (token.IsCancellationRequested)
+                    Assert.Fail(b.ToString());
+            }
+
+            instanceRX.DMXReceived -= InstanceRX_DMXReceived;
 
             Assert.That(rxPort.GoodOutput.HasFlag(EGoodOutput.OutputArtNet), Is.True);
             Assert.That(rxPort.GoodOutput.HasFlag(EGoodOutput.DMX_OutputShortCircuit), Is.False);
@@ -103,16 +116,27 @@ namespace ArtNetTests.LoopTests
             }
             Assert.That(dataReceived, Is.True);
 
+
             async Task doDmxStuff(byte value)
             {
+                receiveFlag = false;
                 if (data[0] != value)
                     for (ushort i = 0; i < 512; i++)
                         data[i] = value;
 
                 instanceTX.WriteDMXValues(portAddress, data);
-                await Task.Delay(70);
-                Assert.That(outputPort.GoodOutput.HasFlag(EGoodOutput.DataTransmitted), Is.True);
-                Assert.That(instanceRX.GetReceivedDMX(portAddress), Is.EqualTo(data));
+                while (!receiveFlag)
+                    await Task.Delay(40);
+            }
+            void InstanceRX_DMXReceived(object? sender, PortAddress e)
+             {
+                if (e != portAddress)
+                    return;
+
+                string str = $"Error at {data[0]}";
+                Assert.That(outputPort.GoodOutput.HasFlag(EGoodOutput.DataTransmitted), Is.True, str);
+                Assert.That(instanceRX.GetReceivedDMX(portAddress), Is.EqualTo(data), str);
+                receiveFlag = true;
             }
         }
     }

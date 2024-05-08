@@ -16,6 +16,8 @@ namespace ArtNetTests
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
+            ArtNet.Clear();
+
             artNet = ArtNet.Instance;
         }
         [SetUp]
@@ -45,6 +47,7 @@ namespace ArtNetTests
         [OneTimeTearDown]
         public void OneTimeTearDown()
         {
+            ArtNet.Clear();
             Trace.Flush();
         }
 

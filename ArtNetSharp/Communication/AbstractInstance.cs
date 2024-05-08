@@ -159,7 +159,7 @@ namespace ArtNetSharp.Communication
 
         private ConcurrentDictionary<string, RemoteClient> remoteClients = new ConcurrentDictionary<string, RemoteClient>();
         private ConcurrentDictionary<string, RemoteClient> remoteClientsTimeouted = new ConcurrentDictionary<string, RemoteClient>();
-        public IReadOnlyCollection<RemoteClient> RemoteClients { get; private set; } =  new List<RemoteClient>();
+        public IReadOnlyCollection<RemoteClient> RemoteClients { get; private set; } = new List<RemoteClient>();
         public IReadOnlyCollection<RemoteClientPort> RemoteClientsPorts { get { return remoteClients.SelectMany(rc => rc.Value.Ports).ToList().AsReadOnly(); } }
 
         public event EventHandler<PortAddress> DMXReceived;
@@ -329,7 +329,7 @@ namespace ArtNetSharp.Communication
                     ports = ports.Where(pc => pc.PortAddress >= artPoll.TargetPortBottom && pc.PortAddress <= artPoll.TargetPortTop).ToList();
 
                 if (ports.Count != 0)
-                    foreach (PortConfig portConfig in ports.OrderBy(p=>p.BindIndex).ToList())
+                    foreach (PortConfig portConfig in ports.OrderBy(p => p.BindIndex).ToList())
                     {
                         if (artPoll?.Flags.HasFlag(EArtPollFlags.EnableTargetedMode) ?? false)
                         {
@@ -505,7 +505,7 @@ namespace ArtNetSharp.Communication
             if (pauseDMXOutput.CurrentCount == 0)
                 await pauseDMXOutput.WaitAsync();
 
-            if (semaphoreSlimDMXOutput.CurrentCount == 0)
+            if (semaphoreSlimDMXOutput.CurrentCount == 0 && !keepAlive)
                 return;
             await semaphoreSlimDMXOutput.WaitAsync();
             try
@@ -539,6 +539,7 @@ namespace ArtNetSharp.Communication
                         catch (Exception e) { Logger.LogError(e); }
                     }));
                 await Task.WhenAll(tasks);
+                await Task.Delay(2);
                 if (EnabelSync && sended != 0)
                     await sendArtSync();
 
@@ -761,7 +762,7 @@ namespace ArtNetSharp.Communication
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
 
-            var port = portConfigs.FirstOrDefault(p => p.Universe == artDMX.Address.Universe && p.Subnet == artDMX.Address.Subnet && p.Net == artDMX.Net);
+            var port = portConfigs.FirstOrDefault(p => p.Type.HasFlag(EPortType.OutputFromArtNet) && p.Universe == artDMX.Address.Universe && p.Subnet == artDMX.Address.Subnet && p.Net == artDMX.Net);
             if (port == null)
                 return;
 
@@ -786,8 +787,7 @@ namespace ArtNetSharp.Communication
             if (success)
             {
                 DMXReceived?.Invoke(this, port.PortAddress);
-                if (port.Type.HasFlag(EPortType.OutputFromArtNet))
-                    port.GoodOutput |= EGoodOutput.DataTransmitted;
+                port.GoodOutput |= EGoodOutput.DataTransmitted;
             }
         }
 
