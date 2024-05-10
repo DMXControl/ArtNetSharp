@@ -11,7 +11,7 @@ namespace ArtNetSharp.Communication
 {
     public class PortConfig
     {
-        private static ILogger Logger = ApplicationLogging.CreateLogger<PortConfig>();
+        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<PortConfig>();
         public virtual PortAddress PortAddress { get; set; }
         public Net Net { get => PortAddress.Net; }
         public Subnet Subnet { get => PortAddress.Subnet; }
@@ -29,13 +29,13 @@ namespace ArtNetSharp.Communication
 
         public virtual bool ForceBroadcast { get; set; }
 
-        private List<IPv4Address> additionalIPEndpoints;
+        private readonly List<IPv4Address> additionalIPEndpoints;
         public IReadOnlyCollection<IPv4Address> AdditionalIPEndpoints { get; private set; }
 
 
-        private ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> discoveredRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        private readonly ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> discoveredRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> DiscoveredRDMUIDs;
-        private ConcurrentDictionary<RDMUID, RDMUID> additionalRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID>();
+        private readonly ConcurrentDictionary<RDMUID, RDMUID> additionalRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID>();
         public IReadOnlyCollection<RDMUID> AdditionalRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
         //public event EventHandler<RDMMessage> RDMMessageReceived;
@@ -100,15 +100,14 @@ namespace ArtNetSharp.Communication
 
             foreach (RDMUID rdmuid in rdmuids)
             {
-                RDMUID_ReceivedBag bag;
-                if (discoveredRDMUIDs.TryGetValue(rdmuid, out bag))
+                if (discoveredRDMUIDs.TryGetValue(rdmuid, out RDMUID_ReceivedBag bag))
                     bag.Seen();
                 else
                 {
                     bag = new RDMUID_ReceivedBag(rdmuid);
                     if (discoveredRDMUIDs.TryAdd(rdmuid, bag))
                     {
-                        RDMUIDReceived?.Invoke(this, bag);
+                        RDMUIDReceived?.InvokeFailSafe(this, bag);
                         Logger.LogTrace($"#{BindIndex} PortAddress: {PortAddress.Combined:x4} Cached UID: {bag.Uid}");
                     }
                 }

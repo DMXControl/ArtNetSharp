@@ -12,7 +12,7 @@ Console.WriteLine("Controller Example!");
 //ArtNet.Instance.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
 
 // Create Instance
-ControllerInstance controllerInstance = new ControllerInstance();
+ControllerInstance controllerInstance = new ControllerInstance(ArtNet.Instance);
 controllerInstance.Name = controllerInstance.ShortName = "Controller Example";
 
 // Configure Ports

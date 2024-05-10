@@ -14,7 +14,7 @@ namespace ArtNetTests.Mocks
         }
         public override RDMUID UID => new RDMUID((ushort)EManufacturer.DMXControlProjects_eV, 12314);
 
-        public ControllerInstanceMock(ushort oemProductCode = Constants.DEFAULT_OEM_CODE) : base()
+        public ControllerInstanceMock(ArtNet artnet, ushort oemProductCode = Constants.DEFAULT_OEM_CODE) : base(artnet)
         {
             _oemProductCode = oemProductCode;
         }

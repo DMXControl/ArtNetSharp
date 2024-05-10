@@ -3,6 +3,7 @@ using RDMSharp;
 
 namespace ArtNetTests.ReportedBugs
 {
+    [Order(3)]
     public class MarioBock_Berlin
     {
         [Test]
@@ -24,19 +25,22 @@ namespace ArtNetTests.ReportedBugs
                     0x31, 0x31, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x4d, 0x48, 0xc9, 0x06, 0x64, 0x0a,
                     0xc9, 0x06, 0x64, 0x01, 0x08, 0x31 };
             ArtPollReply? artPollReply = null;
-            Assert.DoesNotThrow(() => artPollReply = new ArtPollReply(data));
-            Assert.That(artPollReply, Is.Not.Null);
-            Assert.That(artPollReply.LongName, Is.EqualTo("CR011R"));
-            Assert.That(artPollReply.ShortName, Is.EqualTo("CR011R_001"));
-            Assert.That(artPollReply.MAC, Is.EqualTo(new MACAddress("02:4d:48:c9:06:64")));
-            Assert.That(artPollReply.PortTypes, Has.Length.EqualTo(1));
-            Assert.That(artPollReply.PortTypes[0], Is.EqualTo(EPortType.OutputFromArtNet));
-            Assert.That(artPollReply.OutputUniverses, Has.Length.EqualTo(1));
-            Assert.That(artPollReply.OutputUniverses[0], Is.EqualTo((Universe)0));
-            Assert.That(artPollReply.InputUniverses, Has.Length.EqualTo(1));
-            Assert.That(artPollReply.InputUniverses[0], Is.EqualTo((Universe)0));
-            Assert.That(artPollReply.GoodOutput, Has.Length.EqualTo(1));
-            Assert.That(artPollReply.GoodInput, Has.Length.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.DoesNotThrow(() => artPollReply = new ArtPollReply(data));
+                Assert.That(artPollReply, Is.Not.Null);
+                Assert.That(artPollReply!.LongName, Is.EqualTo("CR011R"));
+                Assert.That(artPollReply.ShortName, Is.EqualTo("CR011R_001"));
+                Assert.That(artPollReply.MAC, Is.EqualTo(new MACAddress("02:4d:48:c9:06:64")));
+                Assert.That(artPollReply.PortTypes, Has.Length.EqualTo(1));
+                Assert.That(artPollReply.PortTypes[0], Is.EqualTo(EPortType.OutputFromArtNet));
+                Assert.That(artPollReply.OutputUniverses, Has.Length.EqualTo(1));
+                Assert.That(artPollReply.OutputUniverses[0], Is.EqualTo((Universe)0));
+                Assert.That(artPollReply.InputUniverses, Has.Length.EqualTo(1));
+                Assert.That(artPollReply.InputUniverses[0], Is.EqualTo((Universe)0));
+                Assert.That(artPollReply.GoodOutput, Has.Length.EqualTo(1));
+                Assert.That(artPollReply.GoodInput, Has.Length.EqualTo(1));
+            });
         }
     }
 }

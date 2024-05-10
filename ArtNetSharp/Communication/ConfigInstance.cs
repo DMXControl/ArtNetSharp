@@ -7,6 +7,10 @@ namespace ArtNetSharp.Communication
 {
     public class ConfigInstance : AbstractInstance
     {
+        public ConfigInstance(ArtNet _artnet) : base(_artnet)
+        {
+        }
+
         public sealed override EStCodes EstCodes => EStCodes.StConfig;
         protected sealed override bool SendArtPollBroadcast => true;
         protected sealed override bool SendArtPollTargeted => false;

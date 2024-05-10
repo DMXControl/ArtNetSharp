@@ -12,7 +12,7 @@ Console.WriteLine("Node Output Exampler!");
 //ArtNet.Instance.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
 
 // Create Instance
-NodeInstance nodeInstance = new NodeInstance();
+NodeInstance nodeInstance = new NodeInstance(ArtNet.Instance);
 nodeInstance.Name = nodeInstance.ShortName = "Node Output Example";
 
 // Configure Output Ports

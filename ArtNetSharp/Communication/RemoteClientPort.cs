@@ -11,7 +11,7 @@ namespace ArtNetSharp.Communication
 {
     public sealed class RemoteClientPort : INotifyPropertyChanged
     {
-        private static ILogger Logger = ApplicationLogging.CreateLogger<RemoteClientPort>();
+        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<RemoteClientPort>();
         public readonly IPv4Address IpAddress;
         public readonly string ID;
         public readonly byte BindIndex;
@@ -130,9 +130,9 @@ namespace ArtNetSharp.Communication
             }
         }
 
-        private ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownControllerRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        private readonly ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownControllerRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownControllerRDMUIDs;
-        private ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownResponderRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        private readonly ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownResponderRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownResponderRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
 
@@ -146,22 +146,11 @@ namespace ArtNetSharp.Communication
         {
             try
             {
-                PropertyChanged?.Invoke(this, eventArgs);
+                PropertyChanged?.InvokeFailSafe(this, eventArgs);
             }
             catch (Exception e)
             {
                 Logger.LogError(e);
-            }
-        }
-
-
-        private byte sequence = byte.MaxValue;
-        internal byte Sequence
-        {
-            get
-            {
-                sequence++;
-                return sequence;
             }
         }
 
@@ -223,8 +212,7 @@ namespace ArtNetSharp.Communication
         }
         private void addControllerRdmUID(RDMUID rdmuid)
         {
-            RDMUID_ReceivedBag bag;
-            if (knownControllerRDMUIDs.TryGetValue(rdmuid, out bag))
+            if (knownControllerRDMUIDs.TryGetValue(rdmuid, out RDMUID_ReceivedBag bag))
                 bag.Seen();
             else
             {
@@ -241,15 +229,14 @@ namespace ArtNetSharp.Communication
 
             foreach (RDMUID rdmuid in rdmuids)
             {
-                RDMUID_ReceivedBag bag;
-                if (knownResponderRDMUIDs.TryGetValue(rdmuid, out bag))
+                if (knownResponderRDMUIDs.TryGetValue(rdmuid, out RDMUID_ReceivedBag bag))
                     bag.Seen();
                 else
                 {
                     bag = new RDMUID_ReceivedBag(rdmuid);
                     if (knownResponderRDMUIDs.TryAdd(rdmuid, bag))
                     {
-                        RDMUIDReceived?.Invoke(this, bag);
+                        RDMUIDReceived?.InvokeFailSafe(this, bag);
                         Logger.LogTrace($"{IpAddress}#{BindIndex} Cached Responder UID: {bag.Uid}");
                     }
                 }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -25,8 +26,7 @@ namespace ArtNetSharp
         {
             get
             {
-                if (instance == null)
-                    instance = new ArtNet();
+                instance ??= new ArtNet();
                 return instance;
             }
         }
@@ -34,12 +34,12 @@ namespace ArtNetSharp
         public event EventHandler<AbstractInstance> OnInstanceAdded;
         public event EventHandler<AbstractInstance> OnInstanceRemoved;
 
-        private Dictionary<IPv4Address, MACAddress> ipTomacAddressCache = new Dictionary<IPv4Address, MACAddress>();
+        private readonly Dictionary<IPv4Address, MACAddress> ipTomacAddressCache = new Dictionary<IPv4Address, MACAddress>();
 
-        private ConcurrentDictionary<uint, AbstractInstance> instances = new ConcurrentDictionary<uint, AbstractInstance>();
+        private readonly ConcurrentDictionary<uint, AbstractInstance> instances = new ConcurrentDictionary<uint, AbstractInstance>();
         public ReadOnlyCollection<AbstractInstance> Instances { get => instances.Values.ToList().AsReadOnly(); }
 
-        private ConcurrentDictionary<uint,NetworkClientBag> networkClients = new ConcurrentDictionary<uint, NetworkClientBag>();
+        private readonly ConcurrentDictionary<uint,NetworkClientBag> networkClients = new ConcurrentDictionary<uint, NetworkClientBag>();
         public IReadOnlyCollection<NetworkClientBag> NetworkClients => networkClients.Values.ToList().AsReadOnly();
 
         private System.Timers.Timer _updateNetworkClientsTimer = null;
@@ -47,9 +47,35 @@ namespace ArtNetSharp
         public bool IsDisposing { get; private set; }
         public bool IsDisposed { get; private set; }
 
+        private NetworkLoopAdapter loopNetwork;
+        internal NetworkLoopAdapter LoopNetwork
+        {
+            get
+            {
+                return loopNetwork;
+            }
+            set
+            {
+                if (loopNetwork != null)
+                    loopNetwork.DataReceived -= LoopNetwork_DataReceived;
+                loopNetwork = value;
+                if (loopNetwork != null)
+                    loopNetwork.DataReceived += LoopNetwork_DataReceived;
+            }
+        }
+
+        private async void LoopNetwork_DataReceived(object sender, EventArgs e)
+        {
+            NetworkLoopAdapter adapter = (NetworkLoopAdapter)sender;
+            var bag = await adapter.Receive();
+            Tools.TryDeserializePacket(bag.Data, out var packet);
+            Logger.LogTrace($"Received Loop Package {packet}");
+            processPacket(packet, new IPv4Address("3.3.3.3"), new IPv4Address("3.3.3.3"));
+        }
+
         public class NetworkClientBag: IDisposable
         {
-            private static ILogger<NetworkClientBag> Logger = ApplicationLogging.CreateLogger<NetworkClientBag>();
+            private static readonly ILogger<NetworkClientBag> Logger = ApplicationLogging.CreateLogger<NetworkClientBag>();
             private readonly IPEndPoint broadcastEndpoint;
             public readonly IPAddress BroadcastIpAddress;
             public readonly UnicastIPAddressInformation UnicastIPAddressInfo;
@@ -60,7 +86,7 @@ namespace ArtNetSharp
             private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
             private bool _clientAlive = false;
 
-            public bool enabled = true;
+            private bool enabled = true;
             public bool Enabled
             {
                 get { return enabled; }
@@ -144,53 +170,29 @@ namespace ArtNetSharp
                 {
                     while (true)
                     {
+                        if (this.IsDisposed || this.IsDisposing)
+                            return;
+
                         UdpReceiveResult received = await _client.ReceiveAsync();
 
-
-                        //if (Tools.IsLinux())
-                            if (!IsInSubnet(LocalIpAddress, UnicastIPAddressInfo.IPv4Mask, received.RemoteEndPoint.Address))
+                        if (!Tools.IsWindows())
+                            if (!Tools.IsInSubnet(LocalIpAddress, UnicastIPAddressInfo.IPv4Mask, received.RemoteEndPoint.Address))
                             {
                                 Logger?.LogTrace($"Drop Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
                                 return;
                             }
+                    
 
-                        Logger?.LogTrace($"Allowed Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
                         if (Enabled)
-                            ReceivedData?.Invoke(this, new Tuple<IPv4Address, UdpReceiveResult>(LocalIpAddress, received));
+                            ReceivedData?.InvokeFailSafe(this, new Tuple<IPv4Address, UdpReceiveResult>(LocalIpAddress, received));
                     }
                 }
+                catch (SocketException) { }
                 catch (Exception e) { Logger.LogError(e); _ = openClient(); }
             }
-            public static bool IsInSubnet(IPAddress ip, IPAddress mask, IPAddress target)
-            {
-                try
-                {
-                    // Get bytes of IP address and subnet mask
-                    byte[] ipBytes = ip.GetAddressBytes();
-                    byte[] maskBytes = mask.GetAddressBytes();
-                    byte[] targetBytes = target.GetAddressBytes();
 
-                    // Perform bitwise AND operation between IP address and subnet mask
-                    for (int i = 0; i < ipBytes.Length; i++)
-                    {
-                        if ((ipBytes[i] & maskBytes[i]) != (targetBytes[i] & maskBytes[i]))
-                        {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    // Handle any parsing errors
-                    Logger?.LogError(ex);
-                    return false;
-                }
-            }
-
-            private List<IPAddress> notMatchingIpAdddresses = new List<IPAddress>();
-            private List<IPAddress> matchingIpAdddresses = new List<IPAddress>();
+            private readonly List<IPAddress> notMatchingIpAdddresses = new List<IPAddress>();
+            private readonly List<IPAddress> matchingIpAdddresses = new List<IPAddress>();
             public async Task<bool> MatchIP(IPAddress ip)
             {
                 if (ip == null)
@@ -246,9 +248,9 @@ namespace ArtNetSharp
                         return;
 
                     await _client.SendAsync(data, data.Length, new IPEndPoint(destinationIp, Constants.ARTNET_PORT));
-#if DEBUG
-                    Logger.LogTrace($"Send Packet to {destinationIp} -> {packet}");
-#endif
+//#if DEBUG
+//                    Logger.LogTrace($"Send Packet to {destinationIp} -> {packet}");
+//#endif
                     return;
                 }
                 catch (Exception e)
@@ -273,9 +275,9 @@ namespace ArtNetSharp
                     if (!_clientAlive || _client?.Client == null)
                         return;
                     await _client.SendAsync(data, data.Length, broadcastEndpoint);
-#if DEBUG
-                    Logger.LogTrace($"Send Packet to {broadcastEndpoint.Address} -> {packet}");
-#endif
+//#if DEBUG
+//                    Logger.LogTrace($"Send Packet to {broadcastEndpoint.Address} -> {packet}");
+//#endif
                     return;
                 }
                 catch (Exception e)
@@ -284,7 +286,7 @@ namespace ArtNetSharp
                 }
                 finally
                 {
-                    semaphoreSlim.Release();
+                    semaphoreSlim?.Release();
                     await openClient();
                 }
             }
@@ -295,42 +297,71 @@ namespace ArtNetSharp
                     return;
                 IsDisposing = true;
                 _ = closeClient();
+                semaphoreSlim.Dispose();
+                semaphoreSlim = null;
                 IsDisposed = true;
                 IsDisposing = false;
             }
         }
 
-        private ArtNet()
+        internal ArtNet([CallerFilePath] string caller="", [CallerLineNumber] int line=-1)
         {
-            ApplicationLogging.LoggerFactory.AddProvider(new FileProvider());
+            if (Logger == null)
+            {
+                ApplicationLogging.LoggerFactory.AddProvider(new FileProvider());
+                Logger = ApplicationLogging.CreateLogger<ArtNet>();
+            }
 
-            Logger = ApplicationLogging.CreateLogger<ArtNet>();
-            Logger.LogTrace("Initialized!");
-
+            Logger?.LogTrace($"Initialize {caller} (Line: {line})");
             _updateNetworkClientsTimer = new System.Timers.Timer();
             _updateNetworkClientsTimer.Interval = 1000;
             _updateNetworkClientsTimer.Enabled = true;
-            _updateNetworkClientsTimer.Elapsed += _updateNetworkClientsTimer_Elapsed;
+            _updateNetworkClientsTimer.Elapsed += UpdateNetworkClientsTimer_Elapsed;
             updateNetworkClients();
+            Logger?.LogTrace($"Initialized!");
         }
         ~ArtNet()
         {
             ((IDisposable)this).Dispose();
         }
 
-        internal static void Clear()
+        internal class NetworkLoopAdapter
         {
-            if (instance == null)
-                return;
+            internal readonly struct LoopDataBag
+            {
+                public readonly byte[] Data;
 
-            var old = instance;
-            instance= new ArtNet();
+                public LoopDataBag(byte[] data) : this()
+                {
+                    Data = data;
+                }
+            }
+            private readonly ConcurrentQueue<LoopDataBag> bag;
+            public event EventHandler DataReceived;
 
-            old.RemoveInstance(old.Instances.ToArray());
-            ((IDisposable)old).Dispose();
+            public readonly IPv4Address Mask;
+            public NetworkLoopAdapter(IPv4Address mask)
+            {
+                bag = new ConcurrentQueue<LoopDataBag>();
+                Mask = mask;
+            }
+            public void Send(byte[] _data)
+            {
+                bag.Enqueue(new LoopDataBag(_data));
+                DataReceived.InvokeFailSafe(this, EventArgs.Empty);
+            }
+
+            public async Task<LoopDataBag> Receive()
+            {
+                LoopDataBag b;
+                while (!bag.TryDequeue(out b))
+                    await Task.Delay(1);
+
+                return b;
+            }
         }
 
-        private static List<ILoggerProvider> loggerProviders = new List<ILoggerProvider>();  
+        private static readonly List<ILoggerProvider> loggerProviders = new List<ILoggerProvider>();  
         public static void AddLoggProvider(ILoggerProvider loggerProvider)
         {
             if (loggerProviders.Contains(loggerProvider))
@@ -339,16 +370,16 @@ namespace ArtNetSharp
             loggerProviders.Add(loggerProvider);
         }
 
-        private void _updateNetworkClientsTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        private void UpdateNetworkClientsTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             updateNetworkClients();
         }
 
         private void ReceivedData(object sender, Tuple<IPv4Address, UdpReceiveResult> e)
         {
-            processReceivedData(e.Item1, e.Item2);
+            ProcessReceivedData(e.Item2);
         }
-        private void processReceivedData(IPv4Address localIpAddress, UdpReceiveResult result)
+        private void ProcessReceivedData(UdpReceiveResult result)
         {
             if (IsDisposed || IsDisposing)
                 return;
@@ -360,7 +391,12 @@ namespace ArtNetSharp
                 IPv4Address sourceIp = RemoteIpEndPoint.Address;
                 if (Tools.TryDeserializePacket(received, out var packet))
                 {
-                    processPacket(packet, localIpAddress, sourceIp);
+                    var nic = networkClients.Values.FirstOrDefault(n => Tools.IsInSubnet(n.LocalIpAddress,n.IPv4Mask, sourceIp));
+                    if (nic != null)
+                    {
+                        //Logger?.LogTrace($"Process Network Packet:{packet} {Environment.NewLine} Local:{nic.LocalIpAddress}, Mask: {nic.IPv4Mask}, Remote: {sourceIp}");
+                        processPacket(packet, nic.LocalIpAddress, sourceIp);
+                    }
                     return;
                 }
                 Logger.LogWarning($"Can't deserialize Data to ArtNet-Packet");
@@ -374,7 +410,14 @@ namespace ArtNetSharp
 #if DEBUG
             Logger.LogTrace($"Received Packet from {sourceIp} -> {packet}");
 #endif
-            instances.Values.ToList().ForEach(_instance => { ((IInstance)_instance).PacketReceived(packet, localIp, sourceIp); });
+            foreach (var inst in instances) try
+                {
+                    ((IInstance)inst.Value).PacketReceived(packet, localIp, sourceIp);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e);
+                }
         }
 
         public static bool IsNetworkAvailable(long? minimumSpeed=null)
@@ -444,16 +487,19 @@ namespace ArtNetSharp
             }
             return new MACAddress();
         }
-        private SemaphoreSlim updateNetworkSenaphoreSlim = new SemaphoreSlim(1);
+        private readonly SemaphoreSlim updateNetworkSenaphoreSlim = new SemaphoreSlim(1);
         private async void updateNetworkClients()
         {
-            if (IsDisposed || IsDisposing)
+            if (LoopNetwork != null)
+                return;
+
+            if (IsDisposed || IsDisposing || updateNetworkSenaphoreSlim == null)
                 return;
 
             if (updateNetworkSenaphoreSlim.CurrentCount == 0)
                 return;
 
-            await updateNetworkSenaphoreSlim.WaitAsync();
+            await updateNetworkSenaphoreSlim?.WaitAsync();
             try
             {
                 NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
@@ -488,7 +534,8 @@ namespace ArtNetSharp
             }
             finally
             {
-                updateNetworkSenaphoreSlim.Release();
+                if (!(IsDisposed || IsDisposing))
+                    updateNetworkSenaphoreSlim?.Release();
             }
         }
 
@@ -501,7 +548,7 @@ namespace ArtNetSharp
                 if (this.instances.TryAdd((uint)new Random().Next(), instance))
                 {
                     Logger?.LogDebug($"Added instance {instance.GetType().Name}: {instance.Name} ({instance.ShortName})");
-                    OnInstanceAdded(this, instance);
+                    OnInstanceAdded?.InvokeFailSafe(this, instance);
                 }
             }
         }
@@ -515,24 +562,43 @@ namespace ArtNetSharp
                 if (this.instances.TryRemove(toRemove.Key, out _))
                 {
                     Logger?.LogDebug($"Removed instance {instance.Name} ({instance.ShortName})");
-                    OnInstanceRemoved(this, instance);
+                    OnInstanceRemoved?.InvokeFailSafe(this, instance);
                 }
             }
         }
 
         internal async Task TrySendPacket(AbstractArtPacketCore packet, IPv4Address destinationIp)
         {
-            List<Task> tasks = new List<Task>();
-            foreach (var ncb in networkClients.Values)
-                tasks.Add(Task.Run(async () => await ncb.TrySendPacket(packet, destinationIp)));
-            await Task.WhenAll(tasks);
+            if (this.IsDisposed || this.IsDisposing)
+                return;
+            if (LoopNetwork==null)
+            {
+                List<Task> tasks = new List<Task>();
+                foreach (var ncb in networkClients.Values)
+                    tasks.Add(Task.Run(async () => await ncb.TrySendPacket(packet, destinationIp)));
+                await Task.WhenAll(tasks);
+            }
+            else
+            {
+                LoopNetwork.Send(packet);
+            }
         }
         internal async Task TrySendBroadcastPacket(AbstractArtPacketCore packet)
         {
-            List<Task> tasks = new List<Task>();
-            foreach (var ncb in networkClients.Values)
-                tasks.Add(Task.Run(async () => await ncb.TrySendBroadcastPacket(packet)));
-            await Task.WhenAll(tasks);
+            if (this.IsDisposed || this.IsDisposing)
+                return;
+
+            if (LoopNetwork==null)
+            {
+                List<Task> tasks = new List<Task>();
+                foreach (var ncb in networkClients.Values)
+                    tasks.Add(Task.Run(async () => await ncb.TrySendBroadcastPacket(packet)));
+                await Task.WhenAll(tasks);
+            }
+            else
+            {
+                LoopNetwork.Send(packet);
+            }
         }
 
         void IDisposable.Dispose()
@@ -541,11 +607,14 @@ namespace ArtNetSharp
                 return;
             IsDisposing = true;
 
-            _updateNetworkClientsTimer.Enabled = false;
-            _updateNetworkClientsTimer.Elapsed -= _updateNetworkClientsTimer_Elapsed;
-            _updateNetworkClientsTimer = null;
-            networkClients.Clear();
-            loggerProviders.Clear();
+            Logger?.LogCritical($"Dispose ArtNet");
+
+            if (_updateNetworkClientsTimer != null)
+            {
+                _updateNetworkClientsTimer.Enabled = false;
+                _updateNetworkClientsTimer.Elapsed -= UpdateNetworkClientsTimer_Elapsed;
+                _updateNetworkClientsTimer = null;
+            }
             foreach (var instance in instances)
                 ((IDisposable)instance.Value).Dispose();
             instances.Clear();
@@ -554,7 +623,8 @@ namespace ArtNetSharp
                 net.Value.Enabled = false;
                 net.Value.Dispose();
             }
-            networkClients.Clear();
+            networkClients?.Clear();
+            loggerProviders?.Clear();
 
             updateNetworkSenaphoreSlim.Release();
             updateNetworkSenaphoreSlim.Dispose();
@@ -562,7 +632,7 @@ namespace ArtNetSharp
             ipTomacAddressCache.Clear();
             OnInstanceAdded = null;
             OnInstanceRemoved = null;
-            Logger = null;
+            LoopNetwork = null;
             IsDisposed = true;
             IsDisposing = false;
 

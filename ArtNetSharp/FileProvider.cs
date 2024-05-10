@@ -18,10 +18,9 @@ namespace ArtNetSharp
         private static readonly string fileDirectory = getOsDirectory();
 
         private static readonly string filePath = Path.Combine(fileDirectory, "log.txt");
-        private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
 
         private readonly ConcurrentQueue<string> queue= new ConcurrentQueue<string>();
-        private readonly Thread thread;
         private bool isDisposing = false;
         private static string getOsDirectory()
         {
@@ -59,30 +58,23 @@ namespace ArtNetSharp
                 if (File.Exists(filePath))
                     File.Delete(filePath);
 
-                using (var file = File.Create(filePath))
-                {
-
-                }
+                using var file = File.Create(filePath);
             }
             catch
             {
 
             }
-            finally { 
-                FileProvider.semaphore.Release();
-                thread = new Thread(runFileThread);
-                thread.Name = $"{nameof(FileProvider)}-Logging Thread";
-                thread.IsBackground = true ;
-                thread.Priority = ThreadPriority.BelowNormal;
-                thread.Start();
+            finally {
+                _ = runFileThread();
             }
         }
 
-        private void runFileThread()
+        private async Task runFileThread()
         {
             while (!isDisposing)
             {
-                if(queue.TryDequeue(out var message))
+                await Task.Delay(1);
+                while (queue.TryDequeue(out var message))
                 {
                     try
                     {
@@ -98,7 +90,10 @@ namespace ArtNetSharp
 
         private void Log(string message)
         {
-            queue.Enqueue(message);
+            Task.Run(() =>
+            {
+                queue.Enqueue(message);
+            });
         }
 
         public ILogger CreateLogger(string categoryName)
@@ -133,14 +128,14 @@ namespace ArtNetSharp
                 return true;
             }
 
-            public async void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
                 if (string.IsNullOrWhiteSpace(FileProvider.fileDirectory))
                     return;
                 if (!Directory.Exists(fileDirectory))
                     return;
 
-                await Task.Run(async () =>
+                Task.Run(() =>
                 {
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.AppendLine($"{DateTime.UtcNow} [{logLevel}] <{CategoryName}> {formatter?.Invoke(state, exception)}");

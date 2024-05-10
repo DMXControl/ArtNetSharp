@@ -8,6 +8,7 @@ namespace ArtNetSharp
         public readonly ENodeReportCodes ReportCode;
         public readonly uint Counter;
         public readonly string Text;
+        public readonly bool Valid;
 
         private const string REGEX = "#([A-Fa-f0-9]+) \\[([0-9]+)\\](.*)";
 
@@ -16,6 +17,7 @@ namespace ArtNetSharp
             ReportCode = reportCode;
             Counter = counter;
             Text = text;
+            Valid = true;
         }
         public NodeReport(in string reportCode)
         {
@@ -26,7 +28,7 @@ namespace ArtNetSharp
                 {
                     ReportCode = 0;
                     Counter = 0;
-                    Text = string.Empty;
+                    Text = reportCode;
                     return;
                 }
                 string hex = Matches[0].Groups[1].Value.Replace(" ", "");
@@ -38,6 +40,7 @@ namespace ArtNetSharp
                 ReportCode = (ENodeReportCodes)ushort.Parse(hex, System.Globalization.NumberStyles.HexNumber);
                 Counter = uint.Parse(counter);
                 Text = text;
+                Valid = true;
             }
             catch
             {
@@ -68,7 +71,9 @@ namespace ArtNetSharp
         }
         public override string ToString()
         {
-            return $"#{(ushort)ReportCode:x4} [{Counter}] {Text}";
+            if (Valid)
+                return $"#{(ushort)ReportCode:x4} [{Counter:d4}] {Text}";
+            return Text;
         }
 
         public int CompareTo(NodeReport other)

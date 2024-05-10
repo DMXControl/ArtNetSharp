@@ -1,15 +1,15 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
+using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using static ArtNetSharp.ApplicationLogging;
 
 namespace ArtNetSharp
 {
     public static class Tools
     {
-        private static ILogger Logger = ApplicationLogging.CreateLogger("Tools");
+        private static readonly ILogger Logger = ApplicationLogging.CreateLogger("Tools");
         public static bool IsAndroid()
         {
             return
@@ -180,6 +180,56 @@ namespace ArtNetSharp
         {
             byte result = (byte)(value & mask);
             return result == mask;
+        }
+        public static IPAddress GetBroadcastAddress(IPAddress address, IPAddress mask)
+        {
+            uint ipAddress = BitConverter.ToUInt32(address.GetAddressBytes(), 0);
+            uint ipMaskV4 = BitConverter.ToUInt32(mask.GetAddressBytes(), 0);
+            uint broadCastIpAddress = ipAddress | ~ipMaskV4;
+
+            return new IPAddress(BitConverter.GetBytes(broadCastIpAddress));
+        }
+        public static bool IsBroadcastIPAddress(IPAddress ipAddress, IPAddress subnetMask)
+        {
+            byte[] ipBytes = ipAddress.GetAddressBytes();
+            byte[] maskBytes = subnetMask.GetAddressBytes();
+
+            byte[] broadcastBytes = new byte[ipBytes.Length];
+            for (int i = 0; i < ipBytes.Length; i++)
+            {
+                broadcastBytes[i] = (byte)(ipBytes[i] | ~maskBytes[i]);
+            }
+
+            IPAddress broadcastIP = new IPAddress(broadcastBytes);
+            return ipAddress.Equals(broadcastIP);
+        }
+
+        public static bool IsInSubnet(IPAddress ip, IPAddress mask, IPAddress target)
+        {
+            try
+            {
+                // Get bytes of IP address and subnet mask
+                byte[] ipBytes = ip.GetAddressBytes();
+                byte[] maskBytes = mask.GetAddressBytes();
+                byte[] targetBytes = target.GetAddressBytes();
+
+                // Perform bitwise AND operation between IP address and subnet mask
+                for (int i = 0; i < ipBytes.Length; i++)
+                {
+                    if ((ipBytes[i] & maskBytes[i]) != (targetBytes[i] & maskBytes[i]))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Handle any parsing errors
+                Logger?.LogError(ex);
+                return false;
+            }
         }
     }
 }

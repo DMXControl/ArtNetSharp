@@ -279,7 +279,6 @@ namespace ArtNetSharp
             Status = new NodeStatus(status1, status2, status3);
             if (Status.PortAddressBitResolution == NodeStatus.EPortAddressBitResolution._8Bit)
             {
-                Net = 0;
                 Subnet = 0;
             }
             ManufacturerCode = (ushort)(packet[25] << 8 | packet[24]); // 13 & 14 ESTA manufacturer
@@ -455,13 +454,13 @@ namespace ArtNetSharp
             //p[186] = ReceiveUniverse;
             if (InputUniverses != null)
                 for (int i = 0; i < InputUniverses.Length; i++)
-                    p[186 + i] = InputUniverses[i] is Universe ? (Universe)InputUniverses[i] : (Address)InputUniverses[i];
+                    p[186 + i] = InputUniverses[i] is Universe universe ? universe : (Address)InputUniverses[i];
 
             // 24 SwIn [4] Input Universe
             //p[190] = SendUniverse;
             if (OutputUniverses != null)
                 for (int i = 0; i < OutputUniverses.Length; i++)
-                    p[190 + i] = OutputUniverses[i] is Universe ? (Universe)OutputUniverses[i] : (Address)OutputUniverses[i];
+                    p[190 + i] = OutputUniverses[i] is Universe universe ? universe : (Address)OutputUniverses[i];
 
             p[194] = AcnPriority; // 25 AcnPriority
             p[195] = (byte)Macro; // 26 SwMacro

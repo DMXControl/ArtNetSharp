@@ -5,9 +5,11 @@ namespace ArtNetTests.Mocks
 {
     public class RDMDeviceMock : AbstractRDMDevice
     {
-        internal static ControllerInstanceMock Controller = ArtNet.Instance.Instances.OfType<ControllerInstanceMock>().First();
-        public RDMDeviceMock(RDMUID uid) : base(uid)
+        private readonly ArtNet artnet;
+        internal ControllerInstanceMock Controller => artnet.Instances.OfType<ControllerInstanceMock>().First();
+        public RDMDeviceMock(RDMUID uid,ArtNet _artnet) : base(uid)
         {
+            artnet = _artnet;
 #if DEBUG
             if (uid.Manufacturer == RDMSharp.ParameterWrapper.EManufacturer.DMXControlProjects_eV)
                 return;

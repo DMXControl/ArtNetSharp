@@ -12,7 +12,7 @@ namespace ArtNetSharp.Communication
 {
     public sealed class RemoteClient : INotifyPropertyChanged
     {
-        private static ILogger Logger = ApplicationLogging.CreateLogger<RemoteClient>();
+        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<RemoteClient>();
         public readonly string ID;
         public readonly MACAddress MacAddress;
         private IPv4Address ipAddress;
@@ -195,13 +195,13 @@ namespace ArtNetSharp.Communication
                 this.IsSACNCapable = root.Status.NodeSupportArtNet_sACN_Switching;
             }
         }
-        private ConcurrentDictionary<int, RemoteClientPort> ports = new ConcurrentDictionary<int, RemoteClientPort>();
+        private readonly ConcurrentDictionary<int, RemoteClientPort> ports = new ConcurrentDictionary<int, RemoteClientPort>();
         public IReadOnlyCollection<RemoteClientPort> Ports { get; private set; }
         public event EventHandler<RemoteClientPort> PortDiscovered;
         public event EventHandler<RemoteClientPort> PortTimedOut;
 
-        private ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
-        private ConcurrentDictionary<EDataRequest, object> artDataCache = new ConcurrentDictionary<EDataRequest, object>();
+        private readonly ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        private readonly ConcurrentDictionary<EDataRequest, object> artDataCache = new ConcurrentDictionary<EDataRequest, object>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
 
@@ -214,7 +214,7 @@ namespace ArtNetSharp.Communication
         {
             try
             {
-                PropertyChanged?.Invoke(this, eventArgs);
+                PropertyChanged?.InvokeFailSafe(this, eventArgs);
             }
             catch (Exception e)
             {
@@ -284,15 +284,14 @@ namespace ArtNetSharp.Communication
                 for (byte portIndex = 0; portIndex < artPollReply.Ports; portIndex++)
                 {
                     int physicalPort = (Math.Max(0, artPollReply.BindIndex - 1) * artPollReply.Ports) + portIndex;
-                    RemoteClientPort port = null;
-                    if (ports.TryGetValue(physicalPort, out port))
+                    if (ports.TryGetValue(physicalPort, out RemoteClientPort port))
                         port.processArtPollReply(artPollReply);
                     else
                     {
                         port = new RemoteClientPort(artPollReply, portIndex);
                         if (ports.TryAdd(physicalPort, port))
                         {
-                            PortDiscovered?.Invoke(this, port);
+                            PortDiscovered?.InvokeFailSafe(this, port);
                             port.RDMUIDReceived += Port_RDMUIDReceived;
                         }
                     }
@@ -311,7 +310,7 @@ namespace ArtNetSharp.Communication
                 foreach (var port in timoutedPorts)
                 {
                     ports.TryRemove(port.Key, out _);
-                    PortTimedOut?.Invoke(this, port.Value);
+                    PortTimedOut?.InvokeFailSafe(this, port.Value);
                 }
             }
             Ports = ports.Select(p => p.Value).ToList().AsReadOnly();
@@ -333,26 +332,26 @@ namespace ArtNetSharp.Communication
             if (Instance is ControllerInstance)
             {
                 using ArtData artData = new ArtData(instance.OEMProductCode, instance.ESTAManufacturerCode);
-                await ArtNet.Instance.TrySendPacket(artData, IpAddress);
+                await Instance.ArtNetInstance.TrySendPacket(artData, IpAddress);
             }
         }
         private async Task QueryArtData()
         {
-            if (!(Instance is ControllerInstance))
+            if (Instance is not ControllerInstance)
                 return;
 
             EDataRequest[] todo = new[] { EDataRequest.UrlProduct, EDataRequest.UrlSupport, EDataRequest.UrlUserGuide, EDataRequest.UrlPersUdr, EDataRequest.UrlPersGdtf };
             foreach (EDataRequest req in todo)
             {
                 using ArtData artData = new ArtData(instance.OEMProductCode, instance.ESTAManufacturerCode, req);
-                await ArtNet.Instance.TrySendPacket(artData, IpAddress);
+                await Instance.ArtNetInstance.TrySendPacket(artData, IpAddress);
             }
         }
 
         private void Port_RDMUIDReceived(object sender, RDMUID_ReceivedBag bag)
         {
             knownRDMUIDs.AddOrUpdate(bag.Uid, bag, (x, y) => bag);
-            RDMUIDReceived?.Invoke(this, bag);
+            RDMUIDReceived?.InvokeFailSafe(this, bag);
         }
         public void RemoveOutdatedRdmUIDs()
         {

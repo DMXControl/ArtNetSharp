@@ -5,6 +5,7 @@ using RDMSharp;
 
 namespace ArtNetTests
 {
+    [Order(1)]
     public class ObjectTypesTests
     {
         [OneTimeSetUp]
@@ -24,10 +25,12 @@ namespace ArtNetTests
                 try
                 {
                     Universe u = new Universe(b);
-
-                    Assert.That(b, Is.LessThanOrEqualTo(0xf));
-                    Assert.That(u.Value, Is.EqualTo(b));
-                    Assert.That(u.ToString(), Is.Not.Empty);
+                    Assert.Multiple(() =>
+                    {
+                        Assert.That(b, Is.LessThanOrEqualTo(0xf));
+                        Assert.That(u.Value, Is.EqualTo(b));
+                        Assert.That(u.ToString(), Is.Not.Empty);
+                    });
                     universes.Add(u);
                 }
                 catch
@@ -35,21 +38,27 @@ namespace ArtNetTests
                     Assert.That(b, Is.GreaterThan(0xf));
                 }
             }
-            Assert.That(universes, Has.Count.EqualTo(0xf + 1));
-            Assert.That(universes.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(0xf + 1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(universes, Has.Count.EqualTo(0xf + 1));
+                Assert.That(universes.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(0xf + 1));
+            });
 
-            Assert.That(new Universe(1) == (Universe)1, Is.True);
-            Assert.That(new Universe(1) != (Universe)1, Is.False);
-            Assert.That(new Universe(1) == (Universe)2, Is.False);
-            Assert.That(new Universe(1) != (Universe)2, Is.True);
-            Assert.That(new Universe(1).GetHashCode(), Is.EqualTo(((Universe)1).GetHashCode()));
-            Assert.That(new Universe(1).GetHashCode(), Is.Not.EqualTo(((Universe)2).GetHashCode()));
-            Assert.That(new Universe(1).Equals(null), Is.False);
-            Assert.That(new Universe(1).Equals((object)1), Is.False);
-            Assert.That(new Universe(1).Equals((object)(Universe)1), Is.True);
-            Assert.That(new Universe(1).Equals((Universe)1), Is.True);
-            Assert.That(new Universe(1).Equals((Universe)2), Is.False);
-            Assert.That(new Universe(0).Equals(Universe.Default), Is.True);
+            Assert.Multiple(() =>
+            {
+                Assert.That(new Universe(1) == (Universe)1, Is.True);
+                Assert.That(new Universe(1) != (Universe)1, Is.False);
+                Assert.That(new Universe(1) == (Universe)2, Is.False);
+                Assert.That(new Universe(1) != (Universe)2, Is.True);
+                Assert.That(new Universe(1).GetHashCode(), Is.EqualTo(((Universe)1).GetHashCode()));
+                Assert.That(new Universe(1).GetHashCode(), Is.Not.EqualTo(((Universe)2).GetHashCode()));
+                Assert.That(new Universe(1).Equals(null), Is.False);
+                Assert.That(new Universe(1).Equals((object)1), Is.False);
+                Assert.That(new Universe(1).Equals((object)(Universe)1), Is.True);
+                Assert.That(new Universe(1).Equals((Universe)1), Is.True);
+                Assert.That(new Universe(1).Equals((Universe)2), Is.False);
+                Assert.That(new Universe(0).Equals(Universe.Default), Is.True);
+            });
         }
 
         [Test]
@@ -62,9 +71,12 @@ namespace ArtNetTests
                 {
                     Subnet s = new Subnet(b);
 
-                    Assert.That(b, Is.LessThanOrEqualTo(0xf));
-                    Assert.That(s.Value, Is.EqualTo(b));
-                    Assert.That(s.ToString(), Is.Not.Empty);
+                    Assert.Multiple(() =>
+                    {
+                        Assert.That(b, Is.LessThanOrEqualTo(0xf));
+                        Assert.That(s.Value, Is.EqualTo(b));
+                        Assert.That(s.ToString(), Is.Not.Empty);
+                    });
                     subNets.Add(s);
                 }
                 catch
@@ -72,54 +84,72 @@ namespace ArtNetTests
                     Assert.That(b, Is.GreaterThan(0xf));
                 }
             }
-            Assert.That(subNets, Has.Count.EqualTo(0xf + 1));
-            Assert.That(subNets.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(0xf + 1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(subNets, Has.Count.EqualTo(0xf + 1));
+                Assert.That(subNets.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(0xf + 1));
+            });
 
-            Assert.That(new Subnet(1) == (Subnet)1, Is.True);
-            Assert.That(new Subnet(1) != (Subnet)1, Is.False);
-            Assert.That(new Subnet(1) == (Subnet)2, Is.False);
-            Assert.That(new Subnet(1) != (Subnet)2, Is.True);
-            Assert.That(new Subnet(1).GetHashCode(), Is.EqualTo(((Subnet)1).GetHashCode()));
-            Assert.That(new Subnet(1).GetHashCode(), Is.Not.EqualTo(((Subnet)2).GetHashCode()));
-            Assert.That(new Subnet(1).Equals(null), Is.False);
-            Assert.That(new Subnet(1).Equals((object)1), Is.False);
-            Assert.That(new Subnet(1).Equals((object)(Subnet)1), Is.True);
-            Assert.That(new Subnet(1).Equals((Subnet)1), Is.True);
-            Assert.That(new Subnet(1).Equals((Subnet)2), Is.False);
-            Assert.That(new Subnet(0).Equals(Subnet.Default), Is.True);
+            Assert.Multiple(() =>
+            {
+                Assert.That(new Subnet(1) == (Subnet)1, Is.True);
+                Assert.That(new Subnet(1) != (Subnet)1, Is.False);
+                Assert.That(new Subnet(1) == (Subnet)2, Is.False);
+                Assert.That(new Subnet(1) != (Subnet)2, Is.True);
+                Assert.That(new Subnet(1).GetHashCode(), Is.EqualTo(((Subnet)1).GetHashCode()));
+                Assert.That(new Subnet(1).GetHashCode(), Is.Not.EqualTo(((Subnet)2).GetHashCode()));
+                Assert.That(new Subnet(1).Equals(null), Is.False);
+                Assert.That(new Subnet(1).Equals((object)1), Is.False);
+                Assert.That(new Subnet(1).Equals((object)(Subnet)1), Is.True);
+                Assert.That(new Subnet(1).Equals((Subnet)1), Is.True);
+                Assert.That(new Subnet(1).Equals((Subnet)2), Is.False);
+                Assert.That(new Subnet(0).Equals(Subnet.Default), Is.True);
+            });
         }
 
         [Test]
         public void TestAddress()
         {
             Address a = new Address(1);
-            Assert.That(a.Universe.Value, Is.EqualTo(1));
-            Assert.That(a.Combined, Is.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(a.Universe.Value, Is.EqualTo(1));
+                Assert.That(a.Combined, Is.EqualTo(1));
+            });
 
             a = new Address(15);
-            Assert.That(a.Universe.Value, Is.EqualTo(15));
-            Assert.That(a.Combined, Is.EqualTo(15));
+            Assert.Multiple(() =>
+            {
+                Assert.That(a.Universe.Value, Is.EqualTo(15));
+                Assert.That(a.Combined, Is.EqualTo(15));
+            });
 
             a = new Address(16);
-            Assert.That(a.Universe.Value, Is.EqualTo(0));
-            Assert.That(a.Subnet.Value, Is.EqualTo(1));
-            Assert.That(a.Combined, Is.EqualTo(16));
+            Assert.Multiple(() =>
+            {
+                Assert.That(a.Universe.Value, Is.EqualTo(0));
+                Assert.That(a.Subnet.Value, Is.EqualTo(1));
+                Assert.That(a.Combined, Is.EqualTo(16));
+            });
 
             a = new Address(0xff);
-            Assert.That(a.Universe.Value, Is.EqualTo(15));
-            Assert.That(a.Subnet.Value, Is.EqualTo(15));
-            Assert.That(a.Combined, Is.EqualTo(0xff));
-            Assert.That(new Address(16) == new Address(1, 0));
-            Assert.That(new Address(16) != new Address(0, 1));
-            Assert.That(new Address(16), Is.EqualTo(new Address(1, 0)));
-            Assert.That(new Address(16), Is.Not.EqualTo(new Address(0, 1)));
-            Assert.That(new Address(16), Is.EqualTo((object)new Address(1, 0)));
-            Assert.That(new Address(16).GetHashCode(), Is.Not.EqualTo(new Address(0, 1).GetHashCode()));
-            Assert.That(new Address(16).Equals((object)new Address(1, 0)), Is.True);
-            Assert.That(new Address(16).Equals((object)new Address(0, 1)), Is.False);
-            Assert.That(new Address(16).Equals(null), Is.False);
-            Assert.That(new Address(16), Is.Not.EqualTo(null));
-            Assert.That(new Address(16).ToString(), Is.Not.Empty);
+            Assert.Multiple(() =>
+            {
+                Assert.That(a.Universe.Value, Is.EqualTo(15));
+                Assert.That(a.Subnet.Value, Is.EqualTo(15));
+                Assert.That(a.Combined, Is.EqualTo(0xff));
+                Assert.That(new Address(16) == new Address(1, 0));
+                Assert.That(new Address(16) != new Address(0, 1));
+                Assert.That(new Address(16), Is.EqualTo(new Address(1, 0)));
+                Assert.That(new Address(16), Is.Not.EqualTo(new Address(0, 1)));
+                Assert.That(new Address(16), Is.EqualTo((object)new Address(1, 0)));
+                Assert.That(new Address(16).GetHashCode(), Is.Not.EqualTo(new Address(0, 1).GetHashCode()));
+                Assert.That(new Address(16).Equals((object)new Address(1, 0)), Is.True);
+                Assert.That(new Address(16).Equals((object)new Address(0, 1)), Is.False);
+                Assert.That(new Address(16).Equals(null), Is.False);
+                Assert.That(new Address(16), Is.Not.EqualTo(null));
+                Assert.That(new Address(16).ToString(), Is.Not.Empty);
+            });
 
             HashSet<Address> addresses = new HashSet<Address>();
             for (byte b = 0; b < byte.MaxValue; b++)
@@ -138,10 +168,12 @@ namespace ArtNetTests
                 try
                 {
                     Net n = new Net(b);
-
-                    Assert.That(b, Is.LessThanOrEqualTo(0x7f));
-                    Assert.That(n.Value, Is.EqualTo(b));
-                    Assert.That(n.ToString(), Is.Not.Empty);
+                    Assert.Multiple(() =>
+                    {
+                        Assert.That(b, Is.LessThanOrEqualTo(0x7f));
+                        Assert.That(n.Value, Is.EqualTo(b));
+                        Assert.That(n.ToString(), Is.Not.Empty);
+                    });
                     nets.Add(n);
                 }
                 catch
@@ -149,20 +181,26 @@ namespace ArtNetTests
                     Assert.That(b, Is.GreaterThan(0x7f));
                 }
             }
-            Assert.That(nets, Has.Count.EqualTo(0x7f + 1));
-            Assert.That(nets.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(0x7f + 1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(nets, Has.Count.EqualTo(0x7f + 1));
+                Assert.That(nets.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(0x7f + 1));
+            });
 
-            Assert.That(new Net(1) == (Net)1, Is.True);
-            Assert.That(new Net(1) != (Net)1, Is.False);
-            Assert.That(new Net(1) == (Net)2, Is.False);
-            Assert.That(new Net(1) != (Net)2, Is.True);
-            Assert.That(new Net(1).GetHashCode(), Is.EqualTo(((Net)1).GetHashCode()));
-            Assert.That(new Net(1).GetHashCode(), Is.Not.EqualTo(((Net)2).GetHashCode()));
-            Assert.That(new Net(1).Equals(null), Is.False);
-            Assert.That(new Net(1).Equals((object)1), Is.False);
-            Assert.That(new Net(1).Equals((object)(Net)1), Is.True);
-            Assert.That(new Net(1).Equals((Net)1), Is.True);
-            Assert.That(new Net(1).Equals((Net)2), Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(new Net(1) == (Net)1, Is.True);
+                Assert.That(new Net(1) != (Net)1, Is.False);
+                Assert.That(new Net(1) == (Net)2, Is.False);
+                Assert.That(new Net(1) != (Net)2, Is.True);
+                Assert.That(new Net(1).GetHashCode(), Is.EqualTo(((Net)1).GetHashCode()));
+                Assert.That(new Net(1).GetHashCode(), Is.Not.EqualTo(((Net)2).GetHashCode()));
+                Assert.That(new Net(1).Equals(null), Is.False);
+                Assert.That(new Net(1).Equals((object)1), Is.False);
+                Assert.That(new Net(1).Equals((object)(Net)1), Is.True);
+                Assert.That(new Net(1).Equals((Net)1), Is.True);
+                Assert.That(new Net(1).Equals((Net)2), Is.False);
+            });
         }
         [Test]
         public void TestPortAddress()
@@ -175,9 +213,12 @@ namespace ArtNetTests
                 {
                     PortAddress pa = new PortAddress(b);
 
-                    Assert.That(b, Is.LessThanOrEqualTo(0x7fff));
-                    Assert.That(pa.Combined, Is.EqualTo(b));
-                    Assert.That(pa.ToString(), Is.Not.Empty);
+                    Assert.Multiple(() =>
+                    {
+                        Assert.That(b, Is.LessThanOrEqualTo(0x7fff));
+                        Assert.That(pa.Combined, Is.EqualTo(b));
+                        Assert.That(pa.ToString(), Is.Not.Empty);
+                    });
                     portAddresses.Add(pa);
                     count++;
                 }
@@ -186,20 +227,26 @@ namespace ArtNetTests
                     Assert.That(b, Is.GreaterThan(0x7fff));
                 }
             }
-            Assert.That(portAddresses, Has.Count.EqualTo(count));
-            Assert.That(portAddresses.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(count));
+            Assert.Multiple(() =>
+            {
+                Assert.That(portAddresses, Has.Count.EqualTo(count));
+                Assert.That(portAddresses.OrderByDescending(s => s).OrderBy(s => s.GetHashCode()).OrderBy(s => s).ToList(), Has.Count.EqualTo(count));
+            });
 
-            Assert.That(new PortAddress((ushort)1) == new PortAddress(0, 0, 1), Is.True);
-            Assert.That(new PortAddress((ushort)1) != new PortAddress(0, 1), Is.False);
-            Assert.That(new PortAddress(1) == new PortAddress(0, 0, 2), Is.False);
-            Assert.That(new PortAddress(1) != new PortAddress(0, 2), Is.True);
-            Assert.That(new PortAddress(1).GetHashCode(), Is.EqualTo(((PortAddress)1).GetHashCode()));
-            Assert.That(new PortAddress((ushort)1).GetHashCode(), Is.Not.EqualTo(((PortAddress)2).GetHashCode()));
-            Assert.That(new PortAddress(1).Equals(null), Is.False);
-            Assert.That(new PortAddress(1).Equals((object)1), Is.False);
-            Assert.That(new PortAddress(1).Equals((object)(PortAddress)1), Is.True);
-            Assert.That(new PortAddress(1).Equals((PortAddress)1), Is.True);
-            Assert.That(new PortAddress(1).Equals((PortAddress)2), Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(new PortAddress((ushort)1) == new PortAddress(0, 0, 1), Is.True);
+                Assert.That(new PortAddress((ushort)1) != new PortAddress(0, 1), Is.False);
+                Assert.That(new PortAddress(1) == new PortAddress(0, 0, 2), Is.False);
+                Assert.That(new PortAddress(1) != new PortAddress(0, 2), Is.True);
+                Assert.That(new PortAddress(1).GetHashCode(), Is.EqualTo(((PortAddress)1).GetHashCode()));
+                Assert.That(new PortAddress((ushort)1).GetHashCode(), Is.Not.EqualTo(((PortAddress)2).GetHashCode()));
+                Assert.That(new PortAddress(1).Equals(null), Is.False);
+                Assert.That(new PortAddress(1).Equals((object)1), Is.False);
+                Assert.That(new PortAddress(1).Equals((object)(PortAddress)1), Is.True);
+                Assert.That(new PortAddress(1).Equals((PortAddress)1), Is.True);
+                Assert.That(new PortAddress(1).Equals((PortAddress)2), Is.False);
+            });
         }
 
         [Test]
@@ -208,10 +255,13 @@ namespace ArtNetTests
             HashSet<NodeReport> nodeReports= new HashSet<NodeReport>();
             NodeReport src = new NodeReport(ENodeReportCodes.RcFirmwareFail, "FAILED", 337);
             NodeReport dest = new NodeReport(src.ToString());
-            Assert.That(dest, Is.EqualTo(src));
-            Assert.That(dest.Equals(src), Is.True);
-            Assert.That(dest.Equals((object)src), Is.True);
-            Assert.That(dest.Equals(null), Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(dest, Is.EqualTo(src));
+                Assert.That(dest.Equals(src), Is.True);
+                Assert.That(dest.Equals((object)src), Is.True);
+                Assert.That(dest.Equals(null), Is.False);
+            });
 
             src = new NodeReport(ENodeReportCodes.RcDebug, "Test", 0);
             for (byte i = 0; i < byte.MaxValue; i++)
@@ -278,19 +328,25 @@ namespace ArtNetTests
             {
                 string state = $"Command: {command} Port: {port}";
                 ArtAddressCommand artAddressCommand = new ArtAddressCommand(command, port);
-                Assert.That(artAddressCommand.Command, Is.EqualTo(command), state);
-                Assert.That(artAddressCommand.Port, Is.EqualTo(port), state);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(artAddressCommand.Command, Is.EqualTo(command), state);
+                    Assert.That(artAddressCommand.Port, Is.EqualTo(port), state);
+                });
                 byte serialized = (byte)artAddressCommand;
                 ArtAddressCommand artAddressCommandResult = new ArtAddressCommand(serialized);
-                Assert.That(artAddressCommandResult.Command, Is.EqualTo(command), state);
-                Assert.That(artAddressCommandResult.Port, Is.EqualTo(port), state);
-                Assert.That(artAddressCommandResult.GetHashCode(), Is.EqualTo(artAddressCommand.GetHashCode()), state);
-                Assert.That(artAddressCommandResult, Is.EqualTo(artAddressCommand), state);
-                Assert.That(artAddressCommandResult == artAddressCommand, Is.True, state);
-                Assert.That(artAddressCommandResult != artAddressCommand, Is.False, state);
-                Assert.That(artAddressCommandResult.Equals((object)artAddressCommand), Is.True, state);
-                Assert.That(artAddressCommandResult.Equals(artAddressCommand), Is.True, state);
-                Assert.That(artAddressCommandResult.Equals(null), Is.False, state);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(artAddressCommandResult.Command, Is.EqualTo(command), state);
+                    Assert.That(artAddressCommandResult.Port, Is.EqualTo(port), state);
+                    Assert.That(artAddressCommandResult.GetHashCode(), Is.EqualTo(artAddressCommand.GetHashCode()), state);
+                    Assert.That(artAddressCommandResult, Is.EqualTo(artAddressCommand), state);
+                    Assert.That(artAddressCommandResult == artAddressCommand, Is.True, state);
+                    Assert.That(artAddressCommandResult != artAddressCommand, Is.False, state);
+                    Assert.That(artAddressCommandResult.Equals((object)artAddressCommand), Is.True, state);
+                    Assert.That(artAddressCommandResult.Equals(artAddressCommand), Is.True, state);
+                    Assert.That(artAddressCommandResult.Equals(null), Is.False, state);
+                });
                 artAddressCommands.Add(artAddressCommand);
             }
 
@@ -299,17 +355,19 @@ namespace ArtNetTests
                     doTests(command, port);
             foreach (EArtAddressCommand command in commandsWithoutPort)
                 doTests(command, null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(artAddressCommands, Has.Count.EqualTo((commandsWithPort.Length * 4) + commandsWithoutPort.Length));
 
-            Assert.That(artAddressCommands, Has.Count.EqualTo((commandsWithPort.Length * 4) + commandsWithoutPort.Length));
+                Assert.Throws(typeof(ArgumentException), () => new ArtAddressCommand(EArtAddressCommand.MergeHtp, null));
+                Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtAddressCommand(EArtAddressCommand.MergeHtp, 6));
 
-            Assert.Throws(typeof(ArgumentException), () => new ArtAddressCommand(EArtAddressCommand.MergeHtp, null));
-            Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtAddressCommand(EArtAddressCommand.MergeHtp, 6));
-
-            Assert.That(new ArtAddressCommand(EArtAddressCommand.MergeHtp, 1), Is.Not.EqualTo(new ArtAddressCommand(EArtAddressCommand.MergeHtp, 2)));
-            Assert.That(new ArtAddressCommand(EArtAddressCommand.MergeLtp, 1), Is.Not.EqualTo(new ArtAddressCommand(EArtAddressCommand.MergeHtp, 2)));
-            Assert.That(new ArtAddressCommand(EArtAddressCommand.MergeLtp, 1), Is.Not.EqualTo(new ArtAddressCommand(EArtAddressCommand.MergeHtp, 1)));
-            Assert.That(ArtAddressCommand.Default, Is.EqualTo(new ArtAddressCommand(EArtAddressCommand.None, null)));
-            Assert.That(ArtAddressCommand.Default.ToString(), Is.Not.Empty);
+                Assert.That(new ArtAddressCommand(EArtAddressCommand.MergeHtp, 1), Is.Not.EqualTo(new ArtAddressCommand(EArtAddressCommand.MergeHtp, 2)));
+                Assert.That(new ArtAddressCommand(EArtAddressCommand.MergeLtp, 1), Is.Not.EqualTo(new ArtAddressCommand(EArtAddressCommand.MergeHtp, 2)));
+                Assert.That(new ArtAddressCommand(EArtAddressCommand.MergeLtp, 1), Is.Not.EqualTo(new ArtAddressCommand(EArtAddressCommand.MergeHtp, 1)));
+                Assert.That(ArtAddressCommand.Default, Is.EqualTo(new ArtAddressCommand(EArtAddressCommand.None, null)));
+                Assert.That(ArtAddressCommand.Default.ToString(), Is.Not.Empty);
+            });
         }
 
         [Test]
@@ -373,44 +431,49 @@ namespace ArtNetTests
             foreach (NodeStatus nodeStatus in subjects)
             {
                 NodeStatus result = new NodeStatus(nodeStatus.StatusByte1, nodeStatus.StatusByte2, nodeStatus.StatusByte3);
-                Assert.That(nodeStatus.StatusByte1, Is.EqualTo(result!.StatusByte1));
-                Assert.That(nodeStatus.StatusByte2, Is.EqualTo(result!.StatusByte2));
-                Assert.That(nodeStatus.StatusByte3, Is.EqualTo(result!.StatusByte3));
-                Assert.That(nodeStatus.RDM_Supported, Is.EqualTo(result!.RDM_Supported));
-                Assert.That(nodeStatus.ROM_Booted, Is.EqualTo(result!.ROM_Booted));
-                Assert.That(nodeStatus.PortAddressProgrammingAuthority, Is.EqualTo(result!.PortAddressProgrammingAuthority));
-                Assert.That(nodeStatus.IndicatorState, Is.EqualTo(result!.IndicatorState));
-                Assert.That(nodeStatus.WebConfigurationSupported, Is.EqualTo(result!.WebConfigurationSupported));
-                Assert.That(nodeStatus.DHCP_ConfigurationUsed, Is.EqualTo(result!.DHCP_ConfigurationUsed));
-                Assert.That(nodeStatus.DHCP_ConfigurationSupported, Is.EqualTo(result!.DHCP_ConfigurationSupported));
-                Assert.That(nodeStatus.PortAddressBitResolution, Is.EqualTo(result!.PortAddressBitResolution));
-                Assert.That(nodeStatus.NodeSupportArtNet_sACN_Switching, Is.EqualTo(result!.NodeSupportArtNet_sACN_Switching));
-                Assert.That(nodeStatus.Squawking, Is.EqualTo(result!.Squawking));
-                Assert.That(nodeStatus.NodeSupportOutputStyleSwitching, Is.EqualTo(result!.NodeSupportOutputStyleSwitching));
-                Assert.That(nodeStatus.NodeSupportRDM_Switching, Is.EqualTo(result!.NodeSupportRDM_Switching));
-                Assert.That(nodeStatus.NodeSupportSwitchingBetweenInputOutput, Is.EqualTo(result!.NodeSupportSwitchingBetweenInputOutput));
-                Assert.That(nodeStatus.NodeSupportLLRP, Is.EqualTo(result!.NodeSupportLLRP));
-                Assert.That(nodeStatus.NodeSupportFailOver, Is.EqualTo(result!.NodeSupportFailOver));
-                Assert.That(nodeStatus.FailsafeState, Is.EqualTo(result!.FailsafeState));
-                Assert.That(nodeStatus.GetHashCode(), Is.EqualTo(result!.GetHashCode()));
-                Assert.That(nodeStatus, Is.EqualTo(result));
-                Assert.That(nodeStatus == result, Is.True);
-                Assert.That(nodeStatus != result, Is.False);
-                Assert.That(nodeStatus.Equals((object)result), Is.True);
-                Assert.That(nodeStatus.Equals(null), Is.False);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(nodeStatus.StatusByte1, Is.EqualTo(result!.StatusByte1));
+                    Assert.That(nodeStatus.StatusByte2, Is.EqualTo(result!.StatusByte2));
+                    Assert.That(nodeStatus.StatusByte3, Is.EqualTo(result!.StatusByte3));
+                    Assert.That(nodeStatus.RDM_Supported, Is.EqualTo(result!.RDM_Supported));
+                    Assert.That(nodeStatus.ROM_Booted, Is.EqualTo(result!.ROM_Booted));
+                    Assert.That(nodeStatus.PortAddressProgrammingAuthority, Is.EqualTo(result!.PortAddressProgrammingAuthority));
+                    Assert.That(nodeStatus.IndicatorState, Is.EqualTo(result!.IndicatorState));
+                    Assert.That(nodeStatus.WebConfigurationSupported, Is.EqualTo(result!.WebConfigurationSupported));
+                    Assert.That(nodeStatus.DHCP_ConfigurationUsed, Is.EqualTo(result!.DHCP_ConfigurationUsed));
+                    Assert.That(nodeStatus.DHCP_ConfigurationSupported, Is.EqualTo(result!.DHCP_ConfigurationSupported));
+                    Assert.That(nodeStatus.PortAddressBitResolution, Is.EqualTo(result!.PortAddressBitResolution));
+                    Assert.That(nodeStatus.NodeSupportArtNet_sACN_Switching, Is.EqualTo(result!.NodeSupportArtNet_sACN_Switching));
+                    Assert.That(nodeStatus.Squawking, Is.EqualTo(result!.Squawking));
+                    Assert.That(nodeStatus.NodeSupportOutputStyleSwitching, Is.EqualTo(result!.NodeSupportOutputStyleSwitching));
+                    Assert.That(nodeStatus.NodeSupportRDM_Switching, Is.EqualTo(result!.NodeSupportRDM_Switching));
+                    Assert.That(nodeStatus.NodeSupportSwitchingBetweenInputOutput, Is.EqualTo(result!.NodeSupportSwitchingBetweenInputOutput));
+                    Assert.That(nodeStatus.NodeSupportLLRP, Is.EqualTo(result!.NodeSupportLLRP));
+                    Assert.That(nodeStatus.NodeSupportFailOver, Is.EqualTo(result!.NodeSupportFailOver));
+                    Assert.That(nodeStatus.FailsafeState, Is.EqualTo(result!.FailsafeState));
+                    Assert.That(nodeStatus.GetHashCode(), Is.EqualTo(result!.GetHashCode()));
+                    Assert.That(nodeStatus, Is.EqualTo(result));
+                    Assert.That(nodeStatus == result, Is.True);
+                    Assert.That(nodeStatus != result, Is.False);
+                    Assert.That(nodeStatus.Equals((object)result), Is.True);
+                    Assert.That(nodeStatus.Equals(null), Is.False);
+                });
             }
 
             NodeStatus a = new NodeStatus(0b01010101, 0b10101010, 0b00001111);
             NodeStatus b = new NodeStatus(0b10101010, 0b01010101, 0b11110000);
-
-            Assert.That(a != b, Is.True);
-            Assert.That(a == b, Is.False);
-            Assert.That(a != ~b, Is.False);
-            Assert.That(a == ~b, Is.True);
-            Assert.That(~a != b, Is.False);
-            Assert.That(~a == b, Is.True);
-            Assert.That(~a != ~b, Is.True);
-            Assert.That(~a == ~b, Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(a != b, Is.True);
+                Assert.That(a == b, Is.False);
+                Assert.That(a != ~b, Is.False);
+                Assert.That(a == ~b, Is.True);
+                Assert.That(~a != b, Is.False);
+                Assert.That(~a == b, Is.True);
+                Assert.That(~a != ~b, Is.True);
+                Assert.That(~a == ~b, Is.False);
+            });
 
             NodeStatus c = a & b;
             Assert.That(c, Is.EqualTo(NodeStatus.None));
@@ -439,9 +502,11 @@ namespace ArtNetTests
 
             Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.UtcNow.Date));
             e.Seen();
-
-            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.UtcNow.Date));
-            Assert.That(e.Timouted(), Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.UtcNow.Date));
+                Assert.That(e.Timouted(), Is.False);
+            });
             byte number = e.NewTransactionNumber();
             Assert.That(e.TransactionNumber, Is.EqualTo(number));
 
@@ -457,23 +522,30 @@ namespace ArtNetTests
             var a2 = new ControllerRDMUID_Bag(new RDMUID(123155541), new PortAddress(1, 2, 3), IPv4Address.LocalHost);
             var b = new ControllerRDMUID_Bag(new RDMUID(1112), new PortAddress(1, 2, 3), IPv4Address.LocalHost);
 
-            Assert.That(a == b, Is.False);
-            Assert.That(a != b, Is.True);
-            Assert.That(a.Equals((object)b), Is.False);
-            Assert.That(a.Equals(b), Is.False);
-            Assert.That(a.Equals(null), Is.False);
-            Assert.That(b.Equals((object)a!), Is.False);
-            Assert.That(b.Equals(a), Is.False);
-            Assert.That(b.Equals(null), Is.False);
-            Assert.That(a!.GetHashCode(), Is.EqualTo(a2.GetHashCode()));
-            Assert.That(b!.GetHashCode(), Is.Not.EqualTo(a.GetHashCode()));
+            Assert.Multiple(() =>
+            {
+                Assert.That(a == b, Is.False);
+                Assert.That(a != b, Is.True);
+                Assert.That(a.Equals((object)b), Is.False);
+                Assert.That(a.Equals(b), Is.False);
+                Assert.That(a.Equals(null), Is.False);
+                Assert.That(b.Equals((object)a!), Is.False);
+                Assert.That(b.Equals(a), Is.False);
+                Assert.That(b.Equals(null), Is.False);
+                Assert.That(a!.GetHashCode(), Is.EqualTo(a2.GetHashCode()));
+                Assert.That(b!.GetHashCode(), Is.Not.EqualTo(a.GetHashCode()));
+            });
+
             var e = new ControllerRDMUID_Bag(new RDMUID(123141), new PortAddress(1, 2, 3), IPv4Address.LocalHost);
 
             Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.UtcNow.Date));
             e.Seen();
 
-            Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.UtcNow.Date));
-            Assert.That(e.Timouted(), Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(e.LastSeen.Date, Is.EqualTo(DateTime.UtcNow.Date));
+                Assert.That(e.Timouted(), Is.False);
+            });
 
             e.Seen();
             await Task.Delay(30500);
@@ -510,14 +582,20 @@ namespace ArtNetTests
             portConfig.AddDiscoveredRdmUIDs(new RDMUID(0xff345678));
             Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(2));
             await Task.Delay(29600);
-            Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(1));
-            Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(2));
+            Assert.Multiple(() =>
+            {
+                Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(1));
+                Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(2));
+            });
             portConfig.RemoveOutdatedRdmUIDs();
             Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(1));
 
             await Task.Delay(1000);
-            Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(0));
-            Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(0));
+                Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(1));
+            });
             portConfig.RemoveOutdatedRdmUIDs();
             Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(0));
 
@@ -532,48 +610,50 @@ namespace ArtNetTests
 
             void doTest(PortConfig portConfig)
             {
-                Assert.That(portConfig, Is.Not.Null);
-                Assert.That(portConfig.ToString(), Is.Not.Null);
-                Assert.That(portConfig.ForceBroadcast, Is.False);
-                portConfig.ForceBroadcast = true;
-                Assert.That(portConfig.ForceBroadcast, Is.True);
-                portConfig.ForceBroadcast = false;
-                Assert.That(portConfig.ForceBroadcast, Is.False);
-                portConfigs.Add(portConfig);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(portConfig, Is.Not.Null);
+                    Assert.That(portConfig.ToString(), Is.Not.Null);
+                    Assert.That(portConfig.ForceBroadcast, Is.False);
+                    portConfig.ForceBroadcast = true;
+                    Assert.That(portConfig.ForceBroadcast, Is.True);
+                    portConfig.ForceBroadcast = false;
+                    Assert.That(portConfig.ForceBroadcast, Is.False);
+                    portConfigs.Add(portConfig);
 
-                Assert.That(portConfig.Address, Is.Not.Zero);
-                Assert.That(portConfig.Universe, Is.Not.Zero);
-                Assert.That(portConfig.Net, Is.Not.Zero);
+                    Assert.That(portConfig.Address, Is.Not.Zero);
+                    Assert.That(portConfig.Universe, Is.Not.Zero);
+                    Assert.That(portConfig.Net, Is.Not.Zero);
 
-                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
-                portConfig.AddAdditionalIPEndpoints([new IPv4Address("192.168.0.1"), new IPv4Address("192.168.0.2")]);
-                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(2));
-                portConfig.AddAdditionalIPEndpoints([new IPv4Address("192.168.0.3"), new IPv4Address("192.168.0.2")]);
-                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(3));
-                portConfig.RemoveAdditionalIPEndpoints([new IPv4Address("192.168.0.2")]);
-                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(2));
-                portConfig.ClearAdditionalIPEndpoints();
-                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
-                portConfig.AddAdditionalIPEndpoints([]);
-                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
-                portConfig.RemoveAdditionalIPEndpoints([new IPv4Address("192.168.0.2")]);
-                Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
+                    Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
+                    portConfig.AddAdditionalIPEndpoints([new IPv4Address("192.168.0.1"), new IPv4Address("192.168.0.2")]);
+                    Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(2));
+                    portConfig.AddAdditionalIPEndpoints([new IPv4Address("192.168.0.3"), new IPv4Address("192.168.0.2")]);
+                    Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(3));
+                    portConfig.RemoveAdditionalIPEndpoints([new IPv4Address("192.168.0.2")]);
+                    Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(2));
+                    portConfig.ClearAdditionalIPEndpoints();
+                    Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
+                    portConfig.AddAdditionalIPEndpoints([]);
+                    Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
+                    portConfig.RemoveAdditionalIPEndpoints([new IPv4Address("192.168.0.2")]);
+                    Assert.That(portConfig.AdditionalIPEndpoints, Has.Count.EqualTo(0));
 
 
-                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
-                portConfig.AddAdditionalRdmUIDs([new RDMUID(123456), new RDMUID(22123456)]);
-                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(2));
-                portConfig.RemoveAdditionalRdmUIDs([new RDMUID(22123456)]);
-                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(1));
-                portConfig.RemoveAdditionalRdmUIDs([new RDMUID(123456)]);
-                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
-                portConfig.AddAdditionalRdmUIDs([]);
-                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
-                portConfig.RemoveAdditionalRdmUIDs([new RDMUID(123456)]);
-                Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
+                    Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
+                    portConfig.AddAdditionalRdmUIDs([new RDMUID(123456), new RDMUID(22123456)]);
+                    Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(2));
+                    portConfig.RemoveAdditionalRdmUIDs([new RDMUID(22123456)]);
+                    Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(1));
+                    portConfig.RemoveAdditionalRdmUIDs([new RDMUID(123456)]);
+                    Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
+                    portConfig.AddAdditionalRdmUIDs([]);
+                    Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
+                    portConfig.RemoveAdditionalRdmUIDs([new RDMUID(123456)]);
+                    Assert.That(portConfig.AdditionalRDMUIDs, Has.Count.EqualTo(0));
 
-                Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(0));
-
+                    Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(0));
+                });
             }
         }
 
@@ -591,15 +671,18 @@ namespace ArtNetTests
             }
             void doTest(OutputPortConfig portConfig)
             {
-                Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.True);
-                portConfig.Type = EPortType.DMX512;
-                Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.True);
-                Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.True);
+                    portConfig.Type = EPortType.DMX512;
+                    Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.True);
+                    Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
 
-                portConfig.Type = EPortType.DMX512 | EPortType.InputToArtNet;
-                Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.True);
-                Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
-                Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.False);
+                    portConfig.Type = EPortType.DMX512 | EPortType.InputToArtNet;
+                    Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.True);
+                    Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
+                    Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.False);
+                });
             }
         }
         [Test]
@@ -617,14 +700,17 @@ namespace ArtNetTests
 
             void doTest(InputPortConfig portConfig)
             {
-                Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.True);
-                portConfig.Type = EPortType.DMX512;
-                Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.True);
-                Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
-                portConfig.Type = EPortType.DMX512 | EPortType.OutputFromArtNet;
-                Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.True);
-                Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
-                Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.False);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.True);
+                    portConfig.Type = EPortType.DMX512;
+                    Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.True);
+                    Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
+                    portConfig.Type = EPortType.DMX512 | EPortType.OutputFromArtNet;
+                    Assert.That(portConfig.Type.HasFlag(EPortType.InputToArtNet), Is.True);
+                    Assert.That(portConfig.Type.HasFlag(EPortType.DMX512), Is.True);
+                    Assert.That(portConfig.Type.HasFlag(EPortType.OutputFromArtNet), Is.False);
+                });
             }
         }
     }

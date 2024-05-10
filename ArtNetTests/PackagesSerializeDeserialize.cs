@@ -6,6 +6,7 @@ using ArtNetSharp.Messages.Interfaces;
 
 namespace ArtNetTests
 {
+    [Order(2)]
     public class PackagesSerializeDeserialize
     {
         [OneTimeSetUp]
@@ -23,31 +24,31 @@ namespace ArtNetTests
         public void Tools_TryDeserializePacket()
         {
             byte[]? data = null;
-            Assert.That(Tools.TryDeserializePacket(data, out _), Is.False);
+            Assert.That(ArtNetSharp.Tools.TryDeserializePacket(data, out _), Is.False);
 
             data = [];
-            Assert.That(Tools.TryDeserializePacket(data, out _), Is.False);
+            Assert.That(ArtNetSharp.Tools.TryDeserializePacket(data, out _), Is.False);
             data = [0x00, 0x01];
-            Assert.That(Tools.TryDeserializePacket(data, out _), Is.False);
+            Assert.That(ArtNetSharp.Tools.TryDeserializePacket(data, out _), Is.False);
 
             data = new byte[12];
-            Assert.That(Tools.TryDeserializePacket(data, out _), Is.False);
+            Assert.That(ArtNetSharp.Tools.TryDeserializePacket(data, out _), Is.False);
 
             ArtTodControl src = new ArtTodControl(1, new Address(3, 4));
             data = src;
             data = data.Take(22).ToArray();
-            Assert.That(Tools.TryDeserializePacket(data, out _), Is.False);
+            Assert.That(ArtNetSharp.Tools.TryDeserializePacket(data, out _), Is.False);
         }
 
         [Test]
         public void ArtSync()
         {
-            doTests(new ArtSync());
+            PackagesSerializeDeserialize.doTests(new ArtSync());
         }
         [Test]
         public void ArtPoll()
         {
-            doTests(new ArtPoll(
+            PackagesSerializeDeserialize.doTests(new ArtPoll(
                 0x1001,
                 0xea0f,
                 0x0001,
@@ -55,7 +56,7 @@ namespace ArtNetTests
                 EArtPollFlags.DiagnosticEnabled | EArtPollFlags.DiagnosticUnicast,
                 EPriorityCode.DpMed));
 
-            doTests(new ArtPoll(
+            PackagesSerializeDeserialize.doTests(new ArtPoll(
                 oemCode: 0x1001,
                 manufacturerCode: 0xea0f,
                 flags:
@@ -65,7 +66,7 @@ namespace ArtNetTests
         [Test]
         public void ArtPollReply()
         {
-            doTests(new ArtPollReply(
+            PackagesSerializeDeserialize.doTests(new ArtPollReply(
                 new IPv4Address("2.3.2.3"),
                 new IPv4Address("4.4.4.4"),
                 new MACAddress(2, 44, 5, 77, 8, 34),
@@ -107,7 +108,7 @@ namespace ArtNetTests
                 44,
                 EStCodes.StConfig,
                 new RDMUID(0x1122, 0x33445566)));
-            doTests(new ArtPollReply(
+            PackagesSerializeDeserialize.doTests(new ArtPollReply(
                 new IPv4Address("2.3.2.3"),
                 new IPv4Address("4.4.4.4"),
                 new MACAddress(2, 44, 5, 77, 8, 34),
@@ -150,7 +151,7 @@ namespace ArtNetTests
                 EStCodes.StConfig,
                 new RDMUID(0x1122, 0x33445566)));
 
-            doTests(new ArtPollReply(
+            PackagesSerializeDeserialize.doTests(new ArtPollReply(
                 new IPv4Address("2.3.2.3"),
                 new IPv4Address("4.4.4.4"),
                 new MACAddress(2, 44, 5, 77, 8, 34),
@@ -235,13 +236,13 @@ namespace ArtNetTests
         [Test]
         public void ArtDMX()
         {
-            doTests(new ArtDMX(34, 0, 2, new Address(3, 4), new byte[] { 1, 2, 3, 44, 55, 66, 88, 222, 111, 0x33 }));
-            doTests(new ArtDMX(34, 0, 2, new Address(3, 4), new byte[513]));
+            PackagesSerializeDeserialize.doTests(new ArtDMX(34, 0, 2, new Address(3, 4), new byte[] { 1, 2, 3, 44, 55, 66, 88, 222, 111, 0x33 }));
+            PackagesSerializeDeserialize.doTests(new ArtDMX(34, 0, 2, new Address(3, 4), new byte[513]));
         }
         [Test]
         public void ArtNzs()
         {
-            doTests(new ArtNzs(53, 0xED, 2, new Address(3, 4), new byte[] { 1, 2, 3, 44, 55, 66, 88, 222, 111, 0x33 }));
+            PackagesSerializeDeserialize.doTests(new ArtNzs(53, 0xED, 2, new Address(3, 4), new byte[] { 1, 2, 3, 44, 55, 66, 88, 222, 111, 0x33 }));
 
             Assert.Throws(typeof(ArgumentException), () => new ArtNzs(53, Constants.DMX_STARTCODE, 2, new Address(3, 4), new byte[] { 1, 2, 3, 44, 55, 66, 88, 222, 111, 0x33 }));
             Assert.Throws(typeof(ArgumentException), () => new ArtNzs(53, Constants.RDM_STARTCODE, 2, new Address(3, 4), new byte[] { 1, 2, 3, 44, 55, 66, 88, 222, 111, 0x33 }));
@@ -249,7 +250,7 @@ namespace ArtNetTests
         [Test]
         public void ArtVlc()
         {
-            doTests(new ArtVlc(
+            PackagesSerializeDeserialize.doTests(new ArtVlc(
                 59,
                 9,
                 new Address(5, 1),
@@ -307,7 +308,7 @@ namespace ArtNetTests
         [Test]
         public void ArtInput()
         {
-            doTests(new ArtInput(33, [EArtInputCommand.DisableInput, EArtInputCommand.DisableInput, EArtInputCommand.None], 3, 0, 23));
+            PackagesSerializeDeserialize.doTests(new ArtInput(33, [EArtInputCommand.DisableInput, EArtInputCommand.DisableInput, EArtInputCommand.None], 3, 0, 23));
 
             Assert.Throws(typeof(ArgumentOutOfRangeException), () => { var artInput = new ArtInput(33, [], 5, 0, 23); });
             Assert.Throws(typeof(ArgumentOutOfRangeException), () => { var artInput = new ArtInput(35, [], 2, 1, 12); });
@@ -316,27 +317,27 @@ namespace ArtNetTests
         [Test]
         public void ArtRDM()
         {
-            doTests(new ArtRDM(1, new Address(3, 4), new RDMMessage() { SourceUID = new RDMUID(0x1122, 0x33445566), DestUID = new RDMUID(0x3344, 0x55667788) }));
-            doTests(new ArtRDM(new PortAddress(1, 2, 5), new RDMMessage() { SourceUID = new RDMUID(0x1122, 0x33445566), DestUID = new RDMUID(0x3344, 0x55667788) }));
+            PackagesSerializeDeserialize.doTests(new ArtRDM(1, new Address(3, 4), new RDMMessage() { SourceUID = new RDMUID(0x1122, 0x33445566), DestUID = new RDMUID(0x3344, 0x55667788) }));
+            PackagesSerializeDeserialize.doTests(new ArtRDM(new PortAddress(1, 2, 5), new RDMMessage() { SourceUID = new RDMUID(0x1122, 0x33445566), DestUID = new RDMUID(0x3344, 0x55667788) }));
             Assert.Throws(typeof(ArgumentNullException), () => new ArtRDM(new PortAddress(1, 2, 5), null));
         }
         [Test]
         public void ArtRDMSub()
         {
-            doTests(new ArtRDMSub(new RDMUID(0x1122, 0x33445566), 234, 52354, 45647, 43432, new byte[] { 0xf0, 0xaa, 0xbb, 0x13, 0x13, 0x19, 0x1f }));
+            PackagesSerializeDeserialize.doTests(new ArtRDMSub(new RDMUID(0x1122, 0x33445566), 234, 52354, 45647, 43432, new byte[] { 0xf0, 0xaa, 0xbb, 0x13, 0x13, 0x19, 0x1f }));
         }
         [Test]
         public void ArtTodControl()
         {
-            doTests(new ArtTodControl(1, new Address(3, 4)));
-            doTests(new ArtTodControl(new PortAddress(5, 3, 4)));
+            PackagesSerializeDeserialize.doTests(new ArtTodControl(1, new Address(3, 4)));
+            PackagesSerializeDeserialize.doTests(new ArtTodControl(new PortAddress(5, 3, 4)));
         }
         [Test]
         public void ArtTodRequest()
         {
-            doTests(new ArtTodRequest(new PortAddress(1, 2, 3)));
-            doTests(new ArtTodRequest(4, new Address(2, 3)));
-            doTests(new ArtTodRequest(1, [
+            PackagesSerializeDeserialize.doTests(new ArtTodRequest(new PortAddress(1, 2, 3)));
+            PackagesSerializeDeserialize.doTests(new ArtTodRequest(4, new Address(2, 3)));
+            PackagesSerializeDeserialize.doTests(new ArtTodRequest(1, [
                 new Address(3, 4),
                 new Address(0, 0),
                 new Address(1, 0),
@@ -348,7 +349,7 @@ namespace ArtNetTests
         [Test]
         public void ArtTodData()
         {
-            doTests(new ArtTodData(
+            PackagesSerializeDeserialize.doTests(new ArtTodData(
                 1,
                 new Address(3, 4),
                 3,
@@ -358,7 +359,7 @@ namespace ArtNetTests
                 [new RDMUID(0x0220, 0x11223344), new RDMUID(0x1111, 0x12345678), new RDMUID(0x7e17, 0xefa8e1ee)],
                 EArtTodDataCommandResponse.TodNak,
                 ERDMVersion.DRAFT_V1_0));
-            doTests(new ArtTodData(
+            PackagesSerializeDeserialize.doTests(new ArtTodData(
                 new PortAddress(9, 3, 4),
                 3,
                 2,
@@ -385,17 +386,17 @@ namespace ArtNetTests
         [Test]
         public void ArtIpProg()
         {
-            doTests(new ArtIpProg(new byte[] { 1, 2, 3, 4 }, new byte[] { 5, 6, 7, 8 }, new byte[] { 9, 10, 11, 12 }, EArtIpProgCommand.EnableProgramming));
+            PackagesSerializeDeserialize.doTests(new ArtIpProg(new byte[] { 1, 2, 3, 4 }, new byte[] { 5, 6, 7, 8 }, new byte[] { 9, 10, 11, 12 }, EArtIpProgCommand.EnableProgramming));
         }
         [Test]
         public void ArtIpProgReply()
         {
-            doTests(new ArtIpProgReply(new byte[] { 1, 2, 3, 4 }, new byte[] { 5, 6, 7, 8 }, new byte[] { 9, 10, 11, 12 }, EArtIpProgReplyStatusFlags.EnableDHCP));
+            PackagesSerializeDeserialize.doTests(new ArtIpProgReply(new byte[] { 1, 2, 3, 4 }, new byte[] { 5, 6, 7, 8 }, new byte[] { 9, 10, 11, 12 }, EArtIpProgReplyStatusFlags.EnableDHCP));
         }
         [Test]
         public void ArtTimeCode()
         {
-            doTests(new ArtTimeCode(1, 2, 3, 4, ETimecodeType.SMTPE));
+            PackagesSerializeDeserialize.doTests(new ArtTimeCode(1, 2, 3, 4, ETimecodeType.SMTPE));
 
             Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtTimeCode(30, 2, 3, 4, ETimecodeType.SMTPE));
             Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtTimeCode(1, 60, 3, 4, ETimecodeType.SMTPE));
@@ -406,65 +407,68 @@ namespace ArtNetTests
         public void ArtTimeSync()
         {
             ArtTimeSync src = new ArtTimeSync(true, DateTime.UtcNow, EDaylightSaving.Active);
-            doTests(src);
+            PackagesSerializeDeserialize.doTests(src);
 
             ArtTimeSync src2 = new ArtTimeSync(true, DateTime.UtcNow, EDaylightSaving.Inactive);
             Assert.That(src.GetHashCode(), Is.Not.EqualTo(src2.GetHashCode()));
 
-            doTests(new ArtTimeSync(false, DateTime.UtcNow, EDaylightSaving.Active));
+            PackagesSerializeDeserialize.doTests(new ArtTimeSync(false, DateTime.UtcNow, EDaylightSaving.Active));
         }
         [Test]
         public void ArtAddress_Test()
         {
             ArtAddress src = new ArtAddress(4, 6, 7, new Universe?[] { 1 }, new Universe?[] { 8 }, "sdadf", "dadad", 23, new ArtAddressCommand(EArtAddressCommand.MergeLtp, 2));
-            doTests(src);
+            PackagesSerializeDeserialize.doTests(src);
 
             ArtAddress src2 = new ArtAddress(4, 6, 7, new Universe?[] { 1 }, new Universe?[] { 8 }, "sdadf", "dadfd", 23, new ArtAddressCommand(EArtAddressCommand.MergeLtp, 2));
             Assert.That(src.GetHashCode(), Is.Not.EqualTo(src2.GetHashCode()));
 
-            doTests(ArtAddress.CreateSetName(1, "Test Short", "Test Long", new ArtAddressCommand(EArtAddressCommand.FailFull)));
-            Assert.DoesNotThrow(() => doTests(ArtAddress.CreateSetAcnPriority(2, 255, new ArtAddressCommand(EArtAddressCommand.FailHold))));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetName(1, "Test Short", "Test Long", new ArtAddressCommand(EArtAddressCommand.FailFull)));
+            Assert.DoesNotThrow(() => PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetAcnPriority(2, 255, new ArtAddressCommand(EArtAddressCommand.FailHold))));
             Assert.Throws(typeof(ArgumentOutOfRangeException), () => ArtAddress.CreateSetAcnPriority(3, 250, new ArtAddressCommand(EArtAddressCommand.FailRecord)));
-            doTests(ArtAddress.CreateSetCommand(4, new ArtAddressCommand(EArtAddressCommand.DirectionRx, 3)));
-            doTests(ArtAddress.CreateSetNet(5, 3));
-            doTests(ArtAddress.CreateSetSubnet(6, 3));
-            doTests(ArtAddress.CreateSetNetSubnet(7, 3, 4));
-            doTests(ArtAddress.CreateSetInputUniverse(8, 4, 3, 4));
-            doTests(ArtAddress.CreateSetInputUniverse(9, new PortAddress(1, 2, 3)));
-            doTests(ArtAddress.CreateSetInputUniverse(10, new Universe(3)));
-            doTests(ArtAddress.CreateSetInputUniverse(11, [new Universe(1)]));
-            doTests(ArtAddress.CreateSetInputUniverse(12, 3, 4, [new Universe(1)]));
-            doTests(ArtAddress.CreateSetOutputUniverse(13, 4, 3, 4));
-            doTests(ArtAddress.CreateSetOutputUniverse(14, new PortAddress(1, 2, 3)));
-            doTests(ArtAddress.CreateSetOutputUniverse(15, new Universe(3)));
-            doTests(ArtAddress.CreateSetOutputUniverse(16, [new Universe(1)]));
-            doTests(ArtAddress.CreateSetOutputUniverse(17, 3, 4, [new Universe(1)]));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetCommand(4, new ArtAddressCommand(EArtAddressCommand.DirectionRx, 3)));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetNet(5, 3));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetSubnet(6, 3));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetNetSubnet(7, 3, 4));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetInputUniverse(8, 4, 3, 4));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetInputUniverse(9, new PortAddress(1, 2, 3)));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetInputUniverse(10, new Universe(3)));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetInputUniverse(11, [new Universe(1)]));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetInputUniverse(12, 3, 4, [new Universe(1)]));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetOutputUniverse(13, 4, 3, 4));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetOutputUniverse(14, new PortAddress(1, 2, 3)));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetOutputUniverse(15, new Universe(3)));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetOutputUniverse(16, [new Universe(1)]));
+            PackagesSerializeDeserialize.doTests(ArtAddress.CreateSetOutputUniverse(17, 3, 4, [new Universe(1)]));
         }
         [Test]
         public void ArtData()
         {
-            doTests(new ArtData(1234, 5678, EDataRequest.UrlProduct));
+            PackagesSerializeDeserialize.doTests(new ArtData(1234, 5678, EDataRequest.UrlProduct));
         }
         [Test]
         public void ArtDataReply()
         {
-            doTests(new ArtDataReply(1234, 5678, EDataRequest.UrlProduct, "TestUrl"));
-            doTests(new ArtDataReply(1234, 5678, EDataRequest.UrlProduct, payload: null));
+            PackagesSerializeDeserialize.doTests(new ArtDataReply(1234, 5678, EDataRequest.UrlProduct, "TestUrl"));
+            PackagesSerializeDeserialize.doTests(new ArtDataReply(1234, 5678, EDataRequest.UrlProduct, payload: null));
         }
 
-        private void doTests<T>(T packet, bool toLongStrings = false) where T : AbstractArtPacketCore
+        private static void doTests<T>(T packet, bool toLongStrings = false) where T : AbstractArtPacketCore
         {
             byte[] array = packet;
-            Assert.That(Tools.TryDeserializePacket(array, out var res), Is.True);
-            Assert.That(res.GetType(), Is.EqualTo(packet.GetType()));
-            Assert.That(res.GetHashCode(), Is.EqualTo(packet.GetHashCode()));
+            Assert.That(ArtNetSharp.Tools.TryDeserializePacket(array, out var res), Is.True);
+            Assert.Multiple(() =>
+            {
+                Assert.That(res.GetType(), Is.EqualTo(packet.GetType()));
+                Assert.That(res.GetHashCode(), Is.EqualTo(packet.GetHashCode()));
+            });
             if (!toLongStrings)
-                doImplicidTests(packet);
+                PackagesSerializeDeserialize.doImplicidTests(packet);
             else return;
             if (res is T des)
                 Assert.That(des, Is.EqualTo(packet));
         }
-        private void doImplicidTests(AbstractArtPacketCore packet)
+        private static void doImplicidTests(AbstractArtPacketCore packet)
         {
             List<byte[]> dataList = new List<byte[]>();
             dataList.Add(packet);
@@ -477,31 +481,37 @@ namespace ArtNetTests
 
             foreach (var data in dataList)
             {
-                Assert.That(Tools.TryDeserializePacket(data, out var res), Is.True);
-                Assert.That(res.GetType(), Is.EqualTo(packet.GetType()));
-                Assert.That(res, Is.EqualTo(packet));
-                Assert.That(res == packet, Is.True);
-                Assert.That(res != packet, Is.False);
-                Assert.That(null == packet, Is.False);
-                Assert.That(null == res, Is.False);
-                Assert.That(packet == null, Is.False);
-                Assert.That(res == null, Is.False);
-                Assert.That(null != packet, Is.True);
-                Assert.That(null != res, Is.True);
-                Assert.That(packet != null, Is.True);
-                Assert.That(res != null, Is.True);
-                Assert.That(packet!.Equals(res), Is.True);
-                Assert.That(packet.Equals((object)res), Is.True);
-                Assert.That(res.Equals(packet), Is.True);
-                Assert.That(res.Equals((object)packet), Is.True);
-                Assert.That(packet.Equals(null), Is.False);
-                Assert.That(res.Equals(null), Is.False);
-                Assert.That(res.GetHashCode(), Is.EqualTo(packet!.GetHashCode()));
-                Assert.That(res is IDisposableExtended, Is.True);
+                Assert.That(ArtNetSharp.Tools.TryDeserializePacket(data, out var res), Is.True);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(res.GetType(), Is.EqualTo(packet.GetType()));
+                    Assert.That(res, Is.EqualTo(packet));
+                    Assert.That(res == packet, Is.True);
+                    Assert.That(res != packet, Is.False);
+                    Assert.That(null == packet, Is.False);
+                    Assert.That(null == res, Is.False);
+                    Assert.That(packet == null, Is.False);
+                    Assert.That(res == null, Is.False);
+                    Assert.That(null != packet, Is.True);
+                    Assert.That(null != res, Is.True);
+                    Assert.That(packet != null, Is.True);
+                    Assert.That(res != null, Is.True);
+                    Assert.That(packet!.Equals(res), Is.True);
+                    Assert.That(packet.Equals((object)res!), Is.True);
+                    Assert.That(res!.Equals(packet), Is.True);
+                    Assert.That(res.Equals((object)packet), Is.True);
+                    Assert.That(packet.Equals(null), Is.False);
+                    Assert.That(res.Equals(null), Is.False);
+                    Assert.That(res!.GetHashCode(), Is.EqualTo(packet!.GetHashCode()));
+                    Assert.That(res is IDisposableExtended, Is.True);
+                });
                 if (res is IDisposableExtended ide)
                 {
-                    Assert.That(ide.IsDisposed, Is.False);
-                    Assert.That(ide.IsDisposing, Is.False);
+                    Assert.Multiple(() =>
+                    {
+                        Assert.That(ide.IsDisposed, Is.False);
+                        Assert.That(ide.IsDisposing, Is.False);
+                    });
                     ide.Dispose();
                     Assert.That(ide.IsDisposed, Is.True);
                     ide.Dispose();
@@ -509,19 +519,25 @@ namespace ArtNetTests
 
                     Assert.Throws(typeof(ObjectDisposedException), () => res.GetPacket());
                 }
-                Assert.That(res.ToString(), Is.Not.Empty);
-                res = null!;
-                Assert.That(null == res, Is.True);
-                Assert.That(res == null, Is.True);
-                Assert.That(null != res, Is.False);
-                Assert.That(res != null, Is.False);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(res.ToString(), Is.Not.Empty);
+                    res = null!;
+                    Assert.That(null == res, Is.True);
+                    Assert.That(res == null, Is.True);
+                    Assert.That(null != res, Is.False);
+                    Assert.That(res != null, Is.False);
+                });
             }
-            Assert.That(packet.ToString(), Is.Not.Empty);
-            packet = null!;
-            Assert.That(null == packet, Is.True);
-            Assert.That(packet == null, Is.True);
-            Assert.That(null != packet, Is.False);
-            Assert.That(packet != null, Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(packet.ToString(), Is.Not.Empty);
+                packet = null!;
+                Assert.That(null == packet, Is.True);
+                Assert.That(packet == null, Is.True);
+                Assert.That(null != packet, Is.False);
+                Assert.That(packet != null, Is.False);
+            });
         }
     }
 }

@@ -6,6 +6,10 @@ namespace ArtNetSharp.Communication
 {
     public class NodeInstance : AbstractInstance
     {
+        public NodeInstance(ArtNet _artnet) : base(_artnet)
+        {
+        }
+
         public sealed override EStCodes EstCodes => EStCodes.StNode;
         protected sealed override bool SendArtPollBroadcast => false;
         protected sealed override bool SendArtPollTargeted => true;

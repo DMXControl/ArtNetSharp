@@ -19,23 +19,26 @@ namespace ArtNetTests.HardwareTests
         public MACAddress MAC { get; private set; }
         public IPv4Address IP { get; private set; }
         public string LongName { get; private set; }
-        public override string ToString()
+        public override readonly string ToString()
         {
             return $"Luminex Luminode 1 ({MAC}) on IP: {IP}";
         }
     }
 
-    [Category("Hardware")]
+    [Category("Hardware"), Order(1000)]
     [TestFixtureSource(typeof(Luminex_Luminode1TestSubject), nameof(Luminex_Luminode1TestSubject.TestSubjects))]
     public class Luminex_Luminode1
     {
         private bool? Pingable;
-        private static readonly ArtNet artNet = ArtNet.Instance;
+        private ArtNet artNet;
         private readonly Luminex_Luminode1TestSubject testSubject;
         private RemoteClient? remoteClient;
         private RemoteClientPort? remoteClientPort1;
         private RemoteClientPort? remoteClientPort2;
         private ControllerInstanceMock instance;
+
+        private static Tuple<IPv4Address, IPv4Address>[] IPs => Tools.GetIpAddresses();
+
         public Luminex_Luminode1(Luminex_Luminode1TestSubject _luminex_Luminode1TestSubject)
         {
             testSubject = _luminex_Luminode1TestSubject;
@@ -47,7 +50,9 @@ namespace ArtNetTests.HardwareTests
             if (!await IsPingable())
                 return;
 
-            instance = new ControllerInstanceMock(0x1234)
+            artNet = new ArtNet();
+
+            instance = new ControllerInstanceMock(artNet, 0x1234)
             {
                 Name = $"Test: {nameof(Luminex_Luminode1)}"
             };
@@ -57,14 +62,11 @@ namespace ArtNetTests.HardwareTests
 
             for (int i = 0; i < 1000; i++)
             {
-                if (remoteClient == null)
-                    remoteClient = instance.RemoteClients?.FirstOrDefault(rc => testSubject.MAC.Equals(rc.MacAddress));
+                remoteClient ??= instance.RemoteClients?.FirstOrDefault(rc => testSubject.MAC.Equals(rc.MacAddress));
                 if (remoteClient != null)
                 {
-                    if (remoteClientPort1 == null)
-                        remoteClientPort1 = remoteClient.Ports.FirstOrDefault(p => p.BindIndex == 1);
-                    if (remoteClientPort2 == null)
-                        remoteClientPort2 = remoteClient.Ports.FirstOrDefault(p => p.BindIndex == 2);
+                    remoteClientPort1 ??= remoteClient.Ports.FirstOrDefault(p => p.BindIndex == 1);
+                    remoteClientPort2 ??= remoteClient.Ports.FirstOrDefault(p => p.BindIndex == 2);
                 }
                 if (remoteClient != null && remoteClientPort1 != null && remoteClientPort2 != null)
                     return;
@@ -80,7 +82,7 @@ namespace ArtNetTests.HardwareTests
 
             if (!Pingable.HasValue)
             {
-                if (!artNet.NetworkClients.Any(nc => ArtNet.NetworkClientBag.IsInSubnet(nc.LocalIpAddress, nc.IPv4Mask, testSubject.IP)))
+                if (!IPs.Any(nc => ArtNetSharp.Tools.IsInSubnet(nc.Item1, nc.Item2, testSubject.IP)))
                 {
                     Assert.Ignore($"TestSubject: {testSubject} no matching Network-Adapter found!");
                     return false;
@@ -105,11 +107,8 @@ namespace ArtNetTests.HardwareTests
         [OneTimeTearDown]
         public void TearDown()
         {
-            if (instance != null)
-            {
-                artNet?.RemoveInstance(instance);
-                ((IDisposable)instance).Dispose();
-            }
+            if (artNet != null)
+                ((IDisposable)artNet).Dispose();
 
             remoteClient = null;
         }
@@ -117,20 +116,22 @@ namespace ArtNetTests.HardwareTests
         [Test, Order(1)]
         public void Test_Default()
         {
-            Assert.That(remoteClient, Is.Not.Null);
-            Assert.That(remoteClient.LongName, Is.EqualTo(testSubject.LongName));
-            Assert.That(remoteClient.IpAddress, Is.EqualTo(testSubject.IP));
-            Assert.That(remoteClient.Ports, Has.Count.EqualTo(2));
-            Assert.That(remoteClient.Root.Macro, Is.EqualTo(EMacroState.None));
-            Assert.That(remoteClient.Root.Style, Is.EqualTo(EStCodes.StNode));
-            Assert.That(remoteClient.IsSACNCapable, Is.True);
-            Assert.That(remoteClient.IsLLRPCapable, Is.False);
-            Assert.That(remoteClient.IsDHCPCapable, Is.False);
-            Assert.That(remoteClient.Root.Status.NodeSupportSwitchingBetweenInputOutput, Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(remoteClient, Is.Not.Null);
+                Assert.That(remoteClient!.LongName, Is.EqualTo(testSubject.LongName));
+                Assert.That(remoteClient.IpAddress, Is.EqualTo(testSubject.IP));
+                Assert.That(remoteClient.Ports, Has.Count.EqualTo(2));
+                Assert.That(remoteClient.Root.Macro, Is.EqualTo(EMacroState.None));
+                Assert.That(remoteClient.Root.Style, Is.EqualTo(EStCodes.StNode));
+                Assert.That(remoteClient.IsSACNCapable, Is.True);
+                Assert.That(remoteClient.IsLLRPCapable, Is.False);
+                Assert.That(remoteClient.IsDHCPCapable, Is.False);
+                Assert.That(remoteClient.Root.Status.NodeSupportSwitchingBetweenInputOutput, Is.False);
 
-            Assert.That(remoteClientPort1, Is.Not.Null);
-            Assert.That(remoteClientPort2, Is.Not.Null);
-
+                Assert.That(remoteClientPort1, Is.Not.Null);
+                Assert.That(remoteClientPort2, Is.Not.Null);
+            });
         }
         [Order(2)]
         [TestCase(1)]

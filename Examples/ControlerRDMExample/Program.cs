@@ -16,7 +16,7 @@ Console.WriteLine("Controller RDM Example!");
 //ArtNet.Instance.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
 
 // Create Instance
-ControllerInstance controllerInstance = new ControllerInstance();
+ControllerInstance controllerInstance = new ControllerInstance(ArtNet.Instance);
 controllerInstance.Name = controllerInstance.ShortName = "Controller RDM Example";
 ConcurrentDictionary<RDMUID, TestRDMDevice> devices = new();
 

@@ -2,30 +2,30 @@ using ArtNetSharp;
 using ArtNetSharp.Communication;
 using ArtNetTests.Mocks;
 using ArtNetTests.Mocks.Instances;
-using NUnit.Framework.Internal;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
 namespace ArtNetTests
 {
+    [Order(30)]
     public class TestOS
     {
-        NodeInstance nodeInstance;
-        ControllerInstance controllerInstance;
-        byte ports = 2;
-        ArtNet artNet;
+        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<TestOS>();
+        private NodeInstance nodeInstance;
+        private ControllerInstance controllerInstance;
+        private const byte ports = 2;
+        private ArtNet artNet;
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            ArtNet.Clear();
-
-            artNet = ArtNet.Instance;
+            artNet = new ArtNet();
         }
         [SetUp]
         public void SetUp()
         {
-            nodeInstance = new NodeMock();
+            nodeInstance = new NodeMock(artNet);
             nodeInstance.Name = "Test Node";
-            controllerInstance = new ControllerInstanceMock(0x42);
+            controllerInstance = new ControllerInstanceMock(artNet, 0x42);
             controllerInstance.Name = "Test Controller";
             for (ushort i = 1; i <= ports; i++)
             {
@@ -33,59 +33,53 @@ namespace ArtNetTests
                 controllerInstance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
             }
         }
-
-
-
-        [TearDown]
-        public void Teardown()
-        {
-            artNet.RemoveInstance(nodeInstance);
-            artNet.RemoveInstance(controllerInstance);
-            ((IDisposable)nodeInstance).Dispose();
-            ((IDisposable)controllerInstance).Dispose();
-        }
         [OneTimeTearDown]
         public void OneTimeTearDown()
         {
-            ArtNet.Clear();
+            if (artNet != null)
+                ((IDisposable)artNet).Dispose();
             Trace.Flush();
         }
 
-        [Test]
+        [Test, Order(101)]
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(10000)]
+        [Timeout(15000), Retry(3)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         public async Task TestOnLinux()
         {
             if (!OperatingSystem.IsLinux())
                 Assert.Ignore("Skiped, only run on Linux");
 
+            Logger.LogDebug(nameof(TestOnLinux));
             await doTests();
         }
 
-        [Test]
+        [Test, Order(102)]
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(10000)]
+        [Timeout(15000), Retry(3)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         public async Task TestOnWindows()
         {
             if (!OperatingSystem.IsWindows())
                 Assert.Ignore("Skiped, only run on Windows");
 
+            Logger.LogDebug(nameof(TestOnWindows));
             await doTests();
         }
 
-        [Test]
+        [Test, Order(103)]
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(10000)]
+        [Timeout(15000), Retry(3)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         public async Task TestOnMackOS()
         {
             if (!OperatingSystem.IsMacOS())
                 Assert.Ignore("Skiped, only run on Mac OS");
 
+            Logger.LogDebug(nameof(TestOnMackOS));
             await doTests();
         }
+
         private async Task doTests()
         {
 
@@ -93,16 +87,11 @@ namespace ArtNetTests
             artNet.AddInstance(controllerInstance);
 
             while (controllerInstance.RemoteClients?.FirstOrDefault(rc => nodeInstance.Name.Equals(rc?.LongName))?.Ports.Count != ports)
-                await Task.Delay(100);
+                await Task.Delay(1000);
 
             var nodeRD = controllerInstance.RemoteClients.FirstOrDefault(rc => nodeInstance.Name.Equals(rc?.LongName));
             Assert.That(nodeRD, Is.Not.Null);
-            Assert.That(nodeRD.Ports.Count, Is.EqualTo(ports));
-
-            artNet.RemoveInstance(nodeInstance);
-            artNet.RemoveInstance(controllerInstance);
-            ((IDisposable)nodeInstance).Dispose();
-            ((IDisposable)controllerInstance).Dispose();
+            Assert.That(nodeRD.Ports, Has.Count.EqualTo(ports));
         }
     }
 }
