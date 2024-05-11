@@ -8,9 +8,11 @@ namespace ArtNetSharp.Misc
         public readonly RDMMessage Request;
         public bool Handled { get => Response != null; }
         public RDMMessage Response;
-        public ControllerRDMMessageReceivedEventArgs (RDMMessage Request)
+        public readonly PortAddress PortAddress;
+        public ControllerRDMMessageReceivedEventArgs (in RDMMessage request, in PortAddress portAddress)
         { 
-            this.Request = Request;
+            this.Request = request;
+            this.PortAddress = portAddress;
         }
         public void SetResponse (RDMMessage response)
         {
@@ -21,6 +23,16 @@ namespace ArtNetSharp.Misc
 
                 Response = response;
             }
+        }
+    }
+    public class ResponderRDMMessageReceivedEventArgs : EventArgs
+    {
+        public readonly RDMMessage Response;
+        public readonly PortAddress PortAddress;
+        public ResponderRDMMessageReceivedEventArgs(RDMMessage response, in PortAddress portAddress)
+        {
+            this.Response = response;
+            this.PortAddress = portAddress;
         }
     }
 }

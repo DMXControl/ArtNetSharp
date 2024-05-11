@@ -1,4 +1,5 @@
 ﻿using ArtNetSharp;
+using ArtNetSharp.Misc;
 using RDMSharp;
 
 namespace ArtNetTests.Mocks
@@ -26,13 +27,13 @@ namespace ArtNetTests.Mocks
             await Controller.SendArtRDM(rdmMessage);
         }
 
-        private async void Controller_RDMMessageReceived(object? sender, RDMMessage e)
+        private async void Controller_RDMMessageReceived(object? sender, ResponderRDMMessageReceivedEventArgs e)
         {
 #if DEBUG
-            if (e.SourceUID.Manufacturer == RDMSharp.ParameterWrapper.EManufacturer.DMXControlProjects_eV)
+            if (e.Response.SourceUID.Manufacturer == RDMSharp.ParameterWrapper.EManufacturer.DMXControlProjects_eV)
                 return;
 #endif
-            await ReceiveRDMMessage(e);
+            await ReceiveRDMMessage(e.Response);
         }
     }
 }

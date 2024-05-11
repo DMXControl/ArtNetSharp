@@ -486,13 +486,15 @@ namespace ArtNetTests
         [Test]
         public void TestControllerRDMMessageReceivedEventArgs()
         {
-            var e = new ControllerRDMMessageReceivedEventArgs(new RDMMessage() { Command = ERDM_Command.SET_COMMAND, Parameter = ERDM_Parameter.CURVE });
+            var e = new ControllerRDMMessageReceivedEventArgs(new RDMMessage() { Command = ERDM_Command.SET_COMMAND, Parameter = ERDM_Parameter.CURVE }, new PortAddress(123));
 
             Assert.That(e.Handled, Is.False);
             e.SetResponse(new RDMMessage() { Command = ERDM_Command.SET_COMMAND_RESPONSE, Parameter = ERDM_Parameter.CURVE });
             Assert.That(e.Handled, Is.True);
             e.SetResponse(new RDMMessage() { Command = ERDM_Command.SET_COMMAND_RESPONSE, Parameter = ERDM_Parameter.CURVE });
             Assert.That(e.Handled, Is.True);
+
+            Assert.That(e.PortAddress, Is.EqualTo(new PortAddress(123)));
         }
         [Test]
         [Retry(2)]

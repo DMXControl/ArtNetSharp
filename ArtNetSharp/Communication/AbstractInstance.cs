@@ -36,8 +36,8 @@ namespace ArtNetSharp.Communication
 
         public virtual byte MajorVersion { get; } = 1;
         public virtual byte MinorVersion { get; } = 0;
-        public virtual bool EnabelDmxOutput { get; } = true;
-        protected virtual bool EnabelSync { get; } = true;
+        public virtual bool EnableDmxOutput { get; } = true;
+        protected virtual bool EnableSync { get; } = true;
 
         public virtual ushort ESTAManufacturerCode { get; } = Constants.DEFAULT_ESTA_MANUFACTURER_CODE;
         public virtual ushort OEMProductCode { get; } = Constants.DEFAULT_OEM_CODE;
@@ -244,7 +244,7 @@ namespace ArtNetSharp.Communication
         private readonly ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
-        public event EventHandler<RDMMessage> ResponderRDMMessageReceived;
+        public event EventHandler<ResponderRDMMessageReceivedEventArgs> ResponderRDMMessageReceived;
         public event EventHandler<ControllerRDMMessageReceivedEventArgs> ControllerRDMMessageReceived;
 
         protected AbstractInstance(ArtNet _artnet)
@@ -514,7 +514,7 @@ namespace ArtNetSharp.Communication
         #region Send ArtSync
         public async Task SendArtSync()
         {
-            if (EnabelSync)
+            if (EnableSync)
                 await sendArtSync();
         }
         private async Task sendArtSync()
@@ -556,7 +556,7 @@ namespace ArtNetSharp.Communication
             const double dmxKeepAliveTime = 800; // Spec 1.4dh page 53
             while (!(this.IsDisposing || this.IsDisposed))
             {
-                if (!this.EnabelDmxOutput)
+                if (!this.EnableDmxOutput)
                     continue;
                 if (this.IsDeactivated)
                     continue;
@@ -588,7 +588,7 @@ namespace ArtNetSharp.Communication
                                 }
                         }
                         catch (Exception e) { Logger.LogError(e); }
-                    if (EnabelSync && sended != 0)
+                    if (EnableSync && sended != 0)
                         await sendArtSync();
 
                 }
@@ -946,13 +946,17 @@ namespace ArtNetSharp.Communication
             {
                 if (!artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE))
                 {
-                    var eventArgs = new ControllerRDMMessageReceivedEventArgs(artRDM.RDMMessage);
+                    var eventArgs = new ControllerRDMMessageReceivedEventArgs(artRDM.RDMMessage, artRDM.PortAddress);
                     ControllerRDMMessageReceived?.InvokeFailSafe(this, eventArgs);
                     if (eventArgs.Handled)
                         await sendArtRDM(eventArgs.Response, artRDM.PortAddress, source);
                 }
                 else
-                    ResponderRDMMessageReceived?.InvokeFailSafe(this, artRDM.RDMMessage);
+                {
+                    var eventArgs = new ResponderRDMMessageReceivedEventArgs(artRDM.RDMMessage, artRDM.PortAddress);
+
+                    ResponderRDMMessageReceived?.InvokeFailSafe(this, eventArgs);
+                }
             }
             catch (Exception ex) { Logger.LogError(ex); }
             _ = Task.Run(async () =>
