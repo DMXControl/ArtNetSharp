@@ -21,8 +21,8 @@ namespace ArtNetSharp.Communication
         public virtual byte PortNumber { get; set; }
         public readonly byte BindIndex;
 
-        public virtual bool Output { get; set; }
-        public virtual bool Input { get; set; }
+        public virtual bool Output { get => this.Type.HasFlag(EPortType.OutputFromArtNet); }
+        public virtual bool Input { get => this.Type.HasFlag(EPortType.InputToArtNet); }
         public virtual EPortType Type { get; set; }
         public virtual EGoodInput GoodInput { get; set; }
         public virtual EGoodOutput GoodOutput { get; set; }
@@ -63,8 +63,10 @@ namespace ArtNetSharp.Communication
             
             BindIndex = bindIndex;
             PortAddress = portAddress;
-            Output = output;
-            Input = input;
+            if (output)
+                this.Type |= EPortType.OutputFromArtNet;
+            if (input)
+                this.Type |= EPortType.InputToArtNet;
 
             additionalIPEndpoints = new List<IPv4Address>();
             AdditionalIPEndpoints = additionalIPEndpoints.AsReadOnly();

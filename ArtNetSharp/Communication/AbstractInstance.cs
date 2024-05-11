@@ -10,10 +10,12 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 
+[assembly: InternalsVisibleTo("ArtNetTests")]
 namespace ArtNetSharp.Communication
 {
     public abstract class AbstractInstance : IInstance
