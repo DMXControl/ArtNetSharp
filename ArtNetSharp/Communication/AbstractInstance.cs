@@ -556,6 +556,8 @@ namespace ArtNetSharp.Communication
             const double dmxKeepAliveTime = 800; // Spec 1.4dh page 53
             while (!(this.IsDisposing || this.IsDisposed))
             {
+                if (!this.EnabelDmxOutput)
+                    continue;
                 if (this.IsDeactivated)
                     continue;
 
