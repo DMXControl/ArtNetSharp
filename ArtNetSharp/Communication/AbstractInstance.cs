@@ -10,6 +10,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -191,7 +192,7 @@ namespace ArtNetSharp.Communication
                 try
                 {
                     if ((startindex + count) <= Data.Length)
-                        Array.Copy(data, startindex.Value, Data, startindex.Value, count.Value);
+                        Array.Copy(data, 0, Data, startindex.Value, count.Value);
                     else
                         Array.Copy(data, 0, Data, 0, Math.Min(data.Length, Data.Length));
 
@@ -519,12 +520,20 @@ namespace ArtNetSharp.Communication
             if (EnableSync)
                 await sendArtSync();
         }
-        private async Task sendArtSync()
+        private async Task sendArtSync(params IPv4Address[] addresses)
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
             using ArtSync artSync = new ArtSync();
-            await TrySendBroadcastPacket(artSync);
+            if (addresses.Length == 0)
+                await TrySendBroadcastPacket(artSync);
+            else
+            {
+                var smalArray = addresses.Distinct();
+                var networkClients = ArtNetInstance.NetworkClients.ToList();
+                var broadcastAddresses = smalArray.Select(a => networkClients.FirstOrDefault(n => Tools.IsInSubnet(a, n.IPv4Mask, n.LocalIpAddress)).BroadcastIpAddress).Distinct().ToList(); ;
+                broadcastAddresses.ForEach(async (b) => await TrySendPacket(artSync, b));
+            }
         }
         #endregion
 
