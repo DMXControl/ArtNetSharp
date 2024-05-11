@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v4.1.4
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v4
       with:
@@ -22,12 +22,10 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
     - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v4.3.1
+      uses: actions/upload-artifact@v4.3.3
       with:
         path: ArtNetSharp/bin/Release/**/ArtNetSharp.dll
-    - name: Publish ArtNetSharp
-      uses: brandedoutcast/publish-nuget@v2.5.5
-      with:
-          PROJECT_FILE_PATH: ArtNetSharp/ArtNetSharp.csproj
-          NUGET_KEY: ${{secrets.NUGET_KEY}}
-          PACKAGE_NAME: ArtNetSharp
+    - name: Create Nuget Package
+      run: dotnet pack --configuration Release
+    - name: Upload to Nuget.org
+      run: dotnet nuget push ArtNetSharp/bin/Release/ArtNetSharp.*.nupkg --api-key ${{secrets.NUGET_KEY}} -s https://api.nuget.org/v3/index.json
