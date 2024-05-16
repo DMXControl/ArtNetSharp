@@ -50,6 +50,12 @@ namespace ArtNetSharp.Communication
         protected virtual bool SendArtData { get; } = false;
         protected virtual bool SupportRDM { get; } = false;
 
+        protected virtual string UrlProduct { get; }
+        protected virtual string UrlUserGuid { get; }
+        protected virtual string UrlSupport { get; }
+        protected virtual string UrlPersonalityUDR { get; }
+        protected virtual string UrlPersonalityGDTF { get; }
+
         private readonly ConcurrentDictionary<RDMUID, ControllerRDMUID_Bag> knownControllerRDMUIDs = new ConcurrentDictionary<RDMUID, ControllerRDMUID_Bag>();
         public virtual RDMUID UID { get; } = RDMUID.Empty;
 
@@ -306,6 +312,9 @@ namespace ArtNetSharp.Communication
                         break;
                     case ArtPollReply artPollReply:
                         processArtPollReply(artPollReply, localIp, sourceIp);
+                        break;
+                    case ArtData artData:
+                        _ = processArtData(artData, sourceIp);
                         break;
 
                     case ArtDMX artDMX:
@@ -835,6 +844,45 @@ namespace ArtNetSharp.Communication
                 DMXReceived?.InvokeFailSafe(this, port.PortAddress);
                 port.GoodOutput |= EGoodOutput.DataTransmitted;
             }
+        }
+        protected async Task processArtData(ArtData artData, IPv4Address source)
+        {
+            if (this.IsDisposing || this.IsDisposed || this.IsDeactivated || !this.SendArtData)
+                return;
+
+            try
+            {
+                if (artData.Request == EDataRequest.Poll)
+                {
+                    await TrySendPacket(new ArtDataReply(OEMProductCode, ESTAManufacturerCode, data: null), source);
+                    return;
+                }
+                ArtDataReply packet = null;
+                string str = null;
+                switch (artData.Request)
+                {
+                    case EDataRequest.UrlProduct: str = UrlProduct; break;
+                    case EDataRequest.UrlUserGuide: str = UrlUserGuid; break;
+                    case EDataRequest.UrlSupport: str = UrlSupport; break;
+                    case EDataRequest.UrlPersUdr: str = UrlPersonalityUDR; break;
+                    case EDataRequest.UrlPersGdtf: str = UrlPersonalityGDTF; break;
+                }
+                if (!string.IsNullOrWhiteSpace(str))
+                    packet = new ArtDataReply(OEMProductCode, ESTAManufacturerCode, artData.Request, str);
+
+                if (packet == null)
+                    packet = buildArtDataReply(artData);
+
+                if (packet != null)
+                    await TrySendPacket(packet, source);
+            }
+            catch (Exception ex) { Logger.LogError(ex); }
+        }
+
+        protected virtual ArtDataReply buildArtDataReply(ArtData artData)
+        {
+
+            return new ArtDataReply(OEMProductCode, ESTAManufacturerCode, artData.Request, data: null);
         }
 
 

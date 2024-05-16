@@ -21,7 +21,6 @@ namespace ArtNetSharp.Communication
         {
             switch (packet)
             {
-
                 case ArtDataReply artDataReply:
                     await processArtDataReply(artDataReply, sourceIp);
                     break;

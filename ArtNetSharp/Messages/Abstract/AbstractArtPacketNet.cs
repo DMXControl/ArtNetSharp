@@ -10,8 +10,7 @@
         /// </summary>
         public readonly Net Net;
 
-        public AbstractArtPacketNet(in Net net,
-                             in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(protocolVersion)
+        public AbstractArtPacketNet(in Net net, in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(protocolVersion)
         {
             Net = net;
         }
