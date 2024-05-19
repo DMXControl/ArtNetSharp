@@ -565,5 +565,68 @@ namespace ArtNetTests
                 Assert.That(packet != null, Is.False);
             });
         }
+
+
+        [Test]
+        public async Task AbstractArtPacketCore()
+        {
+            var artPoll=new ArtPoll().GetPacket();
+            Assert.Throws(typeof(ArgumentException), () => { new MockPacketCore(artPoll); });
+            var artSync = new ArtSync().GetPacket();
+            Assert.Throws(typeof(ArgumentOutOfRangeException), () => { new MockPacketCore(artSync); });
+            byte[] toDisposeMock = new byte[18];
+            Array.Copy(artSync, toDisposeMock, artSync.Length);
+            var mock = new MockPacketCore(toDisposeMock);
+            Assert.That(((IDisposableExtended)mock).IsDisposed, Is.False);
+            _ = Task.Run(async () =>
+            {
+                await Task.CompletedTask;
+                ((IDisposable)mock).Dispose();
+            });
+            await Task.Delay(100);
+            Assert.That(((IDisposableExtended)mock).IsDisposed, Is.False);
+            Assert.That(((IDisposableExtended)mock).IsDisposing, Is.True);
+            Assert.Throws(typeof(ObjectDisposedException), () => { mock.GetPacket(); });
+            Assert.DoesNotThrowAsync(async () => { ((IDisposable)mock).Dispose(); });
+            Assert.That(((IDisposableExtended)mock).IsDisposed, Is.False);
+            Assert.That(((IDisposableExtended)mock).IsDisposing, Is.True);
+            mock.EndDispose();
+            await Task.Delay(200);
+            Assert.That(((IDisposableExtended)mock).IsDisposed, Is.True);
+            Assert.That(((IDisposableExtended)mock).IsDisposing, Is.False);
+        }
+        class MockPacketCore : AbstractArtPacketCore
+        {
+
+            public MockPacketCore(in byte[] data) : base(data)
+            {
+            }
+
+            public override EOpCodes OpCode => EOpCodes.OpSync;
+
+            protected override ushort PacketMinLength => 18;
+            protected override ushort PacketMaxLength => 19;
+
+            private bool holdDispose;
+            public void EndDispose()
+            {
+                holdDispose = false;
+            }
+            protected override void Dispose()
+            {
+                holdDispose = true;
+                while (holdDispose)
+                    Thread.Sleep(10);
+
+                throw new Exception("Mock Exception");
+            }
+
+
+            protected override void fillPacketCore(ref byte[] packet)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
     }
 }
