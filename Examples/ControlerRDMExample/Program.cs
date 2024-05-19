@@ -3,8 +3,6 @@ using ArtNetSharp.Communication;
 using ControlerRDMExample;
 using RDMSharp;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Net;
 
 Console.WriteLine("Controller RDM Example!");
 
@@ -32,7 +30,7 @@ for (ushort i = 1; i <= 4; i++)
         var outputConfig = new PortConfig((byte)i, new PortAddress((ushort)(i - 1)), true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted, };
         outputConfig.AddAdditionalRdmUIDs(generateUIDs());
         controllerInstance.AddPortConfig(outputConfig);
-        controllerInstance.AddPortConfig(new PortConfig((byte)(i+4), new PortAddress((ushort)(i - 1)), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
+        controllerInstance.AddPortConfig(new PortConfig((byte)(i + 4), new PortAddress((ushort)(i - 1)), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
     }
     catch (Exception ex)
     {

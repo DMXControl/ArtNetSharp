@@ -1,6 +1,5 @@
 ﻿using ArtNetSharp;
 using ArtNetSharp.Communication;
-using System.Net;
 
 Console.WriteLine("Node Input Example!");
 

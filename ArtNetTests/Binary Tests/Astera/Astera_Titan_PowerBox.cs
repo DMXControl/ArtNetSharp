@@ -3,7 +3,7 @@ using RDMSharp;
 
 namespace ArtNetTests.Binary_Tests.Astera
 {
-    internal class Astera_Titan_PowerBox: AbstractArtPollReplyBinaryTestSubject
+    internal class Astera_Titan_PowerBox : AbstractArtPollReplyBinaryTestSubject
     {
         private static readonly byte[] DATA = [
             0x41, 0x72, 0x74, 0x2d, 0x4e, 0x65, 0x74, 0x00,

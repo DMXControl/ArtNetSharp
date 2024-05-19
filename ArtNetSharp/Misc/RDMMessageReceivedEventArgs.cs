@@ -9,12 +9,12 @@ namespace ArtNetSharp.Misc
         public bool Handled { get => Response != null; }
         public RDMMessage Response;
         public readonly PortAddress PortAddress;
-        public ControllerRDMMessageReceivedEventArgs (in RDMMessage request, in PortAddress portAddress)
-        { 
+        public ControllerRDMMessageReceivedEventArgs(in RDMMessage request, in PortAddress portAddress)
+        {
             this.Request = request;
             this.PortAddress = portAddress;
         }
-        public void SetResponse (RDMMessage response)
+        public void SetResponse(RDMMessage response)
         {
             lock (Request)
             {

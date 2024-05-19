@@ -59,7 +59,7 @@ namespace ArtNetTests.LoopTests
 
         private async Task init()
         {
-            DateTime startTime= DateTime.UtcNow;
+            DateTime startTime = DateTime.UtcNow;
             while ((DateTime.UtcNow - startTime).TotalSeconds < 12 && (rcRX == null || rcTX == null) && !(artNet.IsDisposed || artNet.IsDisposing))
             {
                 await Task.Delay(2500);

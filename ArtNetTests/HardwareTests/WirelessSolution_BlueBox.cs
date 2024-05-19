@@ -1,7 +1,6 @@
 ﻿using ArtNetSharp;
 using ArtNetSharp.Communication;
 using ArtNetTests.Mocks;
-using NUnit.Framework;
 using RDMSharp;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -38,7 +37,7 @@ namespace ArtNetTests.HardwareTests
         private static Tuple<IPv4Address, IPv4Address>[] IPs => Tools.GetIpAddresses();
         public WirelessSolution_BlueBox(WirelessSolutionBlueBoxTestSubject _wirelessSolutionBlueBoxTestSubject)
         {
-            testSubject = _wirelessSolutionBlueBoxTestSubject; 
+            testSubject = _wirelessSolutionBlueBoxTestSubject;
         }
 
         [OneTimeSetUp]

@@ -20,7 +20,7 @@ namespace ArtNetSharp
         private static readonly string filePath = Path.Combine(fileDirectory, "log.txt");
         private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
 
-        private readonly ConcurrentQueue<string> queue= new ConcurrentQueue<string>();
+        private readonly ConcurrentQueue<string> queue = new ConcurrentQueue<string>();
         private bool isDisposing = false;
         private static string getOsDirectory()
         {
@@ -64,7 +64,8 @@ namespace ArtNetSharp
             {
 
             }
-            finally {
+            finally
+            {
                 _ = runFileThread();
             }
         }
@@ -103,7 +104,7 @@ namespace ArtNetSharp
 
         public void Dispose()
         {
-            isDisposing=true;
+            isDisposing = true;
         }
 
         private class TextLogger : ILogger

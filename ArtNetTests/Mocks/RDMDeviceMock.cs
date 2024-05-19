@@ -8,7 +8,7 @@ namespace ArtNetTests.Mocks
     {
         private readonly ArtNet artnet;
         internal ControllerInstanceMock Controller => artnet.Instances.OfType<ControllerInstanceMock>().First();
-        public RDMDeviceMock(RDMUID uid,ArtNet _artnet) : base(uid)
+        public RDMDeviceMock(RDMUID uid, ArtNet _artnet) : base(uid)
         {
             artnet = _artnet;
 #if DEBUG

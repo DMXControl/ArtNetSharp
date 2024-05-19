@@ -1,9 +1,7 @@
 ﻿using ArtNetSharp;
 using ArtNetSharp.Communication;
 using ArtNetTests.Mocks;
-using NUnit.Framework;
 using RDMSharp;
-using System.Net;
 using System.Net.NetworkInformation;
 
 namespace ArtNetTests.HardwareTests

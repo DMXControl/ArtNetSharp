@@ -53,14 +53,14 @@ namespace ArtNetSharp.Communication
         {
         }
         public PortConfig(in byte bindIndex, in Address address, in bool output, in bool input)
-            : this(bindIndex,new PortAddress(address), output, input)
+            : this(bindIndex, new PortAddress(address), output, input)
         {
         }
         public PortConfig(in byte bindIndex, in PortAddress portAddress, in bool output, in bool input)
         {
-            if(bindIndex==0)
+            if (bindIndex == 0)
                 throw new ArgumentOutOfRangeException("Value has to bee within 1 and 255", nameof(bindIndex));
-            
+
             BindIndex = bindIndex;
             PortAddress = portAddress;
             if (output)

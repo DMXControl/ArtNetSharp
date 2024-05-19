@@ -37,7 +37,7 @@ namespace ArtNetSharp
                   in ERDMVersion rdmVersion = ERDMVersion.STANDARD_V1_0,
                   in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net, address, command, protocolVersion)
         {
-            if(rdmMessage == null)
+            if (rdmMessage == null)
                 throw new ArgumentNullException(nameof(rdmMessage));
 
             RDMMessage = rdmMessage;

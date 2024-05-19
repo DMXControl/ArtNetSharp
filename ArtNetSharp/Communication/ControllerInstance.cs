@@ -34,7 +34,7 @@ namespace ArtNetSharp.Communication
                 return;
 
             List<Task> tasks = new List<Task>();
-            foreach (var client in RemoteClients.Where(rc => IPv4Address.Equals(rc?.IpAddress,sourceIp)))
+            foreach (var client in RemoteClients.Where(rc => IPv4Address.Equals(rc?.IpAddress, sourceIp)))
                 tasks.Add(client.processArtDataReply(artDataReply));
 
             await Task.WhenAll(tasks);

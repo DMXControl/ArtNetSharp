@@ -52,7 +52,7 @@ namespace ArtNetSharp
         public static bool? _isRunningOnGithubWorker;
         public static bool IsRunningOnGithubWorker()
         {
-            if(_isRunningOnGithubWorker.HasValue)
+            if (_isRunningOnGithubWorker.HasValue)
                 return _isRunningOnGithubWorker.Value;
 
             var ad = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -61,7 +61,7 @@ namespace ArtNetSharp
                 _isRunningOnGithubWorker = ad.Contains("runner/work");
             else if (IsWindows()) // Windows Worker
                 _isRunningOnGithubWorker = ad.Contains(":\\a\\");
-            else 
+            else
                 _isRunningOnGithubWorker = false;
 
             return _isRunningOnGithubWorker.Value;
@@ -76,7 +76,7 @@ namespace ArtNetSharp
             high = (byte)(number >> 8);
             low = (byte)(number & 255);
         }
-        public static bool TryDeserializePacket(byte[] data,out AbstractArtPacketCore packet)
+        public static bool TryDeserializePacket(byte[] data, out AbstractArtPacketCore packet)
         {
             packet = null;
             try

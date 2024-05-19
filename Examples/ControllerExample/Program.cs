@@ -1,6 +1,5 @@
 ﻿using ArtNetSharp;
 using ArtNetSharp.Communication;
-using System.Net;
 
 Console.WriteLine("Controller Example!");
 
@@ -17,13 +16,13 @@ controllerInstance.Name = controllerInstance.ShortName = "Controller Example";
 
 // Configure Ports
 for (byte i = 1; i <= 32; i++)
-    controllerInstance.AddPortConfig(new PortConfig(i, new PortAddress((ushort)(i - 1)), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet});
+    controllerInstance.AddPortConfig(new PortConfig(i, new PortAddress((ushort)(i - 1)), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
 
 // Add Instance
 ArtNet.Instance.AddInstance(controllerInstance);
 
 // Genrerate some DMX-Data
-byte[] data= new byte[512];
+byte[] data = new byte[512];
 while (true)
 {
     await Task.Delay(200);

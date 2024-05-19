@@ -1,12 +1,11 @@
 ﻿using ArtNetSharp;
 using RDMSharp;
-using System.Net;
 
 namespace ArtNetTests.Binary_Tests.Showtec
 {
     internal class Showtec_Net8 : AbstractArtPollReplyBinaryTestSubject
     {
-        private static readonly byte[] DATA= [
+        private static readonly byte[] DATA = [
             0x41, 0x72, 0x74, 0x2d, 0x4e, 0x65, 0x74, 0x00,
             0x00, 0x21, 0x02, 0xf3, 0x92, 0xc9, 0x36, 0x19,
             0x01, 0x06, 0x00, 0x00, 0xff, 0xff, 0x00, 0xe2,

@@ -1,8 +1,34 @@
 using ArtNetSharp;
+
+/* Nicht gemergte Änderung aus Projekt "ArtNetTests (net8.0)"
+Vor:
 using Tools = ArtNetSharp.Tools;
-using RDMSharp;
-using RDMTools = RDMSharp.Tools;
+Nach:
+using Tools = ArtNetSharp.Messages.Interfaces;
+*/
+
+/* Nicht gemergte Änderung aus Projekt "ArtNetTests (net6.0)"
+Vor:
+using Tools = ArtNetSharp.Tools;
+Nach:
+using Tools = ArtNetSharp.Messages.Interfaces;
+*/
 using ArtNetSharp.Messages.Interfaces;
+using RDMSharp
+/* Nicht gemergte Änderung aus Projekt "ArtNetTests (net8.0)"
+Vor:
+using ArtNetSharp.Messages.Interfaces;
+Nach:
+using Tools = ArtNetSharp.Tools;
+*/
+
+/* Nicht gemergte Änderung aus Projekt "ArtNetTests (net6.0)"
+Vor:
+using ArtNetSharp.Messages.Interfaces;
+Nach:
+using Tools = ArtNetSharp.Tools;
+*/
+;
 
 namespace ArtNetTests
 {

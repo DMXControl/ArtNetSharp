@@ -1,5 +1,4 @@
 ﻿using RDMSharp;
-using System;
 using System.Threading.Tasks;
 
 namespace ArtNetSharp.Communication
@@ -23,6 +22,6 @@ namespace ArtNetSharp.Communication
         public async Task PerformRDMDiscovery(PortAddress? portAddress = null, bool flush = false)
         {
             await base.PerformRDMDiscovery(portAddress, flush, true); // As per spec Broadcast 1.4dh 19/7/2023 - 82 -
-        }        
+        }
     }
 }

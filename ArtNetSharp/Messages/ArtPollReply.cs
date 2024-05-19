@@ -322,7 +322,7 @@ namespace ArtNetSharp
                 // 22 GoodOutputA [4]
                 EGoodOutput _goodOutputA = default;
                 if (length > 182 + i)
-                    _goodOutputA=(EGoodOutput)packet[182 + i];
+                    _goodOutputA = (EGoodOutput)packet[182 + i];
                 goodOutputA.Add(_goodOutputA);
 
                 if (length > 186 + i) // 23 SwIn [4] Input Universe

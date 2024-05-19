@@ -156,7 +156,7 @@ namespace ArtNetTests
                 addresses.Add(new Address(b));
             Assert.That(addresses, Has.Count.EqualTo(byte.MaxValue));
 
-            Assert.That(addresses.OrderByDescending(s=>s.Universe).ThenBy(s=>s).ToArray(), Has.Length.EqualTo(byte.MaxValue));
+            Assert.That(addresses.OrderByDescending(s => s.Universe).ThenBy(s => s).ToArray(), Has.Length.EqualTo(byte.MaxValue));
         }
 
         [Test]
@@ -252,7 +252,7 @@ namespace ArtNetTests
         [Test]
         public void TestNodeReport()
         {
-            HashSet<NodeReport> nodeReports= new HashSet<NodeReport>();
+            HashSet<NodeReport> nodeReports = new HashSet<NodeReport>();
             NodeReport src = new NodeReport(ENodeReportCodes.RcFirmwareFail, "FAILED", 337);
             NodeReport dest = new NodeReport(src.ToString());
             Assert.Multiple(() =>
@@ -271,7 +271,7 @@ namespace ArtNetTests
                 Assert.That(dest.Equals(src), Is.False);
                 nodeReports.Add(src);
             }
-            Assert.That(nodeReports.OrderBy(n=>n).ToList(),Has.Count.EqualTo(byte.MaxValue));
+            Assert.That(nodeReports.OrderBy(n => n).ToList(), Has.Count.EqualTo(byte.MaxValue));
 
             Assert.DoesNotThrow(() => dest = new NodeReport(null));
         }
@@ -562,10 +562,10 @@ namespace ArtNetTests
             {
                 bool _in = i % 2 == 0;
                 bool _out = i % 3 == 0;
-                var pa = new PortAddress((byte)(i & 0x7f),(Address)(byte)(i & 0x00ff));
+                var pa = new PortAddress((byte)(i & 0x7f), (Address)(byte)(i & 0x00ff));
                 doTest(new PortConfig(i, pa.Address, _out, _in));
                 doTest(new PortConfig(i, pa, _out, _in));
-                doTest(new PortConfig(i, pa.Net,pa.Subnet,pa.Universe, _out, _in));
+                doTest(new PortConfig(i, pa.Net, pa.Subnet, pa.Universe, _out, _in));
                 doTest(new PortConfig(i, pa.Net, pa.Address, _out, _in));
                 doTest(new PortConfig(i, pa.Subnet, pa.Universe, _out, _in));
             }

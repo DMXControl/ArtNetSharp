@@ -7,10 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
-using System.Diagnostics;
 using System.Linq;
-using System.Net;
-using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -101,7 +98,7 @@ namespace ArtNetSharp.Communication
                 return Transaction.GetHashCode() + Controller.GetHashCode() + Responder.GetHashCode();
             }
         }
-        private class DMXReceiveBag: IDisposable
+        private class DMXReceiveBag : IDisposable
         {
             public byte[] Data { get; private set; } = new byte[512];
             public byte Sequence { get; private set; } = byte.MaxValue;
@@ -115,7 +112,7 @@ namespace ArtNetSharp.Communication
             {
                 PortAddress = new PortAddress(artDMX.Net, artDMX.Address);
                 Source = source;
-                Update(artDMX,source);
+                Update(artDMX, source);
             }
             internal bool Update(ArtDMX artDMX, IPv4Address source)
             {
@@ -168,7 +165,7 @@ namespace ArtNetSharp.Communication
                 GC.SuppressFinalize(this);
             }
         }
-        private class DMXSendBag: IDisposable
+        private class DMXSendBag : IDisposable
         {
             public byte[] Data { get; private set; } = new byte[512];
             public bool Updated => LastUpdated > LastSended;

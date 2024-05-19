@@ -1,6 +1,5 @@
 ﻿using ArtNetSharp;
 using RDMSharp;
-using System.Net;
 using System.Reflection;
 
 namespace ArtNetTests.Binary_Tests
@@ -107,4 +106,3 @@ namespace ArtNetTests.Binary_Tests
         }
     }
 }
- 

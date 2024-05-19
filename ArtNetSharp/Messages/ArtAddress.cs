@@ -63,8 +63,8 @@ namespace ArtNetSharp
 
             BindIndex = packet[13];
 
-            var shortName= Encoding.ASCII.GetString(packet, 14, 18).TrimEnd('\0'); // 7 ShortName [18]
-            var longName= Encoding.ASCII.GetString(packet, 32, 64).TrimEnd('\0'); // 8 LongName  [64]
+            var shortName = Encoding.ASCII.GetString(packet, 14, 18).TrimEnd('\0'); // 7 ShortName [18]
+            var longName = Encoding.ASCII.GetString(packet, 32, 64).TrimEnd('\0'); // 8 LongName  [64]
             if (!string.IsNullOrWhiteSpace(shortName))
                 ShortName = shortName;
             if (!string.IsNullOrWhiteSpace(longName))

@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace ArtNetSharp
 {
-    public readonly struct NodeReport:IComparable<NodeReport>
+    public readonly struct NodeReport : IComparable<NodeReport>
     {
         public readonly ENodeReportCodes ReportCode;
         public readonly uint Counter;

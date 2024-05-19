@@ -20,7 +20,7 @@ namespace ArtNetSharp
         protected int? HashCode { get; private set; }
         private byte[] packetData { get; set; }
 
-    protected AbstractArtPacketCore()
+        protected AbstractArtPacketCore()
         {
         }
         public AbstractArtPacketCore(in byte[] packet) : this()

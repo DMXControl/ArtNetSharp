@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -39,7 +38,7 @@ namespace ArtNetSharp
         private readonly ConcurrentDictionary<uint, AbstractInstance> instances = new ConcurrentDictionary<uint, AbstractInstance>();
         public ReadOnlyCollection<AbstractInstance> Instances { get => instances.Values.ToList().AsReadOnly(); }
 
-        private readonly ConcurrentDictionary<uint,NetworkClientBag> networkClients = new ConcurrentDictionary<uint, NetworkClientBag>();
+        private readonly ConcurrentDictionary<uint, NetworkClientBag> networkClients = new ConcurrentDictionary<uint, NetworkClientBag>();
         public IReadOnlyCollection<NetworkClientBag> NetworkClients => networkClients.Values.ToList().AsReadOnly();
 
         private System.Timers.Timer _updateNetworkClientsTimer = null;
@@ -73,7 +72,7 @@ namespace ArtNetSharp
             processPacket(packet, new IPv4Address("3.3.3.3"), new IPv4Address("3.3.3.3"));
         }
 
-        public class NetworkClientBag: IDisposable
+        public class NetworkClientBag : IDisposable
         {
             private static readonly ILogger<NetworkClientBag> Logger = ApplicationLogging.CreateLogger<NetworkClientBag>();
             private readonly IPEndPoint broadcastEndpoint;
@@ -181,7 +180,7 @@ namespace ArtNetSharp
                                 Logger?.LogTrace($"Drop Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
                                 return;
                             }
-                    
+
 
                         if (Enabled)
                             ReceivedData?.InvokeFailSafe(this, new Tuple<IPv4Address, UdpReceiveResult>(LocalIpAddress, received));
@@ -248,9 +247,9 @@ namespace ArtNetSharp
                         return;
 
                     await _client.SendAsync(data, data.Length, new IPEndPoint(destinationIp, Constants.ARTNET_PORT));
-//#if DEBUG
-//                    Logger.LogTrace($"Send Packet to {destinationIp} -> {packet}");
-//#endif
+                    //#if DEBUG
+                    //                    Logger.LogTrace($"Send Packet to {destinationIp} -> {packet}");
+                    //#endif
                     return;
                 }
                 catch (Exception e)
@@ -275,9 +274,9 @@ namespace ArtNetSharp
                     if (!_clientAlive || _client?.Client == null)
                         return;
                     await _client.SendAsync(data, data.Length, broadcastEndpoint);
-//#if DEBUG
-//                    Logger.LogTrace($"Send Packet to {broadcastEndpoint.Address} -> {packet}");
-//#endif
+                    //#if DEBUG
+                    //                    Logger.LogTrace($"Send Packet to {broadcastEndpoint.Address} -> {packet}");
+                    //#endif
                     return;
                 }
                 catch (Exception e)
@@ -304,7 +303,7 @@ namespace ArtNetSharp
             }
         }
 
-        internal ArtNet([CallerFilePath] string caller="", [CallerLineNumber] int line=-1)
+        internal ArtNet([CallerFilePath] string caller = "", [CallerLineNumber] int line = -1)
         {
             if (Logger == null)
             {
@@ -361,7 +360,7 @@ namespace ArtNetSharp
             }
         }
 
-        private static readonly List<ILoggerProvider> loggerProviders = new List<ILoggerProvider>();  
+        private static readonly List<ILoggerProvider> loggerProviders = new List<ILoggerProvider>();
         public static void AddLoggProvider(ILoggerProvider loggerProvider)
         {
             if (loggerProviders.Contains(loggerProvider))
@@ -391,7 +390,7 @@ namespace ArtNetSharp
                 IPv4Address sourceIp = RemoteIpEndPoint.Address;
                 if (Tools.TryDeserializePacket(received, out var packet))
                 {
-                    var nic = networkClients.Values.FirstOrDefault(n => Tools.IsInSubnet(n.LocalIpAddress,n.IPv4Mask, sourceIp));
+                    var nic = networkClients.Values.FirstOrDefault(n => Tools.IsInSubnet(n.LocalIpAddress, n.IPv4Mask, sourceIp));
                     if (nic != null)
                     {
                         //Logger?.LogTrace($"Process Network Packet:{packet} {Environment.NewLine} Local:{nic.LocalIpAddress}, Mask: {nic.IPv4Mask}, Remote: {sourceIp}");
@@ -420,7 +419,7 @@ namespace ArtNetSharp
                 }
         }
 
-        public static bool IsNetworkAvailable(long? minimumSpeed=null)
+        public static bool IsNetworkAvailable(long? minimumSpeed = null)
         {
             try
             {
@@ -528,7 +527,7 @@ namespace ArtNetSharp
                     }
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Logger?.LogError(e);
             }
@@ -571,7 +570,7 @@ namespace ArtNetSharp
         {
             if (this.IsDisposed || this.IsDisposing)
                 return;
-            if (LoopNetwork==null)
+            if (LoopNetwork == null)
             {
                 List<Task> tasks = new List<Task>();
                 foreach (var ncb in networkClients.Values)
@@ -588,7 +587,7 @@ namespace ArtNetSharp
             if (this.IsDisposed || this.IsDisposing)
                 return;
 
-            if (LoopNetwork==null)
+            if (LoopNetwork == null)
             {
                 List<Task> tasks = new List<Task>();
                 foreach (var ncb in networkClients.Values)

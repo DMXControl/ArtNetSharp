@@ -1,6 +1,5 @@
 ﻿using ArtNetSharp;
 using ArtNetSharp.Communication;
-using System.Net;
 
 Console.WriteLine("Node Output Exampler!");
 
@@ -20,7 +19,7 @@ for (byte i = 1; i <= 32; i++)
     nodeInstance.AddPortConfig(new PortConfig(i, new PortAddress((ushort)(i - 1)), true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
 
 // Listen for new Data
-nodeInstance.DMXReceived += (sender, e) => 
+nodeInstance.DMXReceived += (sender, e) =>
 {
     if (!(sender is NodeInstance ni))
         return;
