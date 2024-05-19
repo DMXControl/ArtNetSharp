@@ -587,7 +587,7 @@ namespace ArtNetTests
             Assert.That(((IDisposableExtended)mock).IsDisposed, Is.False);
             Assert.That(((IDisposableExtended)mock).IsDisposing, Is.True);
             Assert.Throws(typeof(ObjectDisposedException), () => { mock.GetPacket(); });
-            Assert.DoesNotThrowAsync(async () => { ((IDisposable)mock).Dispose(); });
+            Assert.DoesNotThrow(() => { ((IDisposable)mock).Dispose(); });
             Assert.That(((IDisposableExtended)mock).IsDisposed, Is.False);
             Assert.That(((IDisposableExtended)mock).IsDisposing, Is.True);
             mock.EndDispose();
