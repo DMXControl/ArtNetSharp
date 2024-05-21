@@ -13,11 +13,11 @@ namespace ArtNetSharp
             Value = value;
         }
 
-        public static implicit operator byte(Net address)
+        public static implicit operator byte(in Net net)
         {
-            return address.Value;
+            return net.Value;
         }
-        public static implicit operator Net(byte b)
+        public static implicit operator Net(in byte b)
         {
             return new Net(b);
         }
@@ -39,12 +39,12 @@ namespace ArtNetSharp
             return $"Net: {Value}(0x{Value:x})";
         }
 
-        public static bool operator ==(Net a, Net b)
+        public static bool operator ==(in Net a, in Net b)
         {
             return a.Equals(b);
         }
 
-        public static bool operator !=(Net a, Net b)
+        public static bool operator !=(in Net a, in Net b)
         {
             return !a.Equals(b);
         }

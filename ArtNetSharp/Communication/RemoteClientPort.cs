@@ -98,8 +98,8 @@ namespace ArtNetSharp.Communication
                 onPropertyChanged();
             }
         }
-        private EGoodInput goodInput;
-        public EGoodInput GoodInput
+        private GoodInput goodInput;
+        public GoodInput GoodInput
         {
             get
             {

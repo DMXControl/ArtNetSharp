@@ -24,7 +24,7 @@ namespace ArtNetSharp.Communication
         public virtual bool Output { get => this.Type.HasFlag(EPortType.OutputFromArtNet); }
         public virtual bool Input { get => this.Type.HasFlag(EPortType.InputToArtNet); }
         public virtual EPortType Type { get; set; }
-        public virtual EGoodInput GoodInput { get; set; }
+        public virtual GoodInput GoodInput { get; set; }
         public virtual EGoodOutput GoodOutput { get; set; }
 
         public virtual bool ForceBroadcast { get; set; }

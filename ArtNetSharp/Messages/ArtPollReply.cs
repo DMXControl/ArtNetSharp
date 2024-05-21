@@ -29,7 +29,7 @@ namespace ArtNetSharp
         public readonly ushort ManufacturerCode;
         public NodeReport? NodeReport { get; private set; }
         public EPortType[] PortTypes { get; private set; }
-        public EGoodInput[] GoodInput { get; private set; }
+        public GoodInput[] GoodInput { get; private set; }
         public EGoodOutput[] GoodOutput { get; private set; }
         public EMacroState Macro { get; private set; }
         public ERemoteState Remote { get; private set; }
@@ -71,7 +71,7 @@ namespace ArtNetSharp
                             in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
                             in NodeReport? nodeReport = null,
                             in EPortType portType = default,
-                            in EGoodInput goodInput = default,
+                            in GoodInput goodInput = default,
                             in EGoodOutput goodOutput = default,
                             in EMacroState macro = EMacroState.None,
                             in ERemoteState remote = ERemoteState.None,
@@ -99,7 +99,7 @@ namespace ArtNetSharp
                   1,
                   nodeReport,
                   new EPortType[] { portType },
-                  new EGoodInput[] { goodInput },
+                  new GoodInput[] { goodInput },
                   new EGoodOutput[] { goodOutput },
                   macro,
                   remote,
@@ -128,7 +128,7 @@ namespace ArtNetSharp
                             in ushort manufacturerCode = Constants.DEFAULT_ESTA_MANUFACTURER_CODE,
                             in NodeReport? nodeReport = null,
                             in EPortType portType = default,
-                            in EGoodInput goodInput = default,
+                            in GoodInput goodInput = default,
                             in EGoodOutput goodOutput = default,
                             in EMacroState macro = EMacroState.None,
                             in ERemoteState remote = ERemoteState.None,
@@ -156,7 +156,7 @@ namespace ArtNetSharp
                   1,
                   nodeReport,
                   new EPortType[] { portType },
-                  new EGoodInput[] { goodInput },
+                  new GoodInput[] { goodInput },
                   new EGoodOutput[] { goodOutput },
                   macro,
                   remote,
@@ -186,7 +186,7 @@ namespace ArtNetSharp
                         in byte ports = 0,
                         in NodeReport? nodeReport = null,
                         in EPortType[] portTypes = null,
-                        in EGoodInput[] goodInput = null,
+                        in GoodInput[] goodInput = null,
                         in EGoodOutput[] goodOutput = null,
                         in EMacroState macro = EMacroState.None,
                         in ERemoteState remote = ERemoteState.None,
@@ -300,7 +300,7 @@ namespace ArtNetSharp
 
 
             List<EPortType> portTypes = new List<EPortType>(portCount);
-            List<EGoodInput> goodInput = new List<EGoodInput>(portCount);
+            List<GoodInput> goodInput = new List<GoodInput>(portCount);
             List<EGoodOutput> goodOutputA = new List<EGoodOutput>(portCount);
             List<EGoodOutput> goodOutputB = new List<EGoodOutput>(portCount);
             List<object> swIn = new List<object>(portCount);
@@ -314,9 +314,9 @@ namespace ArtNetSharp
                 portTypes.Add(_portType);
 
                 // 21 GoodInput [4]
-                EGoodInput _goodInput = default;
+                GoodInput _goodInput = default;
                 if (length > 178 + i)
-                    _goodInput = (EGoodInput)packet[178 + i];
+                    _goodInput = (GoodInput)packet[178 + i];
                 goodInput.Add(_goodInput);
 
                 // 22 GoodOutputA [4]

@@ -1,34 +1,6 @@
 using ArtNetSharp;
-
-/* Nicht gemergte Änderung aus Projekt "ArtNetTests (net8.0)"
-Vor:
-using Tools = ArtNetSharp.Tools;
-Nach:
-using Tools = ArtNetSharp.Messages.Interfaces;
-*/
-
-/* Nicht gemergte Änderung aus Projekt "ArtNetTests (net6.0)"
-Vor:
-using Tools = ArtNetSharp.Tools;
-Nach:
-using Tools = ArtNetSharp.Messages.Interfaces;
-*/
 using ArtNetSharp.Messages.Interfaces;
-using RDMSharp
-/* Nicht gemergte Änderung aus Projekt "ArtNetTests (net8.0)"
-Vor:
-using ArtNetSharp.Messages.Interfaces;
-Nach:
-using Tools = ArtNetSharp.Tools;
-*/
-
-/* Nicht gemergte Änderung aus Projekt "ArtNetTests (net6.0)"
-Vor:
-using ArtNetSharp.Messages.Interfaces;
-Nach:
-using Tools = ArtNetSharp.Tools;
-*/
-;
+using RDMSharp;
 
 namespace ArtNetTests
 {
@@ -119,7 +91,7 @@ namespace ArtNetTests
                 new NodeReport(ENodeReportCodes.RcFactoryRes, "ewqewfffafdafafgg", 55),
                 new EPortType[] { EPortType.DMX512
                                 | EPortType.OutputFromArtNet },
-                new EGoodInput[] { EGoodInput.None },
+                new GoodInput[] { new GoodInput() },
                 new EGoodOutput[] { EGoodOutput.ContiniuousOutput
                                     | EGoodOutput.RDMisDisabled
                                     | EGoodOutput.DataTransmitted
@@ -161,7 +133,7 @@ namespace ArtNetTests
                 new NodeReport(ENodeReportCodes.RcFactoryRes, "ewqewfffafdafafgg", 55),
                 new EPortType[] { EPortType.DMX512
                                 | EPortType.OutputFromArtNet },
-                new EGoodInput[] { EGoodInput.None },
+                new GoodInput[] { new GoodInput(GoodInput.EConvertTo.sACN, true, true, false, true) },
                 new EGoodOutput[] { EGoodOutput.ContiniuousOutput
                                     | EGoodOutput.RDMisDisabled
                                     | EGoodOutput.DataTransmitted
@@ -202,7 +174,7 @@ namespace ArtNetTests
             doPortRelatedExceptionTests(1, _inputs: new object[] { new Universe(15), new Universe(3), new Universe(9), new Universe(5), new Universe(1) });
             doPortRelatedExceptionTests(1, _outputs: new object[] { new Universe(15), new Universe(3), new Universe(9), new Universe(5), new Universe(1) });
             doPortRelatedExceptionTests(2, portTypes: new EPortType[] { EPortType.ArtNet | EPortType.InputToArtNet, EPortType.MIDI, EPortType.MIDI, EPortType.MIDI, EPortType.MIDI });
-            doPortRelatedExceptionTests(2, goodInputs: new EGoodInput[] { EGoodInput.None, EGoodInput.ReceiveErrorsDetected, EGoodInput.DMX_TestPacketsSupported, EGoodInput.DMX_TestPacketsSupported, EGoodInput.DMX_TestPacketsSupported, EGoodInput.DMX_TestPacketsSupported });
+            doPortRelatedExceptionTests(2, goodInputs: new GoodInput[] { new GoodInput(), new GoodInput(receiveErrorsDetected:true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true) });
             doPortRelatedExceptionTests(2, goodOutputs: new EGoodOutput[] { EGoodOutput.OutputArtNet, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit });
 
             void doPortRelatedExceptionTests(
@@ -210,7 +182,7 @@ namespace ArtNetTests
                 object[]? _inputs = null,
                 object[]? _outputs = null,
                 EPortType[]? portTypes = null,
-                EGoodInput[]? goodInputs = null,
+                GoodInput[]? goodInputs = null,
                 EGoodOutput[]? goodOutputs = null,
                 ushort oemCode = 1234,
                 ushort manufacturerCode = 1234)
