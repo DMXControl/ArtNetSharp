@@ -4,6 +4,8 @@ namespace ArtNetSharp
 {
     public readonly struct GoodInput : IEquatable<GoodInput>
     {
+
+        public static GoodInput None = new GoodInput();
         public readonly byte Byte1;
 
         public readonly EConvertTo ConvertTo;

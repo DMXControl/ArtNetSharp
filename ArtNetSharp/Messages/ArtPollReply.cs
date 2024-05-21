@@ -30,7 +30,7 @@ namespace ArtNetSharp
         public NodeReport? NodeReport { get; private set; }
         public EPortType[] PortTypes { get; private set; }
         public GoodInput[] GoodInput { get; private set; }
-        public EGoodOutput[] GoodOutput { get; private set; }
+        public GoodOutput[] GoodOutput { get; private set; }
         public EMacroState Macro { get; private set; }
         public ERemoteState Remote { get; private set; }
         public readonly byte BindIndex;
@@ -72,7 +72,7 @@ namespace ArtNetSharp
                             in NodeReport? nodeReport = null,
                             in EPortType portType = default,
                             in GoodInput goodInput = default,
-                            in EGoodOutput goodOutput = default,
+                            in GoodOutput goodOutput = default,
                             in EMacroState macro = EMacroState.None,
                             in ERemoteState remote = ERemoteState.None,
                             in byte ubeaVersion = 0,
@@ -100,7 +100,7 @@ namespace ArtNetSharp
                   nodeReport,
                   new EPortType[] { portType },
                   new GoodInput[] { goodInput },
-                  new EGoodOutput[] { goodOutput },
+                  new GoodOutput[] { goodOutput },
                   macro,
                   remote,
                   ubeaVersion,
@@ -129,7 +129,7 @@ namespace ArtNetSharp
                             in NodeReport? nodeReport = null,
                             in EPortType portType = default,
                             in GoodInput goodInput = default,
-                            in EGoodOutput goodOutput = default,
+                            in GoodOutput goodOutput = default,
                             in EMacroState macro = EMacroState.None,
                             in ERemoteState remote = ERemoteState.None,
                             in byte ubeaVersion = 0,
@@ -157,7 +157,7 @@ namespace ArtNetSharp
                   nodeReport,
                   new EPortType[] { portType },
                   new GoodInput[] { goodInput },
-                  new EGoodOutput[] { goodOutput },
+                  new GoodOutput[] { goodOutput },
                   macro,
                   remote,
                   ubeaVersion,
@@ -187,7 +187,7 @@ namespace ArtNetSharp
                         in NodeReport? nodeReport = null,
                         in EPortType[] portTypes = null,
                         in GoodInput[] goodInput = null,
-                        in EGoodOutput[] goodOutput = null,
+                        in GoodOutput[] goodOutput = null,
                         in EMacroState macro = EMacroState.None,
                         in ERemoteState remote = ERemoteState.None,
                         in byte ubeaVersion = 0,
@@ -301,8 +301,8 @@ namespace ArtNetSharp
 
             List<EPortType> portTypes = new List<EPortType>(portCount);
             List<GoodInput> goodInput = new List<GoodInput>(portCount);
-            List<EGoodOutput> goodOutputA = new List<EGoodOutput>(portCount);
-            List<EGoodOutput> goodOutputB = new List<EGoodOutput>(portCount);
+            List<GoodOutput> goodOutputA = new List<GoodOutput>(portCount);
+            List<GoodOutput> goodOutputB = new List<GoodOutput>(portCount);
             List<object> swIn = new List<object>(portCount);
             List<object> swOut = new List<object>(portCount);
             for (byte i = 0; i < portCount; i++)
@@ -320,9 +320,9 @@ namespace ArtNetSharp
                 goodInput.Add(_goodInput);
 
                 // 22 GoodOutputA [4]
-                EGoodOutput _goodOutputA = default;
+                GoodOutput _goodOutputA = default;
                 if (length > 182 + i)
-                    _goodOutputA = (EGoodOutput)packet[182 + i];
+                    _goodOutputA = (GoodOutput)packet[182 + i];
                 goodOutputA.Add(_goodOutputA);
 
                 if (length > 186 + i) // 23 SwIn [4] Input Universe
@@ -331,9 +331,9 @@ namespace ArtNetSharp
                     swOut.Add(getUniverseOrAddress(packet[190 + i]));
 
                 // 41 GoodOutputB [4]
-                EGoodOutput _goodOutputB = default;
+                GoodOutput _goodOutputB = default;
                 if (length > 213 + i)
-                    _goodOutputB = (EGoodOutput)(ushort)(packet[213 + i] << 8);
+                    _goodOutputB = (GoodOutput)(ushort)(packet[213 + i] << 8);
                 goodOutputB.Add(_goodOutputB);
             }
 
@@ -393,7 +393,7 @@ namespace ArtNetSharp
                 return (Address)b;
             }
 
-            List<EGoodOutput> goodOutput = new List<EGoodOutput>(portCount);
+            List<GoodOutput> goodOutput = new List<GoodOutput>(portCount);
             for (int i = 0; i < goodOutputA.Count; i++)
                 goodOutput.Add(goodOutputA[i] | goodOutputB[i]);
 

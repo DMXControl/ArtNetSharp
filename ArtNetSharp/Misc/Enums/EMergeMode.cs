@@ -1,8 +1,8 @@
 ﻿namespace ArtNetSharp
 {
-    public enum EMergeMode
+    public enum EMergeMode: byte
     {
-        HTP = 0,
-        LTP = 1
+        HTP = 0b00000000,
+        LTP = 0b00000010
     }
 }

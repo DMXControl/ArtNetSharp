@@ -839,7 +839,7 @@ namespace ArtNetSharp.Communication
             if (success)
             {
                 DMXReceived?.InvokeFailSafe(this, port.PortAddress);
-                port.GoodOutput |= EGoodOutput.DataTransmitted;
+                port.GoodOutput |= GoodOutput.DATA_TRANSMITTED;
             }
         }
         protected async Task processArtData(ArtData artData, IPv4Address source)

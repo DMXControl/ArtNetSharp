@@ -92,10 +92,7 @@ namespace ArtNetTests
                 new EPortType[] { EPortType.DMX512
                                 | EPortType.OutputFromArtNet },
                 new GoodInput[] { new GoodInput() },
-                new EGoodOutput[] { EGoodOutput.ContiniuousOutput
-                                    | EGoodOutput.RDMisDisabled
-                                    | EGoodOutput.DataTransmitted
-                                    | EGoodOutput.DMX_OutputShortCircuit },
+                new GoodOutput[] { new GoodOutput(continiuousOutput:true, rdmIsDisabled:true,isBeingOutputAsDMX:true,dmx_OutputShortCircuit:true) },
                 EMacroState.Macro1Active
                     | EMacroState.Macro2Active,
                 ERemoteState.Remote3Active
@@ -134,10 +131,7 @@ namespace ArtNetTests
                 new EPortType[] { EPortType.DMX512
                                 | EPortType.OutputFromArtNet },
                 new GoodInput[] { new GoodInput(GoodInput.EConvertTo.sACN, true, true, false, true) },
-                new EGoodOutput[] { EGoodOutput.ContiniuousOutput
-                                    | EGoodOutput.RDMisDisabled
-                                    | EGoodOutput.DataTransmitted
-                                    | EGoodOutput.DMX_OutputShortCircuit },
+                new GoodOutput[] { new GoodOutput(continiuousOutput: true, rdmIsDisabled: true, isBeingOutputAsDMX: true, dmx_OutputShortCircuit: true) },
                 EMacroState.Macro1Active
                     | EMacroState.Macro2Active,
                 ERemoteState.Remote3Active
@@ -175,7 +169,7 @@ namespace ArtNetTests
             doPortRelatedExceptionTests(1, _outputs: new object[] { new Universe(15), new Universe(3), new Universe(9), new Universe(5), new Universe(1) });
             doPortRelatedExceptionTests(2, portTypes: new EPortType[] { EPortType.ArtNet | EPortType.InputToArtNet, EPortType.MIDI, EPortType.MIDI, EPortType.MIDI, EPortType.MIDI });
             doPortRelatedExceptionTests(2, goodInputs: new GoodInput[] { new GoodInput(), new GoodInput(receiveErrorsDetected:true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true) });
-            doPortRelatedExceptionTests(2, goodOutputs: new EGoodOutput[] { EGoodOutput.OutputFrom_ArtNet, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit });
+            doPortRelatedExceptionTests(2, goodOutputs: new GoodOutput[] { new GoodOutput(), new GoodOutput(dmx_OutputShortCircuit: true), new GoodOutput(dmx_OutputShortCircuit: true), new GoodOutput(dmx_OutputShortCircuit: true), new GoodOutput(dmx_OutputShortCircuit: true) });
 
             void doPortRelatedExceptionTests(
                 byte ports,
@@ -183,7 +177,7 @@ namespace ArtNetTests
                 object[]? _outputs = null,
                 EPortType[]? portTypes = null,
                 GoodInput[]? goodInputs = null,
-                EGoodOutput[]? goodOutputs = null,
+                GoodOutput[]? goodOutputs = null,
                 ushort oemCode = 1234,
                 ushort manufacturerCode = 1234)
             {

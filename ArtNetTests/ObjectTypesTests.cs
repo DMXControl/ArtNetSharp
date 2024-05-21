@@ -482,6 +482,138 @@ namespace ArtNetTests
             c = ~a & b;
             Assert.That(c, Is.EqualTo(b));
         }
+        [Test]
+        public void TestGoodOutput()
+        {
+            HashSet<GoodOutput> subjects = new HashSet<GoodOutput>();
+            for (int i = 0; i < 0xffffff; i += 0b01010101)
+                subjects.Add(new GoodOutput((byte)(i & 0xff), (byte)((i >> 8) & 0xff)));
+
+            subjects.Add(new GoodOutput(GoodOutput.EConvertFrom.sACN, EMergeMode.LTP, true, true, true, true, true, true, true, true));
+            subjects.Add(new GoodOutput(GoodOutput.EConvertFrom.sACN, EMergeMode.HTP, true, false, false, true, true, true, true, true));
+            subjects.Add(new GoodOutput(GoodOutput.EConvertFrom.ArtNet, EMergeMode.LTP, true, false, false, true, true, true, false, true));
+
+            foreach (GoodOutput goodOutput in subjects)
+            {
+                GoodOutput result = new GoodOutput(goodOutput.Byte1, goodOutput.Byte2);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(goodOutput.Byte1, Is.EqualTo(result!.Byte1));
+                    Assert.That(goodOutput.Byte2, Is.EqualTo(result!.Byte2));
+                    Assert.That(goodOutput.ConvertFrom, Is.EqualTo(result!.ConvertFrom));
+                    Assert.That(goodOutput.MergeMode, Is.EqualTo(result!.MergeMode));
+                    Assert.That(goodOutput.DMX_OutputShortCircuit, Is.EqualTo(result!.DMX_OutputShortCircuit));
+                    Assert.That(goodOutput.MergingArtNetData, Is.EqualTo(result!.MergingArtNetData));
+                    Assert.That(goodOutput.DMX_TestPacketsSupported, Is.EqualTo(result!.DMX_TestPacketsSupported));
+                    Assert.That(goodOutput.DMX_SIPsSupported, Is.EqualTo(result!.DMX_SIPsSupported));
+                    Assert.That(goodOutput.DMX_TestPacketsSupported2, Is.EqualTo(result!.DMX_TestPacketsSupported2));
+                    Assert.That(goodOutput.IsBeingOutputAsDMX, Is.EqualTo(result!.IsBeingOutputAsDMX));
+                    Assert.That(goodOutput.ContiniuousOutput, Is.EqualTo(result!.ContiniuousOutput));
+                    Assert.That(goodOutput.RDMisDisabled, Is.EqualTo(result!.RDMisDisabled));
+                    Assert.That(goodOutput.GetHashCode(), Is.EqualTo(result!.GetHashCode()));
+                    Assert.That(goodOutput, Is.EqualTo(result));
+                    Assert.That(goodOutput == result, Is.True);
+                    Assert.That(goodOutput != result, Is.False);
+                    Assert.That(goodOutput.Equals((object)result), Is.True);
+                    Assert.That(goodOutput.Equals(null), Is.False);
+                });
+            }
+
+            GoodOutput a = new GoodOutput(0b01010101, 0b10101010);
+            GoodOutput b = new GoodOutput(0b10101010, 0b01010101);
+            Assert.Multiple(() =>
+            {
+                Assert.That(a != b, Is.True);
+                Assert.That(a == b, Is.False);
+                Assert.That(a != ~b, Is.False);
+                Assert.That(a == ~b, Is.True);
+                Assert.That(~a != b, Is.False);
+                Assert.That(~a == b, Is.True);
+                Assert.That(~a != ~b, Is.True);
+                Assert.That(~a == ~b, Is.False);
+            });
+
+            ushort aUshort = (ushort)a;
+            GoodOutput aFromUshort = (GoodOutput)aUshort;
+            Assert.That(aFromUshort, Is.EqualTo(a));
+
+            ushort bUshort = (ushort)b;
+            GoodOutput bFromUshort = (GoodOutput)bUshort;
+            Assert.That(bFromUshort, Is.EqualTo(b));
+
+
+
+            GoodOutput c = a & b;
+            Assert.That(c, Is.EqualTo(GoodOutput.None));
+            c = a & ~b;
+            Assert.That(c, Is.EqualTo(a));
+            c = ~a & b;
+            Assert.That(c, Is.EqualTo(b));
+        }
+        [Test]
+        public void TestGoodInput()
+        {
+            HashSet<GoodInput> subjects = new HashSet<GoodInput>();
+            for (byte i = 0; i < byte.MaxValue; i ++)
+                subjects.Add(new GoodInput(i));
+
+            subjects.Add(new GoodInput(GoodInput.EConvertTo.sACN, true, true, true, true, true, true));
+            subjects.Add(new GoodInput(GoodInput.EConvertTo.sACN, true, false, false, true, true, true));
+            subjects.Add(new GoodInput(GoodInput.EConvertTo.ArtNet, true, false, false, true, true, true));
+
+            foreach (GoodInput goodInput in subjects)
+            {
+                GoodInput result = new GoodInput(goodInput.Byte1);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(goodInput.Byte1, Is.EqualTo(result!.Byte1));
+                    Assert.That(goodInput.ConvertTo, Is.EqualTo(result!.ConvertTo));
+                    Assert.That(goodInput.ReceiveErrorsDetected, Is.EqualTo(result!.ReceiveErrorsDetected));
+                    Assert.That(goodInput.InputDisabled, Is.EqualTo(result!.InputDisabled));
+                    Assert.That(goodInput.DMX_TestPacketsSupported, Is.EqualTo(result!.DMX_TestPacketsSupported));
+                    Assert.That(goodInput.DMX_SIPsSupported, Is.EqualTo(result!.DMX_SIPsSupported));
+                    Assert.That(goodInput.DMX_TestPacketsSupported2, Is.EqualTo(result!.DMX_TestPacketsSupported2));
+                    Assert.That(goodInput.DataReceived, Is.EqualTo(result!.DataReceived));
+                    Assert.That(goodInput.GetHashCode(), Is.EqualTo(result!.GetHashCode()));
+                    Assert.That(goodInput, Is.EqualTo(result));
+                    Assert.That(goodInput == result, Is.True);
+                    Assert.That(goodInput != result, Is.False);
+                    Assert.That(goodInput.Equals((object)result), Is.True);
+                    Assert.That(goodInput.Equals(null), Is.False);
+                });
+            }
+
+            GoodInput a = new GoodInput(0b01010101);
+            GoodInput b = new GoodInput(0b10101010);
+            Assert.Multiple(() =>
+            {
+                Assert.That(a != b, Is.True);
+                Assert.That(a == b, Is.False);
+                Assert.That(a != ~b, Is.False);
+                Assert.That(a == ~b, Is.True);
+                Assert.That(~a != b, Is.False);
+                Assert.That(~a == b, Is.True);
+                Assert.That(~a != ~b, Is.True);
+                Assert.That(~a == ~b, Is.False);
+            });
+
+            byte aByte = (byte)a;
+            GoodInput aFromByte = (GoodInput)aByte;
+            Assert.That(aFromByte, Is.EqualTo(a));
+
+            byte bByte = (byte)b;
+            GoodInput bFromByte = (GoodInput)bByte;
+            Assert.That(bFromByte, Is.EqualTo(b));
+
+
+
+            GoodInput c = a & b;
+            Assert.That(c, Is.EqualTo(GoodInput.None));
+            c = a & ~b;
+            Assert.That(c, Is.EqualTo(a));
+            c = ~a & b;
+            Assert.That(c, Is.EqualTo(b));
+        }
 
         [Test]
         public void TestControllerRDMMessageReceivedEventArgs()

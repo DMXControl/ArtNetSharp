@@ -32,7 +32,7 @@
 //            NodeInstance instance = new NodeMock();
 //            instance.Name = "Test";
 //            for (ushort i = 1; i <= 32; i++)
-//                instance.AddPortConfig(new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+//                instance.AddPortConfig(new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = GoodOutput.ContiniuousOutput | GoodOutput.DataTransmitted });
 //            artNet.AddInstance(instance);
 //            for (int i = 0; i < 80; i++)
 //                await Task.Delay(100);
@@ -46,7 +46,7 @@
 //            ControllerInstanceMock instance = new ControllerInstanceMock(0x1434);
 //            instance.Name = "Test";
 //            for (ushort i = 1; i <= 32; i++)
-//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = GoodOutput.ContiniuousOutput | GoodOutput.DataTransmitted });
 //            artNet.AddInstance(instance);
 //            for (int i = 0; i < 80; i++)
 //                await Task.Delay(100);
@@ -61,7 +61,7 @@
 //            ControllerInstanceMock instance = new ControllerInstanceMock(0x7234);
 //            instance.Name = "DMXTraffic Test";
 //            for (ushort i = 1; i <= 4; i++)
-//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = GoodOutput.ContiniuousOutput | GoodOutput.DataTransmitted });
 //            artNet.AddInstance(instance);
 
 //            byte[] data = new byte[32];
@@ -97,7 +97,7 @@
 //            ControllerInstanceMock instance = new ControllerInstanceMock(0x1934);
 //            instance.Name = "RDMTraffic Test";
 //            for (ushort i = 1; i <= 4; i++)
-//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = GoodOutput.ContiniuousOutput | GoodOutput.DataTransmitted });
 //            artNet.AddInstance(instance);
 //            for (int i = 0; i < 3; i++)
 //            {
@@ -166,7 +166,7 @@
 //            ControllerInstanceMock instance = new ControllerInstanceMock(0x1284);
 //            instance.Name = "RDMDevice Test";
 //            for (ushort i = 1; i <= 4; i++)
-//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = GoodOutput.ContiniuousOutput | GoodOutput.DataTransmitted });
 //            artNet.AddInstance(instance);
 //            for (int i = 0; i < 3; i++)
 //            {
@@ -196,7 +196,7 @@
 //            ControllerInstanceMock instance = new ControllerInstanceMock(0x1230);
 //            instance.Name = "TestTimeCode";
 //            for (ushort i = 1; i <= 32; i++)
-//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = GoodOutput.ContiniuousOutput | GoodOutput.DataTransmitted });
 //            artNet.AddInstance(instance);
 //            for (int i = 0; i < 600; i++)
 //            {
@@ -215,7 +215,7 @@
 //            ControllerInstanceMock instance = new ControllerInstanceMock(0x0815);
 //            instance.Name = "TestTimeSync";
 //            for (ushort i = 1; i <= 32; i++)
-//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = GoodOutput.ContiniuousOutput | GoodOutput.DataTransmitted });
 //            artNet.AddInstance(instance);
 //            for (int i = 0; i < 6; i++)
 //            {
@@ -233,7 +233,7 @@
 //            ControllerInstanceMock instance = new ControllerInstanceMock(11880);
 //            instance.Name = "TestAddress";
 //            for (ushort i = 1; i <= 32; i++)
-//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+//                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = GoodOutput.ContiniuousOutput | GoodOutput.DataTransmitted });
 //            artNet.AddInstance(instance);
 //            for (int i = 0; i < 6; i++)
 //                await Task.Delay(1000);

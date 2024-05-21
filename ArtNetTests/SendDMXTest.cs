@@ -35,7 +35,7 @@
 //            byte ports = 24;
 //            for (ushort i = 1; i <= ports; i++)
 //            {
-//                nodeInstance.AddPortConfig(new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+//                nodeInstance.AddPortConfig(new PortConfig((byte)i, i, true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = GoodOutput.ContiniuousOutput | GoodOutput.DataTransmitted });
 //                controllerInstance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
 //            }
 //            artNet.AddInstance(nodeInstance);

@@ -54,7 +54,7 @@ namespace ArtNetTests.HardwareTests
                 Name = $"Test: {nameof(Showtec_Net2)}"
             };
             for (ushort i = 1; i <= 1; i++)
-                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = EGoodOutput.ContiniuousOutput | EGoodOutput.DataTransmitted });
+                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = new GoodOutput(continiuousOutput:true, isBeingOutputAsDMX:true) });
             artNet.AddInstance(instance);
 
             for (int i = 0; i < 1000; i++)

@@ -83,8 +83,8 @@ namespace ArtNetSharp.Communication
                 onPropertyChanged();
             }
         }
-        private EGoodOutput goodOutput;
-        public EGoodOutput GoodOutput
+        private GoodOutput goodOutput;
+        public GoodOutput GoodOutput
         {
             get
             {
@@ -188,7 +188,7 @@ namespace ArtNetSharp.Communication
             GoodInput = artPollReply.GoodInput[PortIndex];
             var output = artPollReply.OutputUniverses[PortIndex];
             var input = artPollReply.InputUniverses[PortIndex];
-            IsRDMCapable = artPollReply.Status.RDM_Supported && !GoodOutput.HasFlag(EGoodOutput.RDMisDisabled);
+            IsRDMCapable = artPollReply.Status.RDM_Supported && !GoodOutput.RDMisDisabled;
 
             if (PortType.HasFlag(EPortType.OutputFromArtNet))
             {

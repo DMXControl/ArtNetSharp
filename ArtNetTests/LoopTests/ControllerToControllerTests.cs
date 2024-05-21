@@ -115,7 +115,7 @@ namespace ArtNetTests.LoopTests
                 Assert.That(rxPort.PortType, Is.EqualTo(EPortType.OutputFromArtNet));
                 Assert.That(rxPort.OutputPortAddress, Is.EqualTo(portAddress));
                 Assert.That(txPort.InputPortAddress, Is.EqualTo(portAddress));
-                Assert.That(rxPort.GoodOutput.HasFlag(EGoodOutput.DataTransmitted), Is.False);
+                Assert.That(rxPort.GoodOutput.IsBeingOutputAsDMX, Is.False);
             });
         }
 
@@ -141,9 +141,9 @@ namespace ArtNetTests.LoopTests
             var rxPort = rcRX.Ports.First(p => p.OutputPortAddress.Equals(portAddress));
             Assert.Multiple(() =>
             {
-                Assert.That(rxPort.GoodOutput.HasFlag(EGoodOutput.OutputArtNet), Is.True);
-                Assert.That(rxPort.GoodOutput.HasFlag(EGoodOutput.DMX_OutputShortCircuit), Is.False);
-                Assert.That(rxPort.GoodOutput.HasFlag(EGoodOutput.DataTransmitted), Is.False);
+                Assert.That(rxPort.GoodOutput.ConvertFrom, Is.EqualTo(GoodOutput.EConvertFrom.ArtNet));
+                Assert.That(rxPort.GoodOutput.DMX_OutputShortCircuit, Is.False);
+                Assert.That(rxPort.GoodOutput.IsBeingOutputAsDMX, Is.False);
             });
 
             instanceRX.DMXReceived += InstanceRX_DMXReceived;
@@ -154,13 +154,13 @@ namespace ArtNetTests.LoopTests
 
             Assert.Multiple(() =>
             {
-                Assert.That(rxPort.GoodOutput.HasFlag(EGoodOutput.OutputArtNet), Is.True);
-                Assert.That(rxPort.GoodOutput.HasFlag(EGoodOutput.DMX_OutputShortCircuit), Is.False);
+                Assert.That(rxPort.GoodOutput.ConvertFrom, Is.EqualTo(GoodOutput.EConvertFrom.ArtNet));
+                Assert.That(rxPort.GoodOutput.DMX_OutputShortCircuit, Is.False);
             });
             bool dataReceived = false;
             for (int i = 0; i < 60; i++)
             {
-                dataReceived = rxPort.GoodOutput.HasFlag(EGoodOutput.DataTransmitted);
+                dataReceived = rxPort.GoodOutput.IsBeingOutputAsDMX;
                 if (dataReceived)
                     continue;
             }
@@ -181,7 +181,7 @@ namespace ArtNetTests.LoopTests
                 string str = $"Error at {data[0]}";
                 Assert.Multiple(() =>
                 {
-                    Assert.That(outputPort.GoodOutput.HasFlag(EGoodOutput.DataTransmitted), Is.True, str);
+                    Assert.That(outputPort.GoodOutput.IsBeingOutputAsDMX, Is.True, str);
                     Assert.That(instanceRX.GetReceivedDMX(portAddress), Is.EqualTo(data), str);
                 });
             }
