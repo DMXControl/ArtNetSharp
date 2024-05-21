@@ -3,10 +3,10 @@
 namespace ArtNetSharp
 {
     [Flags]
-    public enum EGoodOutput : ushort
+    public enum EGoodOutput : ushort //Todo refactor to readonly struckt
     {
-        OutputArtNet = 0b00000000,
-        OutputSACN = 0b00000001,
+        OutputFrom_ArtNet = 0b00000000,
+        OutputFrom_sACN = 0b00000001,
         MergeModeIsLTP = 0b00000010,
         DMX_OutputShortCircuit = 0b00000100,
         MergingArtNetData = 0b00001000,

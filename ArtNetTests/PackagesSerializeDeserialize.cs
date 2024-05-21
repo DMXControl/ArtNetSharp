@@ -175,7 +175,7 @@ namespace ArtNetTests
             doPortRelatedExceptionTests(1, _outputs: new object[] { new Universe(15), new Universe(3), new Universe(9), new Universe(5), new Universe(1) });
             doPortRelatedExceptionTests(2, portTypes: new EPortType[] { EPortType.ArtNet | EPortType.InputToArtNet, EPortType.MIDI, EPortType.MIDI, EPortType.MIDI, EPortType.MIDI });
             doPortRelatedExceptionTests(2, goodInputs: new GoodInput[] { new GoodInput(), new GoodInput(receiveErrorsDetected:true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true) });
-            doPortRelatedExceptionTests(2, goodOutputs: new EGoodOutput[] { EGoodOutput.OutputArtNet, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit });
+            doPortRelatedExceptionTests(2, goodOutputs: new EGoodOutput[] { EGoodOutput.OutputFrom_ArtNet, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit, EGoodOutput.DMX_OutputShortCircuit });
 
             void doPortRelatedExceptionTests(
                 byte ports,
