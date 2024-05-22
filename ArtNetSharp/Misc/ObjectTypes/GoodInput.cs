@@ -8,12 +8,33 @@ namespace ArtNetSharp
         public static GoodInput None = new GoodInput();
         public readonly byte Byte1;
 
+        /// <summary>
+        /// Input is selected to convert to sACN or Art-Net.
+        /// </summary>
         public readonly EConvertTo ConvertTo;
+        /// <summary>
+        /// Receive errors detected. 
+        /// </summary>
         public readonly bool ReceiveErrorsDetected;
+        /// <summary>
+        /// Input is disabled.
+        /// </summary>
         public readonly bool InputDisabled;
+        /// <summary>
+        /// Channel includes DMX512 test packets. 
+        /// </summary>
         public readonly bool DMX_TestPacketsSupported;
+        /// <summary>
+        /// Channel includes DMX512 SIP’s.
+        /// </summary>
         public readonly bool DMX_SIPsSupported;
+        /// <summary>
+        /// Channel includes DMX512 test packets. 
+        /// </summary>
         public readonly bool DMX_TestPacketsSupported2;
+        /// <summary>
+        /// Data received.
+        /// </summary>
         public readonly bool DataReceived;
 
         public GoodInput(in byte byte1)

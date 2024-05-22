@@ -489,9 +489,9 @@ namespace ArtNetTests
             for (int i = 0; i < 0xffffff; i += 0b01010101)
                 subjects.Add(new GoodOutput((byte)(i & 0xff), (byte)((i >> 8) & 0xff)));
 
-            subjects.Add(new GoodOutput(GoodOutput.EConvertFrom.sACN, EMergeMode.LTP, true, true, true, true, true, true, true, true));
-            subjects.Add(new GoodOutput(GoodOutput.EConvertFrom.sACN, EMergeMode.HTP, true, false, false, true, true, true, true, true));
-            subjects.Add(new GoodOutput(GoodOutput.EConvertFrom.ArtNet, EMergeMode.LTP, true, false, false, true, true, true, false, true));
+            subjects.Add(new GoodOutput(GoodOutput.EConvertFrom.sACN, EMergeMode.LTP, true, true, true, true, true, true, GoodOutput.EOutputStyle.Continuous, true));
+            subjects.Add(new GoodOutput(GoodOutput.EConvertFrom.sACN, EMergeMode.HTP, true, false, false, true, true, true, GoodOutput.EOutputStyle.Continuous, true));
+            subjects.Add(new GoodOutput(GoodOutput.EConvertFrom.ArtNet, EMergeMode.LTP, true, false, false, true, true, true, GoodOutput.EOutputStyle.Delta, true));
 
             foreach (GoodOutput goodOutput in subjects)
             {
@@ -508,7 +508,7 @@ namespace ArtNetTests
                     Assert.That(goodOutput.DMX_SIPsSupported, Is.EqualTo(result!.DMX_SIPsSupported));
                     Assert.That(goodOutput.DMX_TestPacketsSupported2, Is.EqualTo(result!.DMX_TestPacketsSupported2));
                     Assert.That(goodOutput.IsBeingOutputAsDMX, Is.EqualTo(result!.IsBeingOutputAsDMX));
-                    Assert.That(goodOutput.ContiniuousOutput, Is.EqualTo(result!.ContiniuousOutput));
+                    Assert.That(goodOutput.OutputStyle, Is.EqualTo(result!.OutputStyle));
                     Assert.That(goodOutput.RDMisDisabled, Is.EqualTo(result!.RDMisDisabled));
                     Assert.That(goodOutput.GetHashCode(), Is.EqualTo(result!.GetHashCode()));
                     Assert.That(goodOutput, Is.EqualTo(result));

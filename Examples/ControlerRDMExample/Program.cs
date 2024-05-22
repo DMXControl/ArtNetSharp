@@ -27,7 +27,7 @@ for (ushort i = 1; i <= 4; i++)
 {
     try
     {
-        var outputConfig = new PortConfig((byte)i, new PortAddress((ushort)(i - 1)), true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = GoodOutput.ContiniuousOutput | GoodOutput.DataTransmitted, };
+        var outputConfig = new PortConfig((byte)i, new PortAddress((ushort)(i - 1)), true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, isBeingOutputAsDMX: true), };
         outputConfig.AddAdditionalRdmUIDs(generateUIDs());
         controllerInstance.AddPortConfig(outputConfig);
         controllerInstance.AddPortConfig(new PortConfig((byte)(i + 4), new PortAddress((ushort)(i - 1)), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });

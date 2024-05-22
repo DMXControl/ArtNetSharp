@@ -56,7 +56,7 @@ namespace ArtNetTests.HardwareTests
                 Name = $"Test: {nameof(WirelessSolution_BlueBox)}"
             };
             for (ushort i = 1; i <= 1; i++)
-                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = new GoodOutput(continiuousOutput: true, isBeingOutputAsDMX: true) });
+                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, isBeingOutputAsDMX: true) });
             artNet.AddInstance(instance);
 
             for (int i = 0; i < 1000; i++)

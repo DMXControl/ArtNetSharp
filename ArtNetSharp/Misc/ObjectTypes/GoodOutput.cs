@@ -8,16 +8,44 @@ namespace ArtNetSharp
         public readonly byte Byte1;
         public readonly byte Byte2;
 
+        /// <summary>
+        /// Input is selected to convert to sACN or Art-Net.
+        /// </summary>
         public readonly EConvertFrom ConvertFrom;
+        /// <summary>
+        /// Merge Mode is HTP or LTP.
+        /// </summary>
         public readonly EMergeMode MergeMode;
+        /// <summary>
+        /// DMX output short detected on power up
+        /// </summary>
         public readonly bool DMX_OutputShortCircuit;
+        /// <summary>
+        /// Output is merging ArtNet data.
+        /// </summary>
         public readonly bool MergingArtNetData;
+        /// <summary>
+        /// Channel includes DMX512 test packets. 
+        /// </summary>
         public readonly bool DMX_TestPacketsSupported;
+        /// <summary>
+        /// Channel includes DMX512 SIP’s
+        /// </summary>
         public readonly bool DMX_SIPsSupported;
+        /// <summary>
+        /// Channel includes DMX512 test packets. 
+        /// </summary>
         public readonly bool DMX_TestPacketsSupported2;
+        /// <summary>
+        /// ArtDmx or sACN data is being output as
+        /// DMX512 on this port.
+        /// </summary>
         public readonly bool IsBeingOutputAsDMX;
 
-        public readonly bool ContiniuousOutput;
+        /// <summary>
+        /// 
+        /// </summary>
+        public readonly EOutputStyle OutputStyle;
         public readonly bool RDMisDisabled;
 
         public static GoodOutput None = new GoodOutput();
@@ -36,7 +64,7 @@ namespace ArtNetSharp
             DMX_TestPacketsSupported2 = Tools.BitsMatch(Byte1, 0b01000000);
             IsBeingOutputAsDMX = Tools.BitsMatch(Byte1, 0b10000000);
 
-            ContiniuousOutput = Tools.BitsMatch(Byte2, 0b01000000);
+            OutputStyle = (EOutputStyle)(Byte2 &0b01000000);
             RDMisDisabled = Tools.BitsMatch(Byte2, 0b10000000);
         }
 
@@ -48,7 +76,7 @@ namespace ArtNetSharp
                          in bool dMX_SIPsSupported = false,
                          in bool dMX_TestPacketsSupported2 = false,
                          in bool isBeingOutputAsDMX = false,
-                         in bool continiuousOutput = false,
+                         in EOutputStyle outputStyle =  EOutputStyle.Continuous,
                          in bool rdmIsDisabled = false) : this()
         {
             ConvertFrom = convertFrom;
@@ -59,7 +87,7 @@ namespace ArtNetSharp
             DMX_SIPsSupported = dMX_SIPsSupported;
             DMX_TestPacketsSupported2 = dMX_TestPacketsSupported2;
             IsBeingOutputAsDMX = isBeingOutputAsDMX;
-            ContiniuousOutput = continiuousOutput;
+            OutputStyle = outputStyle;
             RDMisDisabled = rdmIsDisabled;
 
             Byte1 |= (byte)ConvertFrom;
@@ -79,8 +107,8 @@ namespace ArtNetSharp
             if (IsBeingOutputAsDMX)
                 Byte1 |= 0b10000000;
 
-            if (ContiniuousOutput)
-                Byte2 |= 0b01000000;
+
+            Byte2 |= (byte)OutputStyle;
             if (RDMisDisabled)
                 Byte2 |= 0b10000000;
         }
@@ -117,6 +145,11 @@ namespace ArtNetSharp
         {
             ArtNet = 0b00000000,
             sACN = 0b00000001,
+        }
+        public enum EOutputStyle : byte
+        {
+            Continuous = 0b01000000,
+            Delta = 0b00000000,
         }
         public static implicit operator ushort(in GoodOutput goodOutput)
         {

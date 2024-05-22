@@ -92,7 +92,7 @@ namespace ArtNetTests
                 new EPortType[] { EPortType.DMX512
                                 | EPortType.OutputFromArtNet },
                 new GoodInput[] { new GoodInput() },
-                new GoodOutput[] { new GoodOutput(continiuousOutput:true, rdmIsDisabled:true,isBeingOutputAsDMX:true,dmx_OutputShortCircuit:true) },
+                new GoodOutput[] { new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, rdmIsDisabled:true,isBeingOutputAsDMX:true,dmx_OutputShortCircuit:true) },
                 EMacroState.Macro1Active
                     | EMacroState.Macro2Active,
                 ERemoteState.Remote3Active
@@ -131,7 +131,7 @@ namespace ArtNetTests
                 new EPortType[] { EPortType.DMX512
                                 | EPortType.OutputFromArtNet },
                 new GoodInput[] { new GoodInput(GoodInput.EConvertTo.sACN, true, true, false, true) },
-                new GoodOutput[] { new GoodOutput(continiuousOutput: true, rdmIsDisabled: true, isBeingOutputAsDMX: true, dmx_OutputShortCircuit: true) },
+                new GoodOutput[] { new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, rdmIsDisabled: true, isBeingOutputAsDMX: true, dmx_OutputShortCircuit: true) },
                 EMacroState.Macro1Active
                     | EMacroState.Macro2Active,
                 ERemoteState.Remote3Active
