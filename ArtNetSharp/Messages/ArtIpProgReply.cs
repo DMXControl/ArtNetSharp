@@ -1,5 +1,4 @@
-﻿using RDMSharp;
-using System.Linq;
+﻿using System.Linq;
 
 namespace ArtNetSharp
 {

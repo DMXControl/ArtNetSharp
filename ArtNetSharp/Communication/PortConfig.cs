@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using org.dmxc.wkdt.Light.RDM;
 using RDMSharp;
 using System;
 using System.Collections.Concurrent;
@@ -33,10 +34,10 @@ namespace ArtNetSharp.Communication
         public IReadOnlyCollection<IPv4Address> AdditionalIPEndpoints { get; private set; }
 
 
-        private readonly ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> discoveredRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        private readonly ConcurrentDictionary<UID, RDMUID_ReceivedBag> discoveredRDMUIDs = new ConcurrentDictionary<UID, RDMUID_ReceivedBag>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> DiscoveredRDMUIDs;
-        private readonly ConcurrentDictionary<RDMUID, RDMUID> additionalRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID>();
-        public IReadOnlyCollection<RDMUID> AdditionalRDMUIDs;
+        private readonly ConcurrentDictionary<UID, UID> additionalRDMUIDs = new ConcurrentDictionary<UID, UID>();
+        public IReadOnlyCollection<UID> AdditionalRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
         //public event EventHandler<RDMMessage> RDMMessageReceived;
 
@@ -95,12 +96,12 @@ namespace ArtNetSharp.Communication
             AdditionalIPEndpoints = additionalIPEndpoints.AsReadOnly();
         }
 
-        internal void AddDiscoveredRdmUIDs(params RDMUID[] rdmuids)
+        internal void AddDiscoveredRdmUIDs(params UID[] rdmuids)
         {
             if (rdmuids.Length == 0)
                 return;
 
-            foreach (RDMUID rdmuid in rdmuids)
+            foreach (UID rdmuid in rdmuids)
             {
                 if (discoveredRDMUIDs.TryGetValue(rdmuid, out RDMUID_ReceivedBag bag))
                     bag.Seen();
@@ -116,22 +117,22 @@ namespace ArtNetSharp.Communication
             }
             DiscoveredRDMUIDs = discoveredRDMUIDs.Values.ToList().AsReadOnly();
         }
-        public void AddAdditionalRdmUIDs(params RDMUID[] rdmuids)
+        public void AddAdditionalRdmUIDs(params UID[] rdmuids)
         {
             if (rdmuids.Length == 0)
                 return;
 
-            foreach (RDMUID rdmuid in rdmuids)
+            foreach (UID rdmuid in rdmuids)
                 additionalRDMUIDs.TryAdd(rdmuid, rdmuid);
 
             AdditionalRDMUIDs = additionalRDMUIDs.Values.ToList().AsReadOnly();
         }
-        public void RemoveAdditionalRdmUIDs(params RDMUID[] rdmuids)
+        public void RemoveAdditionalRdmUIDs(params UID[] rdmuids)
         {
             if (additionalRDMUIDs.Count == 0)
                 return;
 
-            foreach (RDMUID rdmuid in rdmuids)
+            foreach (UID rdmuid in rdmuids)
                 additionalRDMUIDs.TryRemove(rdmuid, out _);
 
             AdditionalRDMUIDs = additionalRDMUIDs.Values.ToList().AsReadOnly();
@@ -145,7 +146,7 @@ namespace ArtNetSharp.Communication
             if (removed)
                 DiscoveredRDMUIDs = discoveredRDMUIDs.Values.ToList().AsReadOnly();
         }
-        public RDMUID[] GetReceivedRDMUIDs()
+        public UID[] GetReceivedRDMUIDs()
         {
             return DiscoveredRDMUIDs.Where(k => !k.Timouted()).Select(k => k.Uid).ToArray();
         }

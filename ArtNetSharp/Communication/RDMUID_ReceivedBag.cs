@@ -1,4 +1,4 @@
-﻿using RDMSharp;
+﻿using org.dmxc.wkdt.Light.RDM;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -7,12 +7,12 @@ namespace ArtNetSharp.Communication
 {
     public sealed class RDMUID_ReceivedBag
     {
-        public readonly RDMUID Uid;
+        public readonly UID Uid;
         public DateTime LastSeen { get; private set; }
 
         public byte TransactionNumber { get; private set; } = byte.MaxValue;
 
-        public RDMUID_ReceivedBag(in RDMUID uid)
+        public RDMUID_ReceivedBag(in UID uid)
         {
             Uid = uid;
             Seen();

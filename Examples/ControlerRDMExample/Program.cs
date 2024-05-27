@@ -1,7 +1,7 @@
 ﻿using ArtNetSharp;
 using ArtNetSharp.Communication;
 using ControlerRDMExample;
-using RDMSharp;
+using org.dmxc.wkdt.Light.RDM;
 using System.Collections.Concurrent;
 
 Console.WriteLine("Controller RDM Example!");
@@ -16,7 +16,7 @@ Console.WriteLine("Controller RDM Example!");
 // Create Instance
 ControllerInstance controllerInstance = new ControllerInstance(ArtNet.Instance);
 controllerInstance.Name = controllerInstance.ShortName = "Controller RDM Example";
-ConcurrentDictionary<RDMUID, TestRDMDevice> devices = new();
+ConcurrentDictionary<UID, TestRDMDevice> devices = new();
 
 
 // Add Instance
@@ -38,12 +38,12 @@ for (ushort i = 1; i <= 4; i++)
     }
 }
 
-RDMUID[] generateUIDs()
+UID[] generateUIDs()
 {
-    RDMUID[] uids = new RDMUID[30];
+    UID[] uids = new UID[30];
     for (int i = 0; i < uids.Length; i++)
     {
-        var uid = new RDMUID(0x9fff, (uint)devices.Count + 1);
+        var uid = new UID(0x9fff, (uint)devices.Count + 1);
         devices.TryAdd(uid, new TestRDMDevice(uid));
         uids[i] = uid;
     }

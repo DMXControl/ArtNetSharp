@@ -1,5 +1,4 @@
 ﻿using ArtNetSharp;
-using RDMSharp;
 using System.Reflection;
 
 namespace ArtNetTests.Binary_Tests

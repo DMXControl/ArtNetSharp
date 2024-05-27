@@ -1,4 +1,4 @@
-﻿using RDMSharp;
+﻿using org.dmxc.wkdt.Light.RDM;
 using System;
 using System.Linq;
 
@@ -15,13 +15,13 @@ namespace ArtNetSharp
 
         public readonly byte[] Data;
         public readonly ERDMVersion RdmVersion;
-        public readonly RDMUID UID;
+        public readonly UID UID;
         public readonly byte CommandClass;
         public readonly ushort ParameterId;
         public readonly ushort SubDevice;
         public readonly ushort SubCount;
 
-        public ArtRDMSub(in RDMUID uid,
+        public ArtRDMSub(in UID uid,
                       in byte commandClass,
                       in ushort parameterId,
                       in ushort subDevice,
@@ -45,7 +45,7 @@ namespace ArtNetSharp
             byte[] buffer = new byte[8];
             for (int j = 0; j < 6; j++)
                 buffer[5 - j] = packet[14 + j];
-            UID = new RDMUID(BitConverter.ToUInt64(buffer, 0));
+            UID = new UID(BitConverter.ToUInt64(buffer, 0));
 
             CommandClass = packet[21];
             ParameterId = (ushort)(packet[22] << 8 | packet[23]);

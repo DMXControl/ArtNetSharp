@@ -16,7 +16,7 @@ nodeInstance.Name = nodeInstance.ShortName = "Node Output Example";
 
 // Configure Output Ports
 for (byte i = 1; i <= 32; i++)
-    nodeInstance.AddPortConfig(new PortConfig(i, new PortAddress((ushort)(i - 1)), true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, isBeingOutputAsDMX: true)});
+    nodeInstance.AddPortConfig(new PortConfig(i, new PortAddress((ushort)(i - 1)), true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, isBeingOutputAsDMX: true) });
 
 // Listen for new Data
 nodeInstance.DMXReceived += (sender, e) =>

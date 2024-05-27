@@ -1,4 +1,4 @@
-﻿using RDMSharp;
+﻿using org.dmxc.wkdt.Light.RDM;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,7 +53,7 @@ namespace ArtNetSharp
         /// </summary>
         public readonly byte AcnPriority;
         public readonly EStCodes Style;
-        public readonly RDMUID? DefaulRespUID;
+        public readonly UID? DefaulRespUID;
 
         private const byte MaxPortCount = 4;
         public ArtPollReply(in IPv4Address ownIp,
@@ -80,7 +80,7 @@ namespace ArtNetSharp
                             in ushort user = 0,
                             in ushort refreshRate = 0,
                             in EStCodes style = EStCodes.StController,
-                            in RDMUID? defaulRespUID = null)
+                            in UID? defaulRespUID = null)
             : this(ownIp,
                   bindIp,
                   mac,
@@ -137,7 +137,7 @@ namespace ArtNetSharp
                             in ushort user = 0,
                             in ushort refreshRate = 0,
                             in EStCodes style = EStCodes.StController,
-                            in RDMUID? defaulRespUID = null)
+                            in UID? defaulRespUID = null)
             : this(ownIp,
                   bindIp,
                   mac,
@@ -195,7 +195,7 @@ namespace ArtNetSharp
                         in ushort user = 0,
                         in ushort refreshRate = 0,
                         in EStCodes style = EStCodes.StController,
-                        in RDMUID? defaulRespUID = null) : base()
+                        in UID? defaulRespUID = null) : base()
         {
             if ((outputUniverses?.Length ?? 0) > MaxPortCount)
                 throw new ArgumentOutOfRangeException($"The argument {nameof(outputUniverses)} should be an array with max size of {MaxPortCount}.");
@@ -367,7 +367,7 @@ namespace ArtNetSharp
                 byte[] buffer = new byte[8];
                 for (int j = 0; j < 6; j++)
                     buffer[5 - j] = packet[218 + j];
-                DefaulRespUID = new RDMUID(BitConverter.ToUInt64(buffer, 0));
+                DefaulRespUID = new UID(BitConverter.ToUInt64(buffer, 0));
             }
 
             if (length > 224) // 49 & 50 User
@@ -538,7 +538,7 @@ namespace ArtNetSharp
                 && Status == other.Status
                 && AcnPriority == other.AcnPriority
                 && Style == other.Style
-                && RDMUID.Equals(DefaulRespUID, other.DefaulRespUID);
+                && UID.Equals(DefaulRespUID, other.DefaulRespUID);
             ;
         }
         public override string ToString()

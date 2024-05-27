@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using org.dmxc.wkdt.Light.RDM;
 using RDMSharp;
 using System;
 using System.Collections.Concurrent;
@@ -130,9 +131,9 @@ namespace ArtNetSharp.Communication
             }
         }
 
-        private readonly ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownControllerRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        private readonly ConcurrentDictionary<UID, RDMUID_ReceivedBag> knownControllerRDMUIDs = new ConcurrentDictionary<UID, RDMUID_ReceivedBag>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownControllerRDMUIDs;
-        private readonly ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownResponderRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        private readonly ConcurrentDictionary<UID, RDMUID_ReceivedBag> knownResponderRDMUIDs = new ConcurrentDictionary<UID, RDMUID_ReceivedBag>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownResponderRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
 
@@ -210,7 +211,7 @@ namespace ArtNetSharp.Communication
             else
                 InputPortAddress = null;
         }
-        private void addControllerRdmUID(RDMUID rdmuid)
+        private void addControllerRdmUID(UID rdmuid)
         {
             if (knownControllerRDMUIDs.TryGetValue(rdmuid, out RDMUID_ReceivedBag bag))
                 bag.Seen();
@@ -222,12 +223,12 @@ namespace ArtNetSharp.Communication
             }
             KnownControllerRDMUIDs = knownControllerRDMUIDs.Values.ToList().AsReadOnly();
         }
-        internal void AddResponderRdmUIDs(params RDMUID[] rdmuids)
+        internal void AddResponderRdmUIDs(params UID[] rdmuids)
         {
             if (rdmuids.Length == 0)
                 return;
 
-            foreach (RDMUID rdmuid in rdmuids)
+            foreach (UID rdmuid in rdmuids)
             {
                 if (knownResponderRDMUIDs.TryGetValue(rdmuid, out RDMUID_ReceivedBag bag))
                     bag.Seen();
@@ -252,7 +253,7 @@ namespace ArtNetSharp.Communication
             if (removed)
                 KnownResponderRDMUIDs = knownResponderRDMUIDs.Values.ToList().AsReadOnly();
         }
-        public RDMUID[] GetReceivedRDMUIDs()
+        public UID[] GetReceivedRDMUIDs()
         {
             return KnownResponderRDMUIDs.Where(k => !k.Timouted()).Select(k => k.Uid).ToArray();
         }

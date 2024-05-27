@@ -1,5 +1,6 @@
 using ArtNetSharp;
 using ArtNetSharp.Messages.Interfaces;
+using org.dmxc.wkdt.Light.RDM;
 using RDMSharp;
 
 namespace ArtNetTests
@@ -92,7 +93,7 @@ namespace ArtNetTests
                 new EPortType[] { EPortType.DMX512
                                 | EPortType.OutputFromArtNet },
                 new GoodInput[] { new GoodInput() },
-                new GoodOutput[] { new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, rdmIsDisabled:true,isBeingOutputAsDMX:true,dmx_OutputShortCircuit:true) },
+                new GoodOutput[] { new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, rdmIsDisabled: true, isBeingOutputAsDMX: true, dmx_OutputShortCircuit: true) },
                 EMacroState.Macro1Active
                     | EMacroState.Macro2Active,
                 ERemoteState.Remote3Active
@@ -102,7 +103,7 @@ namespace ArtNetTests
                 4,
                 44,
                 EStCodes.StConfig,
-                new RDMUID(0x1122, 0x33445566)));
+                new UID(0x1122, 0x33445566)));
             PackagesSerializeDeserialize.doTests(new ArtPollReply(
                 new IPv4Address("2.3.2.3"),
                 new IPv4Address("4.4.4.4"),
@@ -141,7 +142,7 @@ namespace ArtNetTests
                 4,
                 44,
                 EStCodes.StConfig,
-                new RDMUID(0x1122, 0x33445566)));
+                new UID(0x1122, 0x33445566)));
 
             PackagesSerializeDeserialize.doTests(new ArtPollReply(
                 new IPv4Address("2.3.2.3"),
@@ -168,7 +169,7 @@ namespace ArtNetTests
             doPortRelatedExceptionTests(1, _inputs: new object[] { new Universe(15), new Universe(3), new Universe(9), new Universe(5), new Universe(1) });
             doPortRelatedExceptionTests(1, _outputs: new object[] { new Universe(15), new Universe(3), new Universe(9), new Universe(5), new Universe(1) });
             doPortRelatedExceptionTests(2, portTypes: new EPortType[] { EPortType.ArtNet | EPortType.InputToArtNet, EPortType.MIDI, EPortType.MIDI, EPortType.MIDI, EPortType.MIDI });
-            doPortRelatedExceptionTests(2, goodInputs: new GoodInput[] { new GoodInput(), new GoodInput(receiveErrorsDetected:true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true) });
+            doPortRelatedExceptionTests(2, goodInputs: new GoodInput[] { new GoodInput(), new GoodInput(receiveErrorsDetected: true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true), new GoodInput(dMX_TestPacketsSupported: true) });
             doPortRelatedExceptionTests(2, goodOutputs: new GoodOutput[] { new GoodOutput(), new GoodOutput(dmx_OutputShortCircuit: true), new GoodOutput(dmx_OutputShortCircuit: true), new GoodOutput(dmx_OutputShortCircuit: true), new GoodOutput(dmx_OutputShortCircuit: true) });
 
             void doPortRelatedExceptionTests(
@@ -221,7 +222,7 @@ namespace ArtNetTests
                         4,
                         44,
                         EStCodes.StConfig,
-                        new RDMUID(0x1122, 0x33445566));
+                        new UID(0x1122, 0x33445566));
                 });
             }
         }
@@ -309,14 +310,14 @@ namespace ArtNetTests
         [Test]
         public void ArtRDM()
         {
-            PackagesSerializeDeserialize.doTests(new ArtRDM(1, new Address(3, 4), new RDMMessage() { SourceUID = new RDMUID(0x1122, 0x33445566), DestUID = new RDMUID(0x3344, 0x55667788) }));
-            PackagesSerializeDeserialize.doTests(new ArtRDM(new PortAddress(1, 2, 5), new RDMMessage() { SourceUID = new RDMUID(0x1122, 0x33445566), DestUID = new RDMUID(0x3344, 0x55667788) }));
+            PackagesSerializeDeserialize.doTests(new ArtRDM(1, new Address(3, 4), new RDMMessage() { SourceUID = new UID(0x1122, 0x33445566), DestUID = new UID(0x3344, 0x55667788) }));
+            PackagesSerializeDeserialize.doTests(new ArtRDM(new PortAddress(1, 2, 5), new RDMMessage() { SourceUID = new UID(0x1122, 0x33445566), DestUID = new UID(0x3344, 0x55667788) }));
             Assert.Throws(typeof(ArgumentNullException), () => new ArtRDM(new PortAddress(1, 2, 5), null));
         }
         [Test]
         public void ArtRDMSub()
         {
-            PackagesSerializeDeserialize.doTests(new ArtRDMSub(new RDMUID(0x1122, 0x33445566), 234, 52354, 45647, 43432, new byte[] { 0xf0, 0xaa, 0xbb, 0x13, 0x13, 0x19, 0x1f }));
+            PackagesSerializeDeserialize.doTests(new ArtRDMSub(new UID(0x1122, 0x33445566), 234, 52354, 45647, 43432, new byte[] { 0xf0, 0xaa, 0xbb, 0x13, 0x13, 0x19, 0x1f }));
         }
         [Test]
         public void ArtTodControl()
@@ -348,7 +349,7 @@ namespace ArtNetTests
                 2,
                 204,
                 11,
-                [new RDMUID(0x0220, 0x11223344), new RDMUID(0x1111, 0x12345678), new RDMUID(0x7e17, 0xefa8e1ee)],
+                [new UID(0x0220, 0x11223344), new UID(0x1111, 0x12345678), new UID(0x7e17, 0xefa8e1ee)],
                 EArtTodDataCommandResponse.TodNak,
                 ERDMVersion.DRAFT_V1_0));
             PackagesSerializeDeserialize.doTests(new ArtTodData(
@@ -357,14 +358,14 @@ namespace ArtNetTests
                 2,
                 204,
                 11,
-                [new RDMUID(0x0220, 0x11223344), new RDMUID(0x1111, 0x12345678), new RDMUID(0x7e17, 0xefa8e1ee)],
+                [new UID(0x0220, 0x11223344), new UID(0x1111, 0x12345678), new UID(0x7e17, 0xefa8e1ee)],
                 EArtTodDataCommandResponse.TodNak,
                 ERDMVersion.DRAFT_V1_0));
 
             Random rnd = new Random();
-            List<RDMUID> uids = new List<RDMUID>();
+            List<UID> uids = new List<UID>();
             for (int i = 0; i < 210; i++)
-                uids.Add(new RDMUID((ulong)rnd.NextInt64()));
+                uids.Add(new UID((ulong)rnd.NextInt64()));
             Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtTodData(
                 new PortAddress(9, 5, 7),
                 3,
@@ -536,7 +537,7 @@ namespace ArtNetTests
         [Test]
         public async Task AbstractArtPacketCore()
         {
-            var artPoll=new ArtPoll().GetPacket();
+            var artPoll = new ArtPoll().GetPacket();
             Assert.Throws(typeof(ArgumentException), () => { new MockPacketCore(artPoll); });
             var artSync = new ArtSync().GetPacket();
             Assert.Throws(typeof(ArgumentOutOfRangeException), () => { new MockPacketCore(artSync); });

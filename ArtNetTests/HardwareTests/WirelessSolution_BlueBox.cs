@@ -1,7 +1,6 @@
 ﻿using ArtNetSharp;
 using ArtNetSharp.Communication;
 using ArtNetTests.Mocks;
-using RDMSharp;
 using System.Net;
 using System.Net.NetworkInformation;
 

@@ -1,5 +1,6 @@
 ﻿using ArtNetSharp;
 using ArtNetSharp.Communication;
+using org.dmxc.wkdt.Light.RDM;
 using RDMSharp;
 using RDMSharp.ParameterWrapper;
 
@@ -8,7 +9,7 @@ namespace ControlerRDMExample
     public abstract class AbstractRDMDeviceGeneratedMock : AbstractGeneratedRDMDevice
     {
         internal static ControllerInstance Controller = ArtNet.Instance.Instances.OfType<ControllerInstance>().First();
-        public AbstractRDMDeviceGeneratedMock(RDMUID uid, ERDM_Parameter[] parameters, string? manufacturer = null) : base(uid, parameters, manufacturer)
+        public AbstractRDMDeviceGeneratedMock(UID uid, ERDM_Parameter[] parameters, string? manufacturer = null) : base(uid, parameters, manufacturer)
         {
             Controller.ControllerRDMMessageReceived += Controller_ControllerRDMMessageReceived;
         }
@@ -92,7 +93,7 @@ namespace ControlerRDMExample
         public override GeneratedPersonality[] Personalities => PERSONALITYS;
         public override Sensor[] Sensors => SENSORS;
 
-        public TestRDMDevice(RDMUID uid) : base(uid, [ERDM_Parameter.IDENTIFY_DEVICE, ERDM_Parameter.BOOT_SOFTWARE_VERSION_LABEL], "Dummy Manufacturer 9FFF")
+        public TestRDMDevice(UID uid) : base(uid, [ERDM_Parameter.IDENTIFY_DEVICE, ERDM_Parameter.BOOT_SOFTWARE_VERSION_LABEL], "Dummy Manufacturer 9FFF")
         {
             this.DeviceLabel = "Dummy Device 1";
             this.TrySetParameter(ERDM_Parameter.IDENTIFY_DEVICE, false);

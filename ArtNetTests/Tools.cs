@@ -1,5 +1,4 @@
-﻿using RDMSharp;
-using System.Net.NetworkInformation;
+﻿using System.Net.NetworkInformation;
 
 namespace ArtNetTests
 {

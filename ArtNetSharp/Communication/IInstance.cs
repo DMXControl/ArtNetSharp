@@ -1,5 +1,4 @@
 ﻿using ArtNetSharp.Messages.Interfaces;
-using RDMSharp;
 
 namespace ArtNetSharp.Communication
 {

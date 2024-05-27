@@ -1,4 +1,5 @@
-﻿using RDMSharp;
+﻿using org.dmxc.wkdt.Light.RDM;
+using RDMSharp;
 using System;
 using System.Linq;
 
@@ -16,8 +17,8 @@ namespace ArtNetSharp
         protected override sealed ushort CommandByte => 22;
         protected override sealed ushort AddressByte => 23;
 
-        public RDMUID Source => RDMMessage.SourceUID;
-        public RDMUID Destination => RDMMessage.DestUID;
+        public UID Source => RDMMessage.SourceUID;
+        public UID Destination => RDMMessage.DestUID;
         public byte Transaction => RDMMessage.TransactionCounter;
 
         public readonly byte[] Data;

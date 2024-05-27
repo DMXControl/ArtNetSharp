@@ -123,7 +123,7 @@
 //                    instance.ResponderRDMMessageReceived -= Instance_RDMMessageReceived;
 //                    instance.ResponderRDMMessageReceived += Instance_RDMMessageReceived;
 //                    RDMMessage message = supportedParameter.BuildGetRequestMessage();
-//                    message.SourceUID = new RDMUID(0x414c, 0);
+//                    message.SourceUID = new UID(0x414c, 0);
 //                    message.DestUID = uid;
 //                    message.PortID_or_Responsetype = 1;
 //                    await instance.SendArtRDM(message);
@@ -131,7 +131,7 @@
 //                        await Task.Delay(100);
 
 //                    message = deviceInfoParameter.BuildGetRequestMessage();
-//                    message.SourceUID = new RDMUID(0x414c, 0);
+//                    message.SourceUID = new UID(0x414c, 0);
 //                    message.DestUID = uid;
 //                    message.PortID_or_Responsetype = 1;
 //                    await instance.SendArtRDM(message);

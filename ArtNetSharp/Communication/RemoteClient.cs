@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using org.dmxc.wkdt.Light.RDM;
 using RDMSharp;
 using System;
 using System.Collections.Concurrent;
@@ -200,7 +201,7 @@ namespace ArtNetSharp.Communication
         public event EventHandler<RemoteClientPort> PortDiscovered;
         public event EventHandler<RemoteClientPort> PortTimedOut;
 
-        private readonly ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        private readonly ConcurrentDictionary<UID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<UID, RDMUID_ReceivedBag>();
         private readonly ConcurrentDictionary<EDataRequest, object> artDataCache = new ConcurrentDictionary<EDataRequest, object>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
@@ -362,7 +363,7 @@ namespace ArtNetSharp.Communication
             if (removed)
                 KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
         }
-        public RDMUID[] GetReceivedRDMUIDs()
+        public UID[] GetReceivedRDMUIDs()
         {
             return KnownRDMUIDs.Where(k => !k.Timouted()).Select(k => k.Uid).ToArray();
         }

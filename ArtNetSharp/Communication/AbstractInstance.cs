@@ -1,6 +1,7 @@
 ﻿using ArtNetSharp.Messages.Interfaces;
 using ArtNetSharp.Misc;
 using Microsoft.Extensions.Logging;
+using org.dmxc.wkdt.Light.RDM;
 using RDMSharp;
 using System;
 using System.Collections.Concurrent;
@@ -53,8 +54,8 @@ namespace ArtNetSharp.Communication
         protected virtual string UrlPersonalityUDR { get; }
         protected virtual string UrlPersonalityGDTF { get; }
 
-        private readonly ConcurrentDictionary<RDMUID, ControllerRDMUID_Bag> knownControllerRDMUIDs = new ConcurrentDictionary<RDMUID, ControllerRDMUID_Bag>();
-        public virtual RDMUID UID { get; } = RDMUID.Empty;
+        private readonly ConcurrentDictionary<UID, ControllerRDMUID_Bag> knownControllerRDMUIDs = new ConcurrentDictionary<UID, ControllerRDMUID_Bag>();
+        public virtual UID UID { get; } = UID.Empty;
 
         private readonly System.Timers.Timer _timerSendPoll;
 
@@ -67,10 +68,10 @@ namespace ArtNetSharp.Communication
         private readonly struct RDM_TransactionID : IEquatable<RDM_TransactionID>
         {
             private readonly byte Transaction;
-            private readonly RDMUID Controller;
-            private readonly RDMUID Responder;
+            private readonly UID Controller;
+            private readonly UID Responder;
 
-            public RDM_TransactionID(byte transaction, RDMUID controller, RDMUID responder)
+            public RDM_TransactionID(byte transaction, UID controller, UID responder)
             {
                 Transaction = transaction;
                 Controller = controller;
@@ -247,7 +248,7 @@ namespace ArtNetSharp.Communication
         public event EventHandler<ArtTimeCode> TimeCodeReceived;
         public event EventHandler<ArtTimeSync> TimeSyncReceived;
 
-        private readonly ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<RDMUID, RDMUID_ReceivedBag>();
+        private readonly ConcurrentDictionary<UID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<UID, RDMUID_ReceivedBag>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
         public event EventHandler<ResponderRDMMessageReceivedEventArgs> ResponderRDMMessageReceived;
@@ -642,7 +643,7 @@ namespace ArtNetSharp.Communication
         protected async Task sendArtTodData(IPv4Address ipAddress, PortConfig portConfig)
         {
             ArtTodData artTodData = null;
-            List<RDMUID> uids = portConfig.AdditionalRDMUIDs.Select(bag => bag).ToList();
+            List<UID> uids = portConfig.AdditionalRDMUIDs.Select(bag => bag).ToList();
             uids.AddRange(portConfig.DiscoveredRDMUIDs.Select(bag => bag.Uid));
             uids = uids.OrderBy(uid => uid).ToList();
             ushort totalCount = (ushort)uids.Count();
@@ -670,7 +671,7 @@ namespace ArtNetSharp.Communication
             if (this.IsDisposed || this.IsDisposing || this.IsDeactivated)
                 return;
 
-            if (!rdmMessage.Command.HasFlag(ERDM_Command.RESPONSE) && rdmMessage.SourceUID == RDMUID.Empty)
+            if (!rdmMessage.Command.HasFlag(ERDM_Command.RESPONSE) && rdmMessage.SourceUID == UID.Empty)
                 rdmMessage.SourceUID = UID;
 
             if (knownRDMUIDs.TryGetValue(rdmMessage.DestUID, out RDMUID_ReceivedBag uidBag))
@@ -1117,7 +1118,7 @@ namespace ArtNetSharp.Communication
 
             return null;
         }
-        public RDMUID[] GetReceivedRDMUIDs()
+        public UID[] GetReceivedRDMUIDs()
         {
             if (this.IsDisposing || this.IsDisposed)
                 return null;
@@ -1181,12 +1182,12 @@ namespace ArtNetSharp.Communication
 
             return nodeStatus;
         }
-        private void AddRdmUIDs(params RDMUID[] rdmuids)
+        private void AddRdmUIDs(params UID[] rdmuids)
         {
             if (rdmuids.Length == 0)
                 return;
 
-            foreach (RDMUID rdmuid in rdmuids)
+            foreach (UID rdmuid in rdmuids)
             {
                 if (knownRDMUIDs.TryGetValue(rdmuid, out RDMUID_ReceivedBag bag))
                     bag.Seen();

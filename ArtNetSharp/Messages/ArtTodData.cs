@@ -1,4 +1,4 @@
-﻿using RDMSharp;
+﻿using org.dmxc.wkdt.Light.RDM;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +20,7 @@ namespace ArtNetSharp
 
         public const byte MaxUidsPerPacket = 200;
 
-        public readonly RDMUID[] Uids;
+        public readonly UID[] Uids;
         public readonly ERDMVersion RdmVersion;
         /// <summary>
         /// Physical port index. Range 1-4. This number is used in combination with BindIndex to identify the physical port that generated the packet.
@@ -62,7 +62,7 @@ namespace ArtNetSharp
                       in byte bindIndex,
                       in ushort uidTotalCount,
                       in byte blockCount,
-                      in RDMUID[] uids = default,
+                      in UID[] uids = default,
                       in EArtTodDataCommandResponse command = EArtTodDataCommandResponse.TodNak,
                       in ERDMVersion rdmVersion = ERDMVersion.STANDARD_V1_0,
                       in ushort protocolVersion = Constants.PROTOCOL_VERSION) : this(portAddress.Net, portAddress.Address, port, bindIndex, uidTotalCount, blockCount, uids, command, rdmVersion, protocolVersion)
@@ -75,7 +75,7 @@ namespace ArtNetSharp
                   in byte bindIndex,
                   in ushort uidTotalCount,
                   in byte blockCount,
-                  in RDMUID[] uids = default,
+                  in UID[] uids = default,
                   in EArtTodDataCommandResponse command = EArtTodDataCommandResponse.TodNak,
                   in ERDMVersion rdmVersion = ERDMVersion.STANDARD_V1_0,
                   in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net, address, command, protocolVersion)
@@ -100,14 +100,14 @@ namespace ArtNetSharp
             UidTotalCount = (ushort)((packet[24] << 8) | packet[25]);
             BlockCount = packet[26];
             byte count = packet[27];
-            List<RDMUID> uids = new List<RDMUID>();
+            List<UID> uids = new List<UID>();
             byte[] buffer = new byte[8];
             for (int i = 0; i < count; i++)
             {
                 int index = 28 + (i * 6);
                 for (int j = 0; j < 6; j++)
                     buffer[5 - j] = packet[index + j];
-                RDMUID uid = new RDMUID(BitConverter.ToUInt64(buffer, 0));
+                UID uid = new UID(BitConverter.ToUInt64(buffer, 0));
                 uids.Add(uid);
             }
             this.Uids = uids.ToArray();
@@ -133,7 +133,7 @@ namespace ArtNetSharp
             p[27] = (byte)Uids.Length; // UidCount
 
             List<byte> data = new List<byte>();
-            foreach (RDMUID uid in Uids)
+            foreach (UID uid in Uids)
                 data.AddRange(uid.ToBytes());
 
             Array.Copy(data.ToArray(), 0, p, 28, Uids.Length * 6);
@@ -156,7 +156,7 @@ namespace ArtNetSharp
             if (Uids.Length != 0)
             {
                 StringBuilder sb = new StringBuilder();
-                foreach (RDMUID uid in Uids)
+                foreach (UID uid in Uids)
                     sb.Append($"{uid}, ");
                 uids = sb.ToString().Trim().TrimEnd(',');
             }

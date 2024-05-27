@@ -64,7 +64,7 @@ namespace ArtNetSharp
             DMX_TestPacketsSupported2 = Tools.BitsMatch(Byte1, 0b01000000);
             IsBeingOutputAsDMX = Tools.BitsMatch(Byte1, 0b10000000);
 
-            OutputStyle = (EOutputStyle)(Byte2 &0b01000000);
+            OutputStyle = (EOutputStyle)(Byte2 & 0b01000000);
             RDMisDisabled = Tools.BitsMatch(Byte2, 0b10000000);
         }
 
@@ -76,7 +76,7 @@ namespace ArtNetSharp
                          in bool dMX_SIPsSupported = false,
                          in bool dMX_TestPacketsSupported2 = false,
                          in bool isBeingOutputAsDMX = false,
-                         in EOutputStyle outputStyle =  EOutputStyle.Continuous,
+                         in EOutputStyle outputStyle = EOutputStyle.Continuous,
                          in bool rdmIsDisabled = false) : this()
         {
             ConvertFrom = convertFrom;

@@ -1,5 +1,4 @@
 ﻿using ArtNetSharp;
-using RDMSharp;
 
 namespace ArtNetTests.Binary_Tests.Ulrich_Radig
 {

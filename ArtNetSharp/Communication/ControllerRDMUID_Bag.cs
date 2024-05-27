@@ -1,4 +1,4 @@
-﻿using RDMSharp;
+﻿using org.dmxc.wkdt.Light.RDM;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -8,12 +8,12 @@ namespace ArtNetSharp.Communication
 {
     public sealed class ControllerRDMUID_Bag : IEquatable<ControllerRDMUID_Bag>
     {
-        public readonly RDMUID Uid;
+        public readonly UID Uid;
         public readonly PortAddress PortAddress;
         public readonly IPv4Address IpAddress;
         public DateTime LastSeen { get; private set; }
 
-        public ControllerRDMUID_Bag(in RDMUID uid, in PortAddress portAddress, in IPv4Address ipAddress)
+        public ControllerRDMUID_Bag(in UID uid, in PortAddress portAddress, in IPv4Address ipAddress)
         {
             Uid = uid;
             PortAddress = portAddress;
