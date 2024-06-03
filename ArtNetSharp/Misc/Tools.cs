@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ArtNetSharp
 {
@@ -172,6 +173,14 @@ namespace ArtNetSharp
             catch (Exception e)
             {
                 Logger.LogError(e);
+                Logger.LogTrace(ByteArrayToString(data));
+                static string ByteArrayToString(byte[] ba)
+                {
+                    StringBuilder hex = new StringBuilder(ba.Length * 2);
+                    foreach (byte b in ba)
+                        hex.AppendFormat("{0:x2}, ", b);
+                    return hex.ToString().TrimEnd(' ', ',');
+                }
                 return false;
             }
             return packet != null;
