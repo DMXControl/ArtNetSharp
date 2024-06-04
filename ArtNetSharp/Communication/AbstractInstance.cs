@@ -239,7 +239,7 @@ namespace ArtNetSharp.Communication
         private readonly ConcurrentDictionary<string, RemoteClient> remoteClients = new ConcurrentDictionary<string, RemoteClient>();
         private readonly ConcurrentDictionary<string, RemoteClient> remoteClientsTimeouted = new ConcurrentDictionary<string, RemoteClient>();
         public IReadOnlyCollection<RemoteClient> RemoteClients { get; private set; } = new List<RemoteClient>();
-        public IReadOnlyCollection<RemoteClientPort> RemoteClientsPorts { get { return remoteClients.SelectMany(rc => rc.Value.Ports).ToList().AsReadOnly(); } }
+        public IReadOnlyCollection<RemoteClientPort> RemoteClientsPorts { get { return remoteClients?.Where(rc => rc.Value?.Ports != null).SelectMany(rc => rc.Value.Ports).ToList().AsReadOnly(); } }
 
         public event EventHandler<PortAddress> DMXReceived;
         public event EventHandler SyncReceived;
@@ -581,7 +581,7 @@ namespace ArtNetSharp.Communication
 
                 try
                 {
-                    var ports = RemoteClientsPorts.Where(port => port.OutputPortAddress.HasValue && !port.Timouted()).ToList();
+                    var ports = RemoteClientsPorts?.Where(port => port.OutputPortAddress.HasValue && !port.Timouted())?.ToList();
 
                     int sended = 0;
                     foreach (var port in ports)
@@ -590,13 +590,23 @@ namespace ArtNetSharp.Communication
                             if (sendDMXBuffer.TryGetValue(port.OutputPortAddress.Value, out DMXSendBag bag))
                                 if ((bag.Updated && (DateTime.UtcNow - bag.LastSended).TotalMilliseconds >= dmxRefreshTime) || (DateTime.UtcNow - bag.LastSended).TotalMilliseconds >= dmxKeepAliveTime)
                                 {
-                                    bag.LastSended = DateTime.UtcNow;
-                                    PortConfig config = portConfigs.FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, port.OutputPortAddress));
-                                    byte sourcePort = config?.PortNumber ?? 0;
-                                    await sendArtDMX(port, sourcePort, bag.Data, bag.GetSequence(), config?.ForceBroadcast ?? false);
-                                    sended++;
-                                    if (config == null)
+                                    PortConfig config = null;
+                                    byte sourcePort = 0;
+                                    try
+                                    {
+                                        bag.LastSended = DateTime.UtcNow;
+                                        config = portConfigs?.FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, port.OutputPortAddress));
+                                        sourcePort = config?.PortNumber ?? 0;
+                                        await sendArtDMX(port, sourcePort, bag.Data, bag.GetSequence(), config?.ForceBroadcast ?? false);
+                                        sended++;
+                                        if (config == null)
+                                            return;
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Logger.LogError(e, "Inner Block");
                                         return;
+                                    }
                                     foreach (IPv4Address ip in config?.AdditionalIPEndpoints)
                                     {
                                         await sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, bag.GetSequence());
@@ -605,7 +615,7 @@ namespace ArtNetSharp.Communication
                                     bag.LastSended = DateTime.UtcNow;
                                 }
                         }
-                        catch (Exception e) { Logger.LogError(e); }
+                        catch (Exception e) { Logger.LogError(e, "Outer Block"); }
                     if (EnableSync && sended != 0)
                         await sendArtSync();
 
