@@ -302,10 +302,11 @@ namespace ArtNetSharp.Communication
             if (artPollReply.BindIndex <= 1)
                 Root = artPollReply;
 
+            seen();
+
             if (artPollReply.Ports == 0)
                 return;
 
-            seen();
             List<Task> tasks = new List<Task>();
             try
             {
