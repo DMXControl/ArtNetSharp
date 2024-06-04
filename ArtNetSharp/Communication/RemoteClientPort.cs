@@ -39,7 +39,7 @@ namespace ArtNetSharp.Communication
         }
         internal bool Timouted()// Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 1500 ms)
         {
-            var now = DateTime.UtcNow.AddSeconds(-7.5);
+            var now = DateTime.UtcNow.AddSeconds(-3);
             return LastSeen <= now;
         }
         public ArtPollReply ArtPollReply { get; private set; }

@@ -82,7 +82,7 @@ namespace ArtNetSharp.Communication
         }
         internal bool Timouted() // Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 2500 ms)
         {
-            var now = DateTime.UtcNow.AddSeconds(-9.5);
+            var now = DateTime.UtcNow.AddSeconds(-3);
             return LastSeen <= now;
         }
 
@@ -258,6 +258,7 @@ namespace ArtNetSharp.Communication
 
         public RemoteClient(in ArtPollReply artPollReply)
         {
+            AbstractInstance.sendPollThreadBag.SendArtPollEvent += OnSendArtPoll;
             seen();
             ID = getIDOf(artPollReply);
             MacAddress = artPollReply.MAC;
@@ -265,6 +266,23 @@ namespace ArtNetSharp.Communication
             seen();
             processArtPollReply(artPollReply);
             seen();
+        }
+        private async void OnSendArtPoll(object sender, EventArgs e)
+        {
+            await Task.Delay(3000);
+
+            var timoutedPorts = ports.Where(p => p.Value.Timouted());
+            if (timoutedPorts.Count() != 0)
+            {
+                timoutedPorts = timoutedPorts.ToList();
+                foreach (var port in timoutedPorts)
+                {
+                    if (!ports.TryRemove(port.Key, out _))
+                        Logger.LogWarning($"Can't remove RemoteClientPort from ConcurrentDictionary");
+                    _ = Task.Run(() => PortTimedOut?.InvokeFailSafe(this, port));
+                }
+            }
+            Ports = ports.Select(p => p.Value).ToList().AsReadOnly();
         }
         private void seen()
         {
@@ -288,6 +306,7 @@ namespace ArtNetSharp.Communication
                 return;
 
             seen();
+            List<Task> tasks = new List<Task>();
             try
             {
                 for (byte portIndex = 0; portIndex < artPollReply.Ports; portIndex++)
@@ -300,7 +319,7 @@ namespace ArtNetSharp.Communication
                         port = new RemoteClientPort(artPollReply, portIndex);
                         if (ports.TryAdd(physicalPort, port))
                         {
-                            Task.Run(() => PortDiscovered?.InvokeFailSafe(this, port));
+                            tasks.Add(Task.Run(() => PortDiscovered?.InvokeFailSafe(this, port)));
                             port.RDMUIDReceived += Port_RDMUIDReceived;
                         }
                     }
@@ -309,18 +328,6 @@ namespace ArtNetSharp.Communication
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-            }
-            seen();
-
-            var timoutedPorts = ports.Where(p => p.Value.Timouted());
-            if (timoutedPorts.Count() != 0)
-            {
-                timoutedPorts = timoutedPorts.ToList();
-                foreach (var port in timoutedPorts)
-                {
-                    ports.TryRemove(port.Key, out _);
-                    Task.Run(()=>PortTimedOut?.InvokeFailSafe(this, port));
-                }
             }
             seen();
             Ports = ports.Select(p => p.Value).ToList().AsReadOnly();

@@ -252,9 +252,9 @@ namespace ArtNetSharp.Communication
         public event EventHandler<ResponderRDMMessageReceivedEventArgs> ResponderRDMMessageReceived;
         public event EventHandler<ControllerRDMMessageReceivedEventArgs> ControllerRDMMessageReceived;
 
-        private static readonly SendPollThreadBag sendPollThreadBag = new SendPollThreadBag();
+        internal static readonly SendPollThreadBag sendPollThreadBag = new SendPollThreadBag();
 
-        private class SendPollThreadBag
+        internal class SendPollThreadBag
         {
             private readonly Thread sendPollThread;
             public EventHandler SendArtPollEvent;
@@ -826,23 +826,6 @@ namespace ArtNetSharp.Communication
                 }
             }
             catch (Exception ex) { Logger.LogError(ex); }
-
-            var timoutedClients = RemoteClients.Where(p => p.Timouted());
-            if (timoutedClients.Count() != 0)
-            {
-                timoutedClients = timoutedClients.ToList();
-                foreach (var rc in timoutedClients)
-                {
-
-                    if (remoteClients.TryRemove(rc.ID, out RemoteClient removed))
-                        remoteClientsTimeouted.TryAdd(removed.ID, removed);
-                    if (removed != null)
-                    {
-                        Logger.LogInformation($"Timeout: {removed.ID} ({(DateTime.UtcNow - rc.LastSeen).TotalMilliseconds}ms)");
-                        Task.Run(() => RemoteClientTimedOut?.InvokeFailSafe(this, removed));
-                    }
-                }
-            }
             RemoteClients = remoteClients.Select(p => p.Value).ToList().AsReadOnly();
         }
         private void processArtDMX(ArtDMX artDMX, IPv4Address sourceIp)
@@ -1281,6 +1264,28 @@ namespace ArtNetSharp.Communication
                 return;
 
             await triggerSendArtPoll();
+            await Task.Delay(3000);
+
+            var timoutedClients = remoteClients.Where(p => p.Value.Timouted());
+            if (timoutedClients.Count() != 0)
+            {
+                timoutedClients = timoutedClients.ToList();
+                foreach (var rc in timoutedClients)
+                {
+
+                    if (remoteClients.TryRemove(rc.Key, out RemoteClient removed))
+                        remoteClientsTimeouted.TryAdd(removed.ID, removed);
+                    else
+                        Logger.LogWarning($"Can't remove RemoteClient from ConcurrentDictionary");
+
+                    if (removed != null)
+                    {
+                        Logger.LogInformation($"Timeout: {removed.ID} ({(DateTime.UtcNow - rc.Value.LastSeen).TotalMilliseconds}ms)");
+                        _ = Task.Run(() => RemoteClientTimedOut?.InvokeFailSafe(this, removed));
+                    }
+                }
+            }
+            RemoteClients = remoteClients.Select(p => p.Value).ToList().AsReadOnly();
         }
 
         void IDisposable.Dispose()
