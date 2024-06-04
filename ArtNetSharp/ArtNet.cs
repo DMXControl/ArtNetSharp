@@ -252,9 +252,14 @@ namespace ArtNetSharp
                     //#endif
                     return;
                 }
+                catch(SocketException se)
+                {
+                    Logger?.LogWarning($"On Client {LocalIpAddress}, could not send packet: {se}, Client will be Disposed");
+                    this.Dispose();
+                }
                 catch (Exception e)
                 {
-                    Logger?.LogWarning($"Could not send packet: {e}");
+                    Logger?.LogWarning($"On Client {LocalIpAddress}, could not send packet: {e}");
                 }
                 finally
                 {
@@ -279,9 +284,14 @@ namespace ArtNetSharp
                     //#endif
                     return;
                 }
+                catch (SocketException se)
+                {
+                    Logger?.LogWarning($"On Client {LocalIpAddress}, could not send packet: {se}, Client will be Disposed");
+                    this.Dispose();
+                }
                 catch (Exception e)
                 {
-                    Logger?.LogWarning($"Could not send packet: {e}");
+                    Logger?.LogWarning($"On Client {LocalIpAddress}, could not send packet: {e}");
                 }
                 finally
                 {
