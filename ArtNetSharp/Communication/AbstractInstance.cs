@@ -57,8 +57,6 @@ namespace ArtNetSharp.Communication
         private readonly ConcurrentDictionary<UID, ControllerRDMUID_Bag> knownControllerRDMUIDs = new ConcurrentDictionary<UID, ControllerRDMUID_Bag>();
         public virtual UID UID { get; } = UID.Empty;
 
-        private readonly System.Timers.Timer _timerSendPoll;
-
         private readonly List<PortConfig> portConfigs = new List<PortConfig>();
         public ReadOnlyCollection<PortConfig> PortConfigs { get => portConfigs.AsReadOnly(); }
 
@@ -254,6 +252,41 @@ namespace ArtNetSharp.Communication
         public event EventHandler<ResponderRDMMessageReceivedEventArgs> ResponderRDMMessageReceived;
         public event EventHandler<ControllerRDMMessageReceivedEventArgs> ControllerRDMMessageReceived;
 
+        private static readonly SendPollThreadBag sendPollThreadBag = new SendPollThreadBag();
+
+        private class SendPollThreadBag
+        {
+            private readonly Thread sendPollThread;
+            public EventHandler SendArtPollEvent;
+            public SendPollThreadBag()
+            {
+                sendPollThread = new Thread(() =>
+                {
+                    DateTime lastSendPollTime = DateTime.UtcNow;
+                    while (true)
+                    {
+                        try
+                        {
+                            if ((DateTime.UtcNow - lastSendPollTime).TotalSeconds < 2.5)// Spec 1.4dd page 13
+                                continue;
+
+                            SendArtPollEvent?.InvokeFailSafe(null,EventArgs.Empty);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex);
+                        }
+                        lastSendPollTime = DateTime.UtcNow;
+                        Task.Delay(100);
+                    }
+                });
+                sendPollThread.IsBackground = true;
+                sendPollThread.Name = "sendArtPollThread";
+                sendPollThread.Priority = ThreadPriority.AboveNormal;
+                sendPollThread.Start();
+            }
+        }
+
         protected AbstractInstance(ArtNet _artnet)
         {
             _random = new Random();
@@ -263,11 +296,7 @@ namespace ArtNetSharp.Communication
             ArtNetInstance.OnInstanceAdded += ArtNet_OnInstanceAdded;
             ArtNetInstance.OnInstanceRemoved += ArtNet_OnInstanceRemoved;
 
-            _timerSendPoll = new System.Timers.Timer
-            {
-                Interval = 2500, // Spec 1.4dd page 13
-            };
-            _timerSendPoll.Elapsed += TimerSendPoll_Elapsed;
+            sendPollThreadBag.SendArtPollEvent += TimerSendPoll_Elapsed;
 
             Task.Run(sendAllArtDMX);
 
@@ -284,7 +313,6 @@ namespace ArtNetSharp.Communication
             if (e != this)
                 return;
 
-            _timerSendPoll.Enabled = true;
             await triggerSendArtPoll();
         }
 
@@ -292,8 +320,6 @@ namespace ArtNetSharp.Communication
         {
             if (e != this)
                 return;
-
-            _timerSendPoll.Enabled = false;
         }
 
         void IInstance.PacketReceived(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
@@ -777,7 +803,7 @@ namespace ArtNetSharp.Communication
                 if (remoteClientsTimeouted.TryRemove(id, out remoteClient))
                 {
                     remoteClient.processArtPollReply(artPollReply);
-                    _ = add(remoteClient);
+                    add(remoteClient);
                 }
                 else if (remoteClients.TryGetValue(id, out remoteClient))
                 {
@@ -786,25 +812,17 @@ namespace ArtNetSharp.Communication
                 else
                 {
                     remoteClient = new RemoteClient(artPollReply) { Instance = this };
-                    _ = add(remoteClient);
+                    add(remoteClient);
                 }
-                async Task add(RemoteClient rc)
+                void add(RemoteClient rc)
                 {
-                    await semaphoreSlimAddRemoteClient.WaitAsync();
-                    try
+                    if (remoteClients.TryAdd(rc.ID, rc))
                     {
-                        if (remoteClients.TryAdd(rc.ID, rc))
-                        {
-                            //Delay, to give The Remote CLient time to send all ArtPollReplys
-                            await Task.Delay(1000);
-                            Logger.LogInformation($"Discovered: {rc.ID}");
-                            RemoteClientDiscovered?.InvokeFailSafe(this, rc);
-                        }
+                        Logger.LogInformation($"Discovered: {rc.ID}");
+                        RemoteClientDiscovered?.InvokeFailSafe(this, rc);
+                        return;
                     }
-                    finally
-                    {
-                        semaphoreSlimAddRemoteClient.Release();
-                    }
+                    Logger.LogWarning($"Cant add {rc.ID} to Dictionary");
                 }
             }
             catch (Exception ex) { Logger.LogError(ex); }
@@ -1258,8 +1276,11 @@ namespace ArtNetSharp.Communication
             }
         }
 
-        private async void TimerSendPoll_Elapsed(object sender, ElapsedEventArgs e)
+        private async void TimerSendPoll_Elapsed(object sender, EventArgs e)
         {
+            if (!ArtNetInstance.Instances.Contains(this))
+                return;
+
             await triggerSendArtPoll();
         }
 
@@ -1278,9 +1299,6 @@ namespace ArtNetSharp.Communication
 
                 ArtNetInstance.OnInstanceAdded -= ArtNet_OnInstanceAdded;
                 ArtNetInstance.OnInstanceRemoved -= ArtNet_OnInstanceRemoved;
-
-                _timerSendPoll.Elapsed -= TimerSendPoll_Elapsed;
-                _timerSendPoll.Enabled = false;
 
                 foreach (var rBuffer in receivedDMXBuffer.Values)
                     rBuffer.Dispose();
