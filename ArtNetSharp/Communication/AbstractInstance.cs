@@ -1278,7 +1278,7 @@ namespace ArtNetSharp.Communication
 
         private async void TimerSendPoll_Elapsed(object sender, EventArgs e)
         {
-            if (!ArtNetInstance.Instances.Contains(this))
+            if (!(ArtNetInstance?.Instances?.Contains(this) ?? false))
                 return;
 
             await triggerSendArtPoll();
