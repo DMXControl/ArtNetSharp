@@ -55,7 +55,9 @@ namespace ArtNetSharp
             {
                 Data = new byte[length];
                 Array.Copy(packet, 18, Data, 0, length);
+                return;
             }
+            Data = new byte[0];
         }
 
         protected sealed override void fillPacket(ref byte[] p)
@@ -80,7 +82,7 @@ namespace ArtNetSharp
         }
         public override string ToString()
         {
-            return $"{nameof(ArtDMX)}: Sequence: {Sequence}, Physical: {Physical}, Data[{Data.Length}]";
+            return $"{nameof(ArtDMX)}: Sequence: {Sequence}, Physical: {Physical}, Data[{Data?.Length ?? 0}]";
         }
     }
 }
