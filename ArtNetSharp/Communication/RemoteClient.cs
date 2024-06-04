@@ -80,6 +80,12 @@ namespace ArtNetSharp.Communication
                 onPropertyChanged();
             }
         }
+        internal bool Timouted() // Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 2500 ms)
+        {
+            var now = DateTime.UtcNow.AddSeconds(-9.5);
+            return LastSeen <= now;
+        }
+
         private bool isRDMCapable;
         public bool IsRDMCapable
         {
@@ -252,11 +258,13 @@ namespace ArtNetSharp.Communication
 
         public RemoteClient(in ArtPollReply artPollReply)
         {
+            seen();
             ID = getIDOf(artPollReply);
             MacAddress = artPollReply.MAC;
             IpAddress = artPollReply.OwnIp;
             seen();
             processArtPollReply(artPollReply);
+            seen();
         }
         private void seen()
         {
@@ -292,7 +300,7 @@ namespace ArtNetSharp.Communication
                         port = new RemoteClientPort(artPollReply, portIndex);
                         if (ports.TryAdd(physicalPort, port))
                         {
-                            PortDiscovered?.InvokeFailSafe(this, port);
+                            Task.Run(() => PortDiscovered?.InvokeFailSafe(this, port));
                             port.RDMUIDReceived += Port_RDMUIDReceived;
                         }
                     }
@@ -302,23 +310,24 @@ namespace ArtNetSharp.Communication
             {
                 Logger.LogError(ex);
             }
+            seen();
 
-            var deadline = 7500; // Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 1500 ms)
-            var timoutedPorts = ports.Where(p => (DateTime.UtcNow - p.Value.LastSeen).TotalMilliseconds > deadline);
+            var timoutedPorts = ports.Where(p => p.Value.Timouted());
             if (timoutedPorts.Count() != 0)
             {
                 timoutedPorts = timoutedPorts.ToList();
                 foreach (var port in timoutedPorts)
                 {
                     ports.TryRemove(port.Key, out _);
-                    PortTimedOut?.InvokeFailSafe(this, port.Value);
+                    Task.Run(()=>PortTimedOut?.InvokeFailSafe(this, port));
                 }
             }
+            seen();
             Ports = ports.Select(p => p.Value).ToList().AsReadOnly();
         }
         public async Task processArtDataReply(ArtDataReply artDataReply)
         {
-            LastSeen = DateTime.UtcNow;
+            seen();
             if (artDataReply.Request == EDataRequest.Poll)
             {
                 await QueryArtData();

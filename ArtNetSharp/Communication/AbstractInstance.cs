@@ -819,7 +819,7 @@ namespace ArtNetSharp.Communication
                     if (remoteClients.TryAdd(rc.ID, rc))
                     {
                         Logger.LogInformation($"Discovered: {rc.ID}");
-                        RemoteClientDiscovered?.InvokeFailSafe(this, rc);
+                        Task.Run(() => RemoteClientDiscovered?.InvokeFailSafe(this, rc));
                         return;
                     }
                     Logger.LogWarning($"Cant add {rc.ID} to Dictionary");
@@ -827,20 +827,19 @@ namespace ArtNetSharp.Communication
             }
             catch (Exception ex) { Logger.LogError(ex); }
 
-            var deadline = 9500; // Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 2500 ms)
-            var timoutedClients = remoteClients.Where(p => (DateTime.UtcNow - p.Value.LastSeen).TotalMilliseconds > deadline);
+            var timoutedClients = RemoteClients.Where(p => p.Timouted());
             if (timoutedClients.Count() != 0)
             {
                 timoutedClients = timoutedClients.ToList();
                 foreach (var rc in timoutedClients)
                 {
 
-                    if (remoteClients.TryRemove(rc.Key, out RemoteClient removed))
+                    if (remoteClients.TryRemove(rc.ID, out RemoteClient removed))
                         remoteClientsTimeouted.TryAdd(removed.ID, removed);
                     if (removed != null)
                     {
-                        Logger.LogInformation($"Timeout: {removed.ID} ({(DateTime.UtcNow - rc.Value.LastSeen).TotalMilliseconds}ms)");
-                        RemoteClientTimedOut?.InvokeFailSafe(this, removed);
+                        Logger.LogInformation($"Timeout: {removed.ID} ({(DateTime.UtcNow - rc.LastSeen).TotalMilliseconds}ms)");
+                        Task.Run(() => RemoteClientTimedOut?.InvokeFailSafe(this, removed));
                     }
                 }
             }

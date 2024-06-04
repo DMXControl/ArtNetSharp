@@ -33,9 +33,13 @@ namespace ArtNetSharp.Communication
                 onPropertyChanged();
             }
         }
-        internal bool Timouted()
+        private void seen()
         {
-            var now = DateTime.UtcNow.AddSeconds(-30);
+            LastSeen = DateTime.UtcNow;
+        }
+        internal bool Timouted()// Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 1500 ms)
+        {
+            var now = DateTime.UtcNow.AddSeconds(-7.5);
             return LastSeen <= now;
         }
         public ArtPollReply ArtPollReply { get; private set; }
@@ -157,6 +161,7 @@ namespace ArtNetSharp.Communication
 
         public RemoteClientPort(in ArtPollReply artPollReply, byte portIndex = 0)
         {
+            seen();
             ID = getIDOf(artPollReply, portIndex);
             IpAddress = artPollReply.OwnIp;
             BindIndex = artPollReply.BindIndex;
@@ -182,7 +187,7 @@ namespace ArtNetSharp.Communication
                 return;
 
             ArtPollReply = artPollReply;
-            LastSeen = DateTime.UtcNow;
+            seen();
 
             PortType = artPollReply.PortTypes[PortIndex];
             GoodOutput = artPollReply.GoodOutput[PortIndex];
@@ -210,6 +215,7 @@ namespace ArtNetSharp.Communication
             }
             else
                 InputPortAddress = null;
+            seen();
         }
         private void addControllerRdmUID(UID rdmuid)
         {
@@ -270,7 +276,7 @@ namespace ArtNetSharp.Communication
             if (!KnownResponderRDMUIDs.Any(k => k.Uid.Equals(artRDM.Source)))
                 return;
 
-            LastSeen = DateTime.UtcNow;
+            seen();
         }
 
         public override string ToString()
