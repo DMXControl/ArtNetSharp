@@ -71,12 +71,12 @@ namespace ArtNetTests
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
         [Timeout(15000), Retry(3)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
-        public async Task TestOnMackOS()
+        public async Task TestOnMacOS()
         {
             if (!OperatingSystem.IsMacOS())
                 Assert.Ignore("Skiped, only run on Mac OS");
 
-            Logger.LogDebug(nameof(TestOnMackOS));
+            Logger.LogDebug(nameof(TestOnMacOS));
             await doTests();
         }
 

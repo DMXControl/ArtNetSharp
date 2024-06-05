@@ -237,7 +237,7 @@ namespace ArtNetSharp.Communication
         private readonly ConcurrentDictionary<string, RemoteClient> remoteClients = new ConcurrentDictionary<string, RemoteClient>();
         private readonly ConcurrentDictionary<string, RemoteClient> remoteClientsTimeouted = new ConcurrentDictionary<string, RemoteClient>();
         public IReadOnlyCollection<RemoteClient> RemoteClients { get; private set; } = new List<RemoteClient>();
-        public IReadOnlyCollection<RemoteClientPort> RemoteClientsPorts { get { return remoteClients?.Where(rc => rc.Value?.Ports != null).SelectMany(rc => rc.Value.Ports).ToList().AsReadOnly(); } }
+        public IReadOnlyCollection<RemoteClientPort> RemoteClientsPorts { get { return remoteClients?.Where(rc => rc.Value?.Ports != null).ToList().SelectMany(rc => rc.Value.Ports).ToList().AsReadOnly(); } }
 
         public event EventHandler<PortAddress> DMXReceived;
         public event EventHandler SyncReceived;
@@ -1264,12 +1264,11 @@ namespace ArtNetSharp.Communication
                 return;
 
             await triggerSendArtPoll();
-            await Task.Delay(3000);
+            await Task.Delay(4000);
 
-            var timoutedClients = remoteClients.Where(p => p.Value.Timouted());
+            var timoutedClients = remoteClients.Where(p => p.Value.Timouted()).ToList().AsReadOnly();
             if (timoutedClients.Count() != 0)
             {
-                timoutedClients = timoutedClients.ToList();
                 foreach (var rc in timoutedClients)
                 {
 

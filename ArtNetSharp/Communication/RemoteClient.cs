@@ -80,9 +80,9 @@ namespace ArtNetSharp.Communication
                 onPropertyChanged();
             }
         }
-        internal bool Timouted() // Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 2500 ms)
+        internal bool Timouted() // Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 500 ms)
         {
-            var now = DateTime.UtcNow.AddSeconds(-3);
+            var now = DateTime.UtcNow.AddSeconds(-3.5);
             return LastSeen <= now;
         }
 
@@ -269,12 +269,11 @@ namespace ArtNetSharp.Communication
         }
         private async void OnSendArtPoll(object sender, EventArgs e)
         {
-            await Task.Delay(3000);
+            await Task.Delay(4000);
 
-            var timoutedPorts = ports.Where(p => p.Value.Timouted());
+            var timoutedPorts = ports.Where(p => p.Value.Timouted()).ToList();
             if (timoutedPorts.Count() != 0)
             {
-                timoutedPorts = timoutedPorts.ToList();
                 foreach (var port in timoutedPorts)
                 {
                     if (!ports.TryRemove(port.Key, out _))
