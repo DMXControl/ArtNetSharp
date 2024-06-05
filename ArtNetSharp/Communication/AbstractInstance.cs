@@ -63,6 +63,8 @@ namespace ArtNetSharp.Communication
         private readonly ConcurrentDictionary<Tuple<PortAddress, IPv4Address>, DMXReceiveBag> receivedDMXBuffer = new ConcurrentDictionary<Tuple<PortAddress, IPv4Address>, DMXReceiveBag>();
         private readonly ConcurrentDictionary<RDM_TransactionID, RDMMessage> artRDMdeBumbReceive = new();
 
+        private readonly SemaphoreSlim pollReplyProcessSemaphoreSlim = new SemaphoreSlim(1);
+
         private readonly struct RDM_TransactionID : IEquatable<RDM_TransactionID>
         {
             private readonly byte Transaction;
@@ -260,14 +262,14 @@ namespace ArtNetSharp.Communication
             public EventHandler SendArtPollEvent;
             public SendPollThreadBag()
             {
-                sendPollThread = new Thread(() =>
+                sendPollThread = new Thread(async () =>
                 {
                     DateTime lastSendPollTime = DateTime.UtcNow;
                     while (true)
                     {
                         try
                         {
-                            if ((DateTime.UtcNow - lastSendPollTime).TotalSeconds < 2.5)// Spec 1.4dd page 13
+                            if ((DateTime.UtcNow - lastSendPollTime).TotalSeconds < 2.7)// Spec 1.4dd page 13
                                 continue;
 
                             SendArtPollEvent?.InvokeFailSafe(null,EventArgs.Empty);
@@ -277,12 +279,12 @@ namespace ArtNetSharp.Communication
                             Logger.LogError(ex);
                         }
                         lastSendPollTime = DateTime.UtcNow;
-                        Task.Delay(100);
+                        await Task.Delay(300);
                     }
                 });
                 sendPollThread.IsBackground = true;
                 sendPollThread.Name = "sendArtPollThread";
-                sendPollThread.Priority = ThreadPriority.AboveNormal;
+                sendPollThread.Priority = ThreadPriority.Highest;
                 sendPollThread.Start();
             }
         }
@@ -780,7 +782,7 @@ namespace ArtNetSharp.Communication
         #endregion
 
         #region Process
-        private void processArtPollReply(ArtPollReply artPollReply, IPv4Address localIp, IPv4Address sourceIp)
+        private async Task processArtPollReply(ArtPollReply artPollReply, IPv4Address localIp, IPv4Address sourceIp)
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
@@ -796,7 +798,7 @@ namespace ArtNetSharp.Communication
 
             string id = RemoteClient.getIDOf(artPollReply);
             RemoteClient remoteClient = null;
-
+            await pollReplyProcessSemaphoreSlim.WaitAsync();
             try
             {
                 if (remoteClientsTimeouted.TryRemove(id, out remoteClient))
@@ -815,7 +817,8 @@ namespace ArtNetSharp.Communication
                 }
                 void add(RemoteClient rc)
                 {
-                    if (remoteClients.TryAdd(rc.ID, rc))
+                    var res= remoteClients.AddOrUpdate(rc.ID, (x) => { return rc; }, (x, y) => { return rc; });
+                    if (res == rc)
                     {
                         Logger.LogInformation($"Discovered: {rc.ID}");
                         Task.Run(() => RemoteClientDiscovered?.InvokeFailSafe(this, rc));
@@ -826,6 +829,7 @@ namespace ArtNetSharp.Communication
             }
             catch (Exception ex) { Logger.LogError(ex); }
             RemoteClients = remoteClients.Select(p => p.Value).ToList().AsReadOnly();
+            pollReplyProcessSemaphoreSlim.Release();
         }
         private void processArtDMX(ArtDMX artDMX, IPv4Address sourceIp)
         {
@@ -1263,27 +1267,35 @@ namespace ArtNetSharp.Communication
                 return;
 
             await triggerSendArtPoll();
-            await Task.Delay(4000);
-
-            var timoutedClients = remoteClients.Where(p => p.Value.Timouted()).ToList().AsReadOnly();
-            if (timoutedClients.Count() != 0)
+            await Task.Delay(3000);
+            await pollReplyProcessSemaphoreSlim.WaitAsync();
+            try
             {
-                foreach (var rc in timoutedClients)
+                var timoutedClients = remoteClients.Where(p => p.Value.Timouted()).ToList().AsReadOnly();
+                if (timoutedClients.Count() != 0)
                 {
-
-                    if (remoteClients.TryRemove(rc.Key, out RemoteClient removed))
-                        remoteClientsTimeouted.TryAdd(removed.ID, removed);
-                    else
-                        Logger.LogWarning($"Can't remove RemoteClient({removed.ID}) from ConcurrentDictionary");
-
-                    if (removed != null)
+                    foreach (var rc in timoutedClients)
                     {
-                        Logger.LogInformation($"Timeout: {removed.ID} ({(DateTime.UtcNow - rc.Value.LastSeen).TotalMilliseconds}ms)");
-                        _ = Task.Run(() => RemoteClientTimedOut?.InvokeFailSafe(this, removed));
+
+                        if (remoteClients.TryRemove(rc.Key, out RemoteClient removed))
+                            remoteClientsTimeouted.TryAdd(removed.ID, removed);
+                        else
+                            Logger.LogWarning($"Can't remove RemoteClient({removed.ID}) from ConcurrentDictionary");
+
+                        if (removed != null)
+                        {
+                            Logger.LogInformation($"Timeout: {removed.ID} ({(DateTime.UtcNow - rc.Value.LastSeen).TotalMilliseconds}ms)");
+                            _ = Task.Run(() => RemoteClientTimedOut?.InvokeFailSafe(this, removed));
+                        }
                     }
                 }
             }
+            catch(Exception ex)
+            {
+                Logger.LogError(ex);
+            }
             RemoteClients = remoteClients.Select(p => p.Value).ToList().AsReadOnly();
+            pollReplyProcessSemaphoreSlim.Release();
         }
 
         void IDisposable.Dispose()
