@@ -408,7 +408,7 @@ namespace ArtNetSharp
                     }
                     return;
                 }
-                Logger.LogWarning($"Can't deserialize Data to ArtNet-Packet");
+                Logger.LogWarning($"Can't deserialize Data to ArtNet-Packet from {sourceIp}");
             }
             catch (ObjectDisposedException ed) { Logger.LogTrace(ed); }
             catch (SocketException se) { Logger.LogTrace(se); }
