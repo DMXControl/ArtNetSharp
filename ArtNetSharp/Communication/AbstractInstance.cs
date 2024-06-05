@@ -789,7 +789,6 @@ namespace ArtNetSharp.Communication
                 && MinorVersion == artPollReply.MinorVersion
                 && OEMProductCode == artPollReply.OemCode
                 && ESTAManufacturerCode == artPollReply.ManufacturerCode
-                && IPv4Address.Equals(sourceIp, localIp)
                 && IPv4Address.Equals(artPollReply.OwnIp, localIp)
                 && string.Equals(artPollReply.ShortName, ShortName)
                 && string.Equals(artPollReply.LongName, Name))
@@ -1276,7 +1275,7 @@ namespace ArtNetSharp.Communication
                     if (remoteClients.TryRemove(rc.Key, out RemoteClient removed))
                         remoteClientsTimeouted.TryAdd(removed.ID, removed);
                     else
-                        Logger.LogWarning($"Can't remove RemoteClient from ConcurrentDictionary");
+                        Logger.LogWarning($"Can't remove RemoteClient({removed.ID}) from ConcurrentDictionary");
 
                     if (removed != null)
                     {

@@ -53,6 +53,7 @@ namespace ArtNetSharp
             ushort length = (ushort)((packet[16] << 8) | packet[17]);
             if (length <= 512)
             {
+                length = (ushort)(Math.Max(0, Math.Min(length, packet.Length - 18)));
                 Data = new byte[length];
                 Array.Copy(packet, 18, Data, 0, length);
                 return;

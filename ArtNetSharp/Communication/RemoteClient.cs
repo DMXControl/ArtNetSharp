@@ -278,7 +278,7 @@ namespace ArtNetSharp.Communication
                 foreach (var port in timoutedPorts)
                 {
                     if (!ports.TryRemove(port.Key, out _))
-                        Logger.LogWarning($"Can't remove RemoteClientPort from ConcurrentDictionary");
+                        Logger.LogWarning($"Can't remove RemoteClientPort ({port.Key}) from ConcurrentDictionary");
                     _ = Task.Run(() => PortTimedOut?.InvokeFailSafe(this, port));
                 }
             }
