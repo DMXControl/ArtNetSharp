@@ -11,6 +11,7 @@ namespace ArtNetSharp
         public readonly bool Valid;
 
         private const string REGEX = "#([A-Fa-f0-9]+) \\[([0-9]+)\\](.*)";
+        private const string REGEX_INVALID = "([A-Fa-f0-9]+) \\[([0-9]+)\\](.*)";
 
         public NodeReport(in ENodeReportCodes reportCode, in string text = "", in uint counter = 0)
         {
@@ -26,10 +27,15 @@ namespace ArtNetSharp
                 var Matches = Regex.Matches(reportCode, REGEX);
                 if (Matches.Count == 0)
                 {
-                    ReportCode = 0;
-                    Counter = 0;
-                    Text = reportCode;
-                    return;
+
+                    Matches = Regex.Matches(reportCode, REGEX_INVALID);
+                    if (Matches.Count == 0)
+                    {
+                        ReportCode = 0;
+                        Counter = 0;
+                        Text = reportCode;
+                        return;
+                    }
                 }
                 string hex = Matches[0].Groups[1].Value.Replace(" ", "");
                 string counter = Matches[0].Groups[2].Value.Replace(" ", "");
