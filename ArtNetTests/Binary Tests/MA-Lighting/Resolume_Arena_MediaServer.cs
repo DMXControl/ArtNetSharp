@@ -59,7 +59,7 @@ namespace ArtNetTests.Binary_Tests.MA_Lighting
             0x4d41,
             EStCodes.StController,
             PORTS,
-            false,// because Malformed NodeReport '#' was missing
+            true,
             0,
             1)
         {
