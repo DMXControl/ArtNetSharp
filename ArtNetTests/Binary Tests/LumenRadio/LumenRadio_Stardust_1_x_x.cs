@@ -55,7 +55,8 @@ namespace ArtNetTests.Binary_Tests.LumenRadio
             PORTS,
             true,
             0x10,
-            0x42)
+            0x42,
+            new NodeReport("#0001 [0x0001] Power OK"))// Not as specified, i predict they send the reportCode in the Conter braces
         {
         }
     }
