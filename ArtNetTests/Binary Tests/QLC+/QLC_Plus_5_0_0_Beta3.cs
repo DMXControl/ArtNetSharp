@@ -54,8 +54,8 @@ namespace ArtNetTests.Binary_Tests.QLC
             EStCodes.StNode,
             PORTS,
             false, // PortType of not used Port Set to 0x80 instead of 0x00!
-            0,
-            0)
+            4,
+            32)
         {
         }
     }

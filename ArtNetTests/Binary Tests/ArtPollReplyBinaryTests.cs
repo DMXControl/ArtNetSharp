@@ -37,6 +37,11 @@ namespace ArtNetTests.Binary_Tests
                 Assert.That(artPollReply.OemCode, Is.EqualTo(testSubject.OemCode));
                 Assert.That(artPollReply.ManufacturerCode, Is.EqualTo(testSubject.ManufacturerCode));
                 Assert.That(artPollReply.Style, Is.EqualTo(testSubject.StyleCode));
+                
+                if(testSubject.MajorVersion.HasValue)
+                    Assert.That(artPollReply.MajorVersion, Is.EqualTo(testSubject.MajorVersion));
+                if (testSubject.MinorVersion.HasValue)
+                    Assert.That(artPollReply.MinorVersion, Is.EqualTo(testSubject.MinorVersion));
 
                 Assert.That(artPollReply.Ports, Is.EqualTo(testSubject.Ports.Length));
                 Assert.That(artPollReply.PortTypes, Has.Length.EqualTo(testSubject.Ports.Length));

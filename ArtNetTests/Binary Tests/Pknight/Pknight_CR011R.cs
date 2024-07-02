@@ -51,8 +51,8 @@ namespace ArtNetTests.Binary_Tests.Showtec
             EStCodes.StNode,
             PORTS,
             false, //Compleatly Buggy. Provided by Mario from Berlin
-            1,
-            2)
+            0,
+            14)
         {
         }
     }

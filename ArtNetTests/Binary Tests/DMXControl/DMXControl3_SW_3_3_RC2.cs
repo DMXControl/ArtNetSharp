@@ -54,7 +54,7 @@ namespace ArtNetTests.Binary_Tests.DMXControl
             EStCodes.StController,
             PORTS,
             true,
-            0,
+            3,
             0,
             null)
         {

@@ -2,7 +2,7 @@
 
 namespace ArtNetTests.Binary_Tests.ELC
 {
-    internal class ELC_Node8gb_1_51 : AbstractArtPollReplyBinaryTestSubject
+    internal class ELC_Node8gb_2_70 : AbstractArtPollReplyBinaryTestSubject
     {
         private static readonly byte[] DATA = [
             0x41, 0x72, 0x74, 0x2d, 0x4e, 0x65, 0x74, 0x00,
@@ -43,8 +43,8 @@ namespace ArtNetTests.Binary_Tests.ELC
             new PortTestSubject(EPortType.OutputFromArtNet,(Address)7,(Address)0),
             new PortTestSubject(EPortType.OutputFromArtNet,(Address)8,(Address)0)
         ];
-        public ELC_Node8gb_1_51() : base(
-            "ELC Node8gb (FW 1.51)",
+        public ELC_Node8gb_2_70() : base(
+            "ELC Node8gb (FW 2.70",
             DATA,
             0,
             "dmXLAN node8s",
@@ -58,7 +58,7 @@ namespace ArtNetTests.Binary_Tests.ELC
             PORTS,
             true,
             1,
-            51)
+            14)
         {
         }
     }
