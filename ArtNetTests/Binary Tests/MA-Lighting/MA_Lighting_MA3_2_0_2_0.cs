@@ -2,7 +2,7 @@
 
 namespace ArtNetTests.Binary_Tests.MA_Lighting
 {
-    internal class MA_Lighting_MA3_Unknown_FW : AbstractArtPollReplyBinaryTestSubject
+    internal class MA_Lighting_MA3_2_0_2_0 : AbstractArtPollReplyBinaryTestSubject
     {
         private static readonly byte[] DATA = [
             0x41, 0x72, 0x74, 0x2d, 0x4e, 0x65, 0x74, 0x00,
@@ -46,8 +46,8 @@ namespace ArtNetTests.Binary_Tests.MA_Lighting
         /// <summary>
         /// Among the worst implementation of ArtNet I've ever seen 🙈😅
         /// </summary>
-        public MA_Lighting_MA3_Unknown_FW() : base(
-            "MA-Lighting MA3 (FW: Unknown)",
+        public MA_Lighting_MA3_2_0_2_0() : base(
+            "MA-Lighting MA3 (FW: 2.0.2.0)",
             DATA,
             0,
             string.Empty,
