@@ -2,7 +2,7 @@
 
 namespace ArtNetTests.Binary_Tests.Resolume
 {
-    internal class Resolume_Arena_MediaServer : AbstractArtPollReplyBinaryTestSubject
+    internal class Resolume_Arena_MediaServer_7_18_2 : AbstractArtPollReplyBinaryTestSubject
     {
         private static readonly byte[] DATA = [
             0x41, 0x72, 0x74, 0x2d, 0x4e, 0x65, 0x74, 0x00,
@@ -40,8 +40,8 @@ namespace ArtNetTests.Binary_Tests.Resolume
         [
             new PortTestSubject(EPortType.OutputFromArtNet| EPortType.ArtNet,(Address)0,(Address)0)
         ];
-        public Resolume_Arena_MediaServer() : base(
-            "Resolume Arena MEDIASERVER",
+        public Resolume_Arena_MediaServer_7_18_2() : base(
+            "Resolume Arena MEDIASERVER (FW: 7.18.2)",
             DATA,
             0,
             "Arena MEDIASERVER",
