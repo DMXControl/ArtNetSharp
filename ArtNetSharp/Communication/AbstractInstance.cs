@@ -337,7 +337,7 @@ namespace ArtNetSharp.Communication
                         _ = sendArtPollReply(localIp, sourceIp, artPoll);
                         break;
                     case ArtPollReply artPollReply:
-                        processArtPollReply(artPollReply, localIp, sourceIp);
+                        _ = processArtPollReply(artPollReply, localIp, sourceIp);
                         break;
                     case ArtData artData:
                         _ = processArtData(artData, sourceIp);
