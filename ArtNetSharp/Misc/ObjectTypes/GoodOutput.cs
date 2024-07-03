@@ -47,6 +47,8 @@ namespace ArtNetSharp
         /// </summary>
         public readonly EOutputStyle OutputStyle;
         public readonly bool RDMisDisabled;
+        public readonly bool DiscoveryIsCurrentlyRunning;
+        public readonly bool BackgroundDiscoveryIsEnabled;
 
         public static GoodOutput None = new GoodOutput();
 
@@ -64,6 +66,8 @@ namespace ArtNetSharp
             DMX_TestPacketsSupported2 = Tools.BitsMatch(Byte1, 0b01000000);
             IsBeingOutputAsDMX = Tools.BitsMatch(Byte1, 0b10000000);
 
+            BackgroundDiscoveryIsEnabled = Tools.BitsMatch(Byte2, 0b00010000);
+            DiscoveryIsCurrentlyRunning = Tools.BitsMatch(Byte2, 0b00100000);
             OutputStyle = (EOutputStyle)(Byte2 & 0b01000000);
             RDMisDisabled = Tools.BitsMatch(Byte2, 0b10000000);
         }
@@ -111,6 +115,10 @@ namespace ArtNetSharp
             Byte2 |= (byte)OutputStyle;
             if (RDMisDisabled)
                 Byte2 |= 0b10000000;
+            if (DiscoveryIsCurrentlyRunning)
+                Byte2 |= 0b00100000;
+            if (BackgroundDiscoveryIsEnabled)
+                Byte2 |= 0b00010000;
         }
 
         public static GoodOutput operator |(in GoodOutput goodOutputA, in GoodOutput goodOutputB)

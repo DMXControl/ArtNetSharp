@@ -9,13 +9,16 @@ namespace ArtNetSharp
         public override sealed EOpCodes OpCode => EOpCodes.OpTimeCode;
         protected override sealed ushort PacketMinLength => 19;
 
+        public readonly byte StreamID;
+
         public readonly byte Frames;
         public readonly byte Secounds;
         public readonly byte Minutes;
         public readonly byte Hours;
         public readonly ETimecodeType Type;
 
-        public ArtTimeCode(in byte frames,
+        public ArtTimeCode(in byte streamID,
+                           in byte frames,
                            in byte secounds,
                            in byte minutes,
                            in byte hours,
@@ -31,6 +34,7 @@ namespace ArtNetSharp
             if (hours > 23)
                 throw new ArgumentOutOfRangeException($"{nameof(hours)} has to be between 0 and 23");
 
+            StreamID = streamID;
             Frames = frames;
             Secounds = secounds;
             Minutes = minutes;
@@ -39,6 +43,8 @@ namespace ArtNetSharp
         }
         public ArtTimeCode(in byte[] packet) : base(packet)
         {
+            //Filler1 = packet[12];
+            StreamID = packet[13];
             Frames = packet[14];
             Secounds = packet[15];
             Minutes = packet[16];
@@ -49,7 +55,7 @@ namespace ArtNetSharp
         protected sealed override void fillPacket(ref byte[] p)
         {
             //p[12] = 0 // Filler 1
-            //p[13] = 0 // Filler 2
+            p[13] = StreamID; // Stream ID
             p[14] = Frames; // Frames
             p[15] = Secounds; // Secounds
             p[16] = Minutes; // Minutes
@@ -61,6 +67,7 @@ namespace ArtNetSharp
         {
             return base.Equals(obj)
                 && obj is ArtTimeCode other
+                && StreamID == other.StreamID
                 && Frames == other.Frames
                 && Secounds == other.Secounds
                 && Minutes == other.Minutes
@@ -70,7 +77,7 @@ namespace ArtNetSharp
 
         public override string ToString()
         {
-            return $"{nameof(ArtTimeCode)}: Type: {Type}, Time: {new TimeSpan(Hours, Minutes, Secounds)}, Frames: {Frames}";
+            return $"{nameof(ArtTimeCode)}: StreamID: {StreamID}, Type: {Type}, Time: {new TimeSpan(Hours, Minutes, Secounds)}, Frames: {Frames}";
         }
     }
 }

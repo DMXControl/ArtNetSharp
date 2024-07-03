@@ -398,12 +398,12 @@ namespace ArtNetTests
         [Test]
         public void ArtTimeCode()
         {
-            PackagesSerializeDeserialize.doTests(new ArtTimeCode(1, 2, 3, 4, ETimecodeType.SMTPE));
+            PackagesSerializeDeserialize.doTests(new ArtTimeCode(5, 1, 2, 3, 4, ETimecodeType.SMTPE));
 
-            Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtTimeCode(30, 2, 3, 4, ETimecodeType.SMTPE));
-            Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtTimeCode(1, 60, 3, 4, ETimecodeType.SMTPE));
-            Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtTimeCode(1, 2, 60, 4, ETimecodeType.SMTPE));
-            Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtTimeCode(1, 2, 3, 24, ETimecodeType.SMTPE));
+            Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtTimeCode(6, 30, 2, 3, 4, ETimecodeType.SMTPE));
+            Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtTimeCode(7, 1, 60, 3, 4, ETimecodeType.SMTPE));
+            Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtTimeCode(8, 1, 2, 60, 4, ETimecodeType.SMTPE));
+            Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtTimeCode(0, 1, 2, 3, 24, ETimecodeType.SMTPE));
         }
         [Test]
         public void ArtTimeSync()
