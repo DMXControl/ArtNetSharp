@@ -21,6 +21,8 @@ namespace ArtNetSharp
         public UID Destination => RDMMessage.DestUID;
         public byte Transaction => RDMMessage.TransactionCounter;
 
+        public readonly byte FifoAvailable;
+        public readonly byte FifoMax;
         public readonly byte[] Data;
         public readonly RDMMessage RDMMessage;
         public readonly ERDMVersion RdmVersion;
@@ -28,7 +30,9 @@ namespace ArtNetSharp
                       in RDMMessage rdmMessage,
                       in EArtRDMCommand command = EArtRDMCommand.ArProcess,
                       in ERDMVersion rdmVersion = ERDMVersion.STANDARD_V1_0,
-                      in ushort protocolVersion = Constants.PROTOCOL_VERSION) : this(portAddress.Net, portAddress.Address, rdmMessage, command, rdmVersion, protocolVersion)
+                      in ushort protocolVersion = Constants.PROTOCOL_VERSION,
+                      in byte fifoAvailable = 0,
+                      in byte fifoMax = 0) : this(portAddress.Net, portAddress.Address, rdmMessage, command, rdmVersion, protocolVersion, fifoAvailable, fifoMax)
         {
         }
         public ArtRDM(in Net net,
@@ -36,11 +40,15 @@ namespace ArtNetSharp
                   in RDMMessage rdmMessage,
                   in EArtRDMCommand command = EArtRDMCommand.ArProcess,
                   in ERDMVersion rdmVersion = ERDMVersion.STANDARD_V1_0,
-                  in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net, address, command, protocolVersion)
+                  in ushort protocolVersion = Constants.PROTOCOL_VERSION,
+                  in byte fifoAvailable = 0,
+                  in byte fifoMax = 0) : base(net, address, command, protocolVersion)
         {
             if (rdmMessage == null)
                 throw new ArgumentNullException(nameof(rdmMessage));
-
+            
+            FifoAvailable= fifoAvailable;
+            FifoMax= fifoMax;
             RDMMessage = rdmMessage;
             RdmVersion = rdmVersion;
             Data = RDMMessage.BuildMessage();
@@ -48,6 +56,9 @@ namespace ArtNetSharp
         public ArtRDM(in byte[] packet) : base(packet)
         {
             RdmVersion = (ERDMVersion)packet[12];
+
+            FifoAvailable = packet[19];
+            FifoMax = packet[20];
 
             Data = new byte[(packet.Length - 24) + 1];
             Data[0] = 0xcc;
@@ -66,8 +77,8 @@ namespace ArtNetSharp
             //p[16] = 0; // Spare 3
             //p[17] = 0; // Spare 4
             //p[18] = 0; // Spare 5
-            //p[19] = 0; // Spare 6
-            //p[20] = 0; // Spare 7
+            p[19] = FifoAvailable; // FifoAvail
+            p[20] = FifoMax; // FifoMax
             //p[21] = 0; // Net (done by Abstract part)
             //p[22] = 0; // Command (done by Abstract part)
             //p[23] = 0; // Address (done by Abstract part)
@@ -78,6 +89,8 @@ namespace ArtNetSharp
         {
             return base.Equals(obj)
                 && obj is ArtRDM other
+                && FifoAvailable == other.FifoAvailable
+                && FifoMax == other.FifoMax
                 && RdmVersion == other.RdmVersion
                 && Data.SequenceEqual(other.Data);
         }
