@@ -321,6 +321,7 @@ namespace ArtNetTests
         {
             PackagesSerializeDeserialize.doTests(new ArtRDM(1, new Address(3, 4), new RDMMessage() { SourceUID = new UID(0x1122, 0x33445566), DestUID = new UID(0x3344, 0x55667788) }));
             PackagesSerializeDeserialize.doTests(new ArtRDM(new PortAddress(1, 2, 5), new RDMMessage() { SourceUID = new UID(0x1122, 0x33445566), DestUID = new UID(0x3344, 0x55667788) }));
+            PackagesSerializeDeserialize.doTests(new ArtRDM(new PortAddress(1, 2, 5), new RDMMessage() { SourceUID = new UID(0x1122, 0x33445566), DestUID = new UID(0x3344, 0x55667788) }, fifoAvailable: 30, fifoMax: 200));
             Assert.Throws(typeof(ArgumentNullException), () => new ArtRDM(new PortAddress(1, 2, 5), null));
         }
         [Test]
