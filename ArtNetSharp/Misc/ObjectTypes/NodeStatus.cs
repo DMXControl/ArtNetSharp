@@ -110,6 +110,19 @@ namespace ArtNetSharp
         /// </summary>
         public readonly EFailsafeState FailsafeState;
 
+        /// <summary>
+        /// Set – BackgroundQueue is supported
+        /// Clr – BackgroundQueue is not supported
+        /// </summary>
+        public readonly bool BackgroundQueueSupported;
+
+        /// <summary>
+        /// Set – Programmable background discovery is supported.
+        /// Clr – Programmable background discovery is not supported
+        /// </summary>
+        public readonly bool ProgrammableBackgroundDiscoverySupported;
+
+
         public NodeStatus(in byte statusByte1, in byte statusByte2, in byte statusByte3)
         {
             StatusByte1 = statusByte1;
@@ -144,6 +157,8 @@ namespace ArtNetSharp
             NodeSupportLLRP = Tools.BitsMatch(StatusByte3, 0b00010000);
             NodeSupportFailOver = Tools.BitsMatch(StatusByte3, 0b00100000);
             FailsafeState = (EFailsafeState)(StatusByte3 & 0b11000000);
+            BackgroundQueueSupported = Tools.BitsMatch(StatusByte3, 0b00000010);
+            ProgrammableBackgroundDiscoverySupported = Tools.BitsMatch(StatusByte3, 0b00000001);
         }
 
         public NodeStatus(in bool uBEA_Present = false,
@@ -162,7 +177,9 @@ namespace ArtNetSharp
                           in bool nodeSupportSwitchingBetweenInputOutput = false,
                           in bool nodeSupportLLRP = false,
                           in bool nodeSupportFailOver = false,
-                          in EFailsafeState failsafeState = EFailsafeState.Hold) : this()
+                          in EFailsafeState failsafeState = EFailsafeState.Hold,
+                          in bool backgroundQueueSupported = false,
+                          in bool programmableBackgroundDiscoverySupported = false) : this()
         {
 
             UBEA_Present = uBEA_Present;
@@ -182,6 +199,8 @@ namespace ArtNetSharp
             NodeSupportLLRP = nodeSupportLLRP;
             NodeSupportFailOver = nodeSupportFailOver;
             FailsafeState = failsafeState;
+            BackgroundQueueSupported = backgroundQueueSupported;
+            ProgrammableBackgroundDiscoverySupported = programmableBackgroundDiscoverySupported;
 
             // Calculate StatusByte 1
             if (UBEA_Present)
@@ -223,6 +242,11 @@ namespace ArtNetSharp
                 StatusByte3 |= 0b00100000;
 
             StatusByte3 |= (byte)FailsafeState;
+
+            if (BackgroundQueueSupported)
+                StatusByte3 |= 0b00000010;
+            if (ProgrammableBackgroundDiscoverySupported)
+                StatusByte3 |= 0b00000001;
         }
         public static NodeStatus operator |(NodeStatus nodeStatusA, NodeStatus nodeStatusB)
         {

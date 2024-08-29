@@ -8,19 +8,30 @@ namespace ArtNetSharp
         public readonly EArtAddressCommand Command;
         public readonly byte? Port;
 
-        public ArtAddressCommand(in EArtAddressCommand command, in byte? port = null)
+        public ArtAddressCommand(in EArtAddressCommand command, in byte? x = null)
         {
-            if (port == null)
+            if (x == null)
                 if ((((byte)command) & 0x0f) != ((byte)command))
-                    throw new ArgumentException($"The given Command requires a port");
+                    throw new ArgumentException($"The given Command requires 'x'");
 
-            if (port.HasValue && port.Value >= 4)
-                throw new ArgumentOutOfRangeException($"{nameof(port)} has to be between 0 and 3");
+            if (x != null)
+                if ((((byte)command) & 0x0f) == ((byte)command))
+                    throw new ArgumentException($"The given Command requires NOT 'x'");
+
+            if (x.HasValue)
+            {
+                if (command == EArtAddressCommand.SetBackgroundQueuePolicy)
+                    if (x.Value >= 4)
+                        throw new ArgumentOutOfRangeException($"{nameof(x)} has to be between 0 and 3");
+                    else
+                    if (x.Value >= 15)
+                        throw new ArgumentOutOfRangeException($"{nameof(x)} has to be between 0 and 15");
+            }
 
             Command = command;
-            Port = port;
+            Port = x;
         }
-        public ArtAddressCommand(in byte data) : this(getCommand(data), getPort(data))
+        public ArtAddressCommand(in byte data) : this(getCommand(data), getX(data))
         {
         }
 
@@ -32,7 +43,7 @@ namespace ArtNetSharp
             return (EArtAddressCommand)data;
         }
 
-        private static byte? getPort(in byte data)
+        private static byte? getX(in byte data)
         {
             if (data < 0x0f)
                 return null;

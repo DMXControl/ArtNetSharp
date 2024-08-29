@@ -39,6 +39,7 @@ namespace ArtNetSharp
         public readonly byte Ports;
         public readonly ushort User;
         public readonly ushort RefreshRate;
+        public readonly EBackgroundQueuePolicy BackgroundQueuePolicy;
         /// <summary>
         /// The top 7 bits of the 15 bit Port-Address to which this packet is destined.
         /// </summary>
@@ -79,6 +80,7 @@ namespace ArtNetSharp
                             in byte acnPriority = 0,
                             in ushort user = 0,
                             in ushort refreshRate = 0,
+                            in EBackgroundQueuePolicy backgroundQueuePolicy = EBackgroundQueuePolicy.STATUS_NONE,
                             in EStCodes style = EStCodes.StController,
                             in UID? defaulRespUID = null)
             : this(ownIp,
@@ -107,6 +109,7 @@ namespace ArtNetSharp
                   acnPriority,
                   user,
                   refreshRate,
+                  backgroundQueuePolicy,
                   style,
                   defaulRespUID)
         {
@@ -136,6 +139,7 @@ namespace ArtNetSharp
                             in byte acnPriority = 0,
                             in ushort user = 0,
                             in ushort refreshRate = 0,
+                            in EBackgroundQueuePolicy backgroundQueuePolicy = EBackgroundQueuePolicy.STATUS_NONE,
                             in EStCodes style = EStCodes.StController,
                             in UID? defaulRespUID = null)
             : this(ownIp,
@@ -164,6 +168,7 @@ namespace ArtNetSharp
                   acnPriority,
                   user,
                   refreshRate,
+                  backgroundQueuePolicy,
                   style,
                   defaulRespUID)
         {
@@ -194,6 +199,7 @@ namespace ArtNetSharp
                         in byte acnPriority = 0,
                         in ushort user = 0,
                         in ushort refreshRate = 0,
+                        in EBackgroundQueuePolicy backgroundQueuePolicy = EBackgroundQueuePolicy.STATUS_NONE,
                         in EStCodes style = EStCodes.StController,
                         in UID? defaulRespUID = null) : base()
         {
@@ -254,6 +260,7 @@ namespace ArtNetSharp
             DefaulRespUID = defaulRespUID;
             User = user;
             RefreshRate = refreshRate;
+            BackgroundQueuePolicy = backgroundQueuePolicy;
         }
         public ArtPollReply(in byte[] packet) : base(packet)
         {
@@ -376,7 +383,11 @@ namespace ArtNetSharp
             if (length > 226) // 51 & 52 RefreshRate
                 RefreshRate = (ushort)(packet[226] << 8 | packet[227]);
 
-            // 53 Filler 11x8
+            if (Status.BackgroundQueueSupported)
+                if (length > 228) // 53 BackgroundQueuePolicy
+                    BackgroundQueuePolicy = (EBackgroundQueuePolicy)packet[228];
+
+            // 54 Filler 10x8
 
             for (byte i = 0; i < portCount; i++)
             {
@@ -504,7 +515,10 @@ namespace ArtNetSharp
             Tools.FromUShort(User, out p[225], out p[224]); // 49 & 50 User
             Tools.FromUShort(RefreshRate, out p[227], out p[226]); // 51 & 52 RefreshRate
 
-            // 53 Filler 11x8
+            if (Status.BackgroundQueueSupported)// 53 BackgroundQueuePolicy
+                p[228] = (byte)BackgroundQueuePolicy;
+
+            // 54 Filler 10x8
         }
 
         public override bool Equals(object obj)

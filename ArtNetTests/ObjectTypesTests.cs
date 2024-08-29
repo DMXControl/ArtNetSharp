@@ -38,7 +38,7 @@ namespace ArtNetTests
         [Test]
         public void TestArtAddressCommand()
         {
-            EArtAddressCommand[] commandsWithPort = {
+            EArtAddressCommand[] commandsWithX = {
                 EArtAddressCommand.DirectionRx,
                 EArtAddressCommand.DirectionTx,
                 EArtAddressCommand.MergeHtp,
@@ -49,9 +49,10 @@ namespace ArtNetTests
                 EArtAddressCommand.RdmDisable,
                 EArtAddressCommand.RdmEnable,
                 EArtAddressCommand.StyleConst,
-                EArtAddressCommand.StyleDelta};
+                EArtAddressCommand.StyleDelta,
+                EArtAddressCommand.SetBackgroundQueuePolicy};
 
-            EArtAddressCommand[] commandsWithoutPort = {
+            EArtAddressCommand[] commandsWithoutX = {
                 EArtAddressCommand.LedLocate,
                 EArtAddressCommand.LedMute,
                 EArtAddressCommand.LedNormal,
@@ -95,17 +96,19 @@ namespace ArtNetTests
                 artAddressCommands.Add(artAddressCommand);
             }
 
-            foreach (EArtAddressCommand command in commandsWithPort)
+            foreach (EArtAddressCommand command in commandsWithX)
                 for (byte port = 0; port < 4; port++)
                     doTests(command, port);
-            foreach (EArtAddressCommand command in commandsWithoutPort)
+            foreach (EArtAddressCommand command in commandsWithoutX)
                 doTests(command, null);
             Assert.Multiple(() =>
             {
-                Assert.That(artAddressCommands, Has.Count.EqualTo((commandsWithPort.Length * 4) + commandsWithoutPort.Length));
+                Assert.That(artAddressCommands, Has.Count.EqualTo((commandsWithX.Length * 4) + commandsWithoutX.Length));
 
                 Assert.Throws(typeof(ArgumentException), () => new ArtAddressCommand(EArtAddressCommand.MergeHtp, null));
+                Assert.Throws(typeof(ArgumentException), () => new ArtAddressCommand(EArtAddressCommand.LedMute, 2));
                 Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtAddressCommand(EArtAddressCommand.MergeHtp, 6));
+                Assert.Throws(typeof(ArgumentOutOfRangeException), () => new ArtAddressCommand(EArtAddressCommand.SetBackgroundQueuePolicy, 16));
 
                 Assert.That(new ArtAddressCommand(EArtAddressCommand.MergeHtp, 1), Is.Not.EqualTo(new ArtAddressCommand(EArtAddressCommand.MergeHtp, 2)));
                 Assert.That(new ArtAddressCommand(EArtAddressCommand.MergeLtp, 1), Is.Not.EqualTo(new ArtAddressCommand(EArtAddressCommand.MergeHtp, 2)));

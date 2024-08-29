@@ -103,5 +103,9 @@
         /// Disable RDM for Port x
         /// </summary>
         RdmDisable = 0xd0,
+        /// <summary>
+        /// Set BackgroundQueuePolicy to x
+        /// </summary>
+        SetBackgroundQueuePolicy = 0xe0,
     }
 }
