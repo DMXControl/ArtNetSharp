@@ -20,12 +20,10 @@ namespace ArtNetSharp
 
             if (x.HasValue)
             {
-                if (command == EArtAddressCommand.SetBackgroundQueuePolicy)
-                    if (x.Value >= 4)
-                        throw new ArgumentOutOfRangeException($"{nameof(x)} has to be between 0 and 3");
-                    else
-                    if (x.Value >= 15)
-                        throw new ArgumentOutOfRangeException($"{nameof(x)} has to be between 0 and 15");
+                if (command != EArtAddressCommand.SetBackgroundQueuePolicy && x.Value >= 4)
+                    throw new ArgumentOutOfRangeException($"{nameof(x)} has to be between 0 and 3");
+                else if (command == EArtAddressCommand.SetBackgroundQueuePolicy && x.Value >= 15)
+                    throw new ArgumentOutOfRangeException($"{nameof(x)} has to be between 0 and 15");
             }
 
             Command = command;
