@@ -86,7 +86,8 @@ namespace ArtNetTests
                     dHCP_ConfigurationUsed: true,
                     indicatorState: NodeStatus.EIndicatorState.Locate,
                     portAddressBitResolution: NodeStatus.EPortAddressBitResolution._15Bit,
-                    rDM_Supported: true),
+                    rDM_Supported: true,
+                    backgroundQueueSupported:true),
 
 
                 3,
@@ -111,6 +112,7 @@ namespace ArtNetTests
                 77,
                 4,
                 44,
+                EBackgroundQueuePolicy.STATUS_NONE,
                 EStCodes.StConfig,
                 new UID(0x1122, 0x33445566)));
             PackagesSerializeDeserialize.doTests(new ArtPollReply(
@@ -150,6 +152,7 @@ namespace ArtNetTests
                 77,
                 4,
                 44,
+                EBackgroundQueuePolicy.STATUS_ADVISORY,
                 EStCodes.StConfig,
                 new UID(0x1122, 0x33445566)));
 
@@ -230,6 +233,7 @@ namespace ArtNetTests
                         77,
                         4,
                         44,
+                        EBackgroundQueuePolicy.STATUS_NONE,
                         EStCodes.StConfig,
                         new UID(0x1122, 0x33445566));
                 });
