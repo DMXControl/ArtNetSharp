@@ -2,7 +2,7 @@
 
 namespace ArtNetTests.Binary_Tests.Luminex
 {
-    internal class Luminex_LumiNode1 : AbstractArtPollReplyBinaryTestSubject
+    internal class Luminex_LumiNode1_2_6_0 : AbstractArtPollReplyBinaryTestSubject
     {
         private static readonly byte[] DATA = [
             0x41, 0x72, 0x74, 0x2d, 0x4e, 0x65, 0x74, 0x00,
@@ -40,7 +40,7 @@ namespace ArtNetTests.Binary_Tests.Luminex
         [
             new PortTestSubject(EPortType.OutputFromArtNet,(Universe)0,(Universe)0)
         ];
-        public Luminex_LumiNode1() : base(
+        public Luminex_LumiNode1_2_6_0() : base(
             "Luminex LumiNode 1 (FW 2.6.0)",
             DATA,
             0,
