@@ -90,13 +90,13 @@ namespace ArtNetTests.Binary_Tests
             public readonly object OutputUniverse;
             public readonly object InputUniverse;
 
-            public PortTestSubject(EPortType portType, Universe outputUniverse, Universe inputUniverse)
+            public PortTestSubject(EPortType portType, Address outputUniverse, Address inputUniverse)
             {
                 PortType = portType;
                 OutputUniverse = outputUniverse;
                 InputUniverse = inputUniverse;
             }
-            public PortTestSubject(EPortType portType, Address outputUniverse, Address inputUniverse)
+            public PortTestSubject(EPortType portType, PortAddress outputUniverse, PortAddress inputUniverse)
             {
                 PortType = portType;
                 OutputUniverse = outputUniverse;

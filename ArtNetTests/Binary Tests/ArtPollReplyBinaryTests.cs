@@ -54,8 +54,22 @@ namespace ArtNetTests.Binary_Tests
                     string portString = $"PortIndex: {port}";
                     var config = testSubject.Ports[port];
                     Assert.That(artPollReply.PortTypes[port], Is.EqualTo(config.PortType), portString);
-                    Assert.That(artPollReply.OutputUniverses[port], Is.EqualTo(config.OutputUniverse), portString);
-                    Assert.That(artPollReply.InputUniverses[port], Is.EqualTo(config.InputUniverse), portString);
+                    if (artPollReply.Status.PortAddressBitResolution == NodeStatus.EPortAddressBitResolution._8Bit)
+                    {
+                        Assert.That(artPollReply.OutputUniverses[port], Is.EqualTo(config.OutputUniverse), portString);
+                        Assert.That(artPollReply.InputUniverses[port], Is.EqualTo(config.InputUniverse), portString);
+                    }
+                    else if (artPollReply.OutputUniverses[port] is Universe outputUniverse && artPollReply.InputUniverses[port] is Universe inputUniverse)
+                    {
+                        PortAddress outputPort = new PortAddress(artPollReply.Net, artPollReply.Subnet, outputUniverse);
+                        PortAddress inputPort = new PortAddress(artPollReply.Net, artPollReply.Subnet, inputUniverse);
+                        Assert.That(outputPort, Is.EqualTo(config.OutputUniverse), portString);
+                        Assert.That(inputPort, Is.EqualTo(config.InputUniverse), portString);
+                    }
+                    else
+                    {
+                        Assert.Fail("Not implementet this case");
+                    }
                 }
                 if (testSubject.NodeReport.HasValue)
                     Assert.That(artPollReply.NodeReport, Is.EqualTo(testSubject.NodeReport.Value));

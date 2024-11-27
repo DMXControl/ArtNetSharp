@@ -38,7 +38,7 @@ namespace ArtNetTests.Binary_Tests.Luminex
 
         private static readonly PortTestSubject[] PORTS =
         [
-            new PortTestSubject(EPortType.OutputFromArtNet,(Universe)4,(Universe)0)
+            new PortTestSubject(EPortType.OutputFromArtNet,(PortAddress)20,(PortAddress)16)
         ];
         public Luminex_LumiNode12_2_6_2() : base(
             "Luminex LumiNode 12 (FW 2.6.2)",

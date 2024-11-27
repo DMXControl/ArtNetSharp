@@ -38,7 +38,7 @@ namespace ArtNetTests.Binary_Tests.Luminex
 
         private static readonly PortTestSubject[] PORTS =
         [
-            new PortTestSubject(EPortType.InputToArtNet,(Universe)0,(Universe)0)
+            new PortTestSubject(EPortType.InputToArtNet,(PortAddress)0,(PortAddress)0)
         ];
         public Elation_Obisdian_RDM10_2_9_4() : base(
             "Elation Obsidian RDM10 (FW 2.9.4)",

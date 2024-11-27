@@ -38,7 +38,7 @@ namespace ArtNetTests.Binary_Tests.Luminex
 
         private static readonly PortTestSubject[] PORTS =
         [
-            new PortTestSubject(EPortType.OutputFromArtNet,(Universe)0,(Universe)0)
+            new PortTestSubject(EPortType.OutputFromArtNet,(PortAddress)0,(PortAddress)0)
         ];
         public Entec_Din_Ethergate_2_FW_2_5() : base(
             "ENTEC DIN Ethergate 2 (FW 2.5)",

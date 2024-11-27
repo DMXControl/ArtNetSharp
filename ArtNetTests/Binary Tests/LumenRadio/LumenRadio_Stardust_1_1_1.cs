@@ -38,7 +38,7 @@ namespace ArtNetTests.Binary_Tests.LumenRadio
 
         private static readonly PortTestSubject[] PORTS =
         [
-            new PortTestSubject(EPortType.DMX512,(Universe)15,(Universe)0)
+            new PortTestSubject(EPortType.DMX512,(PortAddress)32767,(PortAddress)32752)
         ];
         public LumenRadio_Stardust_1_1_1() : base(
             "LumenRadio Stardust (FW 1.1.1)",

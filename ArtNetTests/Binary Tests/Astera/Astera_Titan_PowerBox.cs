@@ -38,7 +38,7 @@ namespace ArtNetTests.Binary_Tests.Astera
 
         private static readonly PortTestSubject[] PORTS =
         [
-            new PortTestSubject(EPortType.OutputFromArtNet,(Universe)14,(Universe)0)
+            new PortTestSubject(EPortType.OutputFromArtNet,(PortAddress)14,(PortAddress)0)
         ];
         public Astera_Titan_PowerBox() : base(
             "Astera Titan PowerBox (FW 1.21)",

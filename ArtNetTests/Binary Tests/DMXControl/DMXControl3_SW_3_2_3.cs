@@ -38,10 +38,10 @@ namespace ArtNetTests.Binary_Tests.DMXControl
 
         private static readonly PortTestSubject[] PORTS =
         [
-            new PortTestSubject(EPortType.InputToArtNet | EPortType.OutputFromArtNet,(Universe)4,(Universe)0),
-            new PortTestSubject(EPortType.InputToArtNet | EPortType.OutputFromArtNet,(Universe)5,(Universe)1),
-            new PortTestSubject(EPortType.InputToArtNet | EPortType.OutputFromArtNet,(Universe)6,(Universe)2),
-            new PortTestSubject(EPortType.InputToArtNet | EPortType.OutputFromArtNet,(Universe)7,(Universe)3)
+            new PortTestSubject(EPortType.InputToArtNet | EPortType.OutputFromArtNet,(PortAddress)4,(PortAddress)0),
+            new PortTestSubject(EPortType.InputToArtNet | EPortType.OutputFromArtNet,(PortAddress)5,(PortAddress)1),
+            new PortTestSubject(EPortType.InputToArtNet | EPortType.OutputFromArtNet,(PortAddress)6,(PortAddress)2),
+            new PortTestSubject(EPortType.InputToArtNet | EPortType.OutputFromArtNet,(PortAddress)7,(PortAddress)3)
         ];
         public DMXControl3_SW_3_2_3() : base(
             "DMXControl 3 (3.2.3)",

@@ -38,10 +38,10 @@ namespace ArtNetTests.Binary_Tests.MA_Lighting
 
         private static readonly PortTestSubject[] PORTS =
         [
-            new PortTestSubject(EPortType.DMX512,(Universe)0,(Universe)0),
-            new PortTestSubject(EPortType.DMX512,(Universe)0,(Universe)0),
-            new PortTestSubject(EPortType.DMX512,(Universe)0,(Universe)0),
-            new PortTestSubject(EPortType.DMX512,(Universe)0,(Universe)0)
+            new PortTestSubject(EPortType.DMX512,(PortAddress)0,(PortAddress)0),
+            new PortTestSubject(EPortType.DMX512,(PortAddress)0,(PortAddress)0),
+            new PortTestSubject(EPortType.DMX512,(PortAddress)0,(PortAddress)0),
+            new PortTestSubject(EPortType.DMX512,(PortAddress)0,(PortAddress)0)
         ];
         /// <summary>
         /// Among the worst implementation of ArtNet I've ever seen 🙈😅

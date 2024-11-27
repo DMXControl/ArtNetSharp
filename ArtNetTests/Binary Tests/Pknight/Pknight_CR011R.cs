@@ -35,7 +35,7 @@ namespace ArtNetTests.Binary_Tests.Showtec
 
         private static readonly PortTestSubject[] PORTS =
         [
-            new PortTestSubject(EPortType.OutputFromArtNet,(Universe)0,(Universe)0)
+            new PortTestSubject(EPortType.OutputFromArtNet,(PortAddress)0,(PortAddress)0)
         ];
         public Pknight_CR011R() : base(
             "Pknight CR011R",

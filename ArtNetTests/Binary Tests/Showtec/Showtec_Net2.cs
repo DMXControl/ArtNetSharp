@@ -38,7 +38,7 @@ namespace ArtNetTests.Binary_Tests.Showtec
 
         private static readonly PortTestSubject[] PORTS =
         [
-            new PortTestSubject(EPortType.OutputFromArtNet,(Universe)3,(Universe)3)
+            new PortTestSubject(EPortType.OutputFromArtNet,(PortAddress)259,(PortAddress)259)
         ];
         public Showtec_Net2() : base(
             "Showtec Net2 (FW 1.2)",
