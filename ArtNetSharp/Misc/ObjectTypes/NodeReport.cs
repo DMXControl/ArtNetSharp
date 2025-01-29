@@ -6,9 +6,9 @@ namespace ArtNetSharp
     public readonly struct NodeReport : IComparable<NodeReport>
     {
         public readonly ENodeReportCodes ReportCode;
-        public readonly uint Counter;
-        public readonly string Text;
-        public readonly bool Valid;
+        public readonly uint Counter = 0;
+        public readonly string Text = null;
+        public readonly bool Valid = false;
 
         private const string REGEX = "#([A-Fa-f0-9]+) \\[([0-9]+)\\](.*)";
         private const string REGEX_INVALID = "([A-Fa-f0-9]+) \\[([0-9]+)\\](.*)";

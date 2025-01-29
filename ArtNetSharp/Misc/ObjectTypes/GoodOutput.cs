@@ -61,7 +61,7 @@ namespace ArtNetSharp
             MergeMode = (EMergeMode)(Byte1 & 0b00000010);
             DMX_OutputShortCircuit = Tools.BitsMatch(Byte1, 0b00000100);
             MergingArtNetData = Tools.BitsMatch(Byte1, 0b00001000);
-            DMX_TestPacketsSupported2 = Tools.BitsMatch(Byte1, 0b00010000);
+            DMX_TestPacketsSupported = Tools.BitsMatch(Byte1, 0b00010000);
             DMX_SIPsSupported = Tools.BitsMatch(Byte1, 0b00100000);
             DMX_TestPacketsSupported2 = Tools.BitsMatch(Byte1, 0b01000000);
             IsBeingOutputAsDMX = Tools.BitsMatch(Byte1, 0b10000000);
