@@ -26,7 +26,7 @@ jobs:
     - name: Install dependencies
       run: dotnet restore -p:TargetFramework=net${{ matrix.dotnet-version }}
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build -p:TargetFramework=net${{ matrix.dotnet-version }} --configuration Release --no-restore
     - name: Test
       run: dotnet test --framework net${{ matrix.dotnet-version }} --collect:"XPlat Code Coverage" --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
     - name: Upload a Build Artifact
