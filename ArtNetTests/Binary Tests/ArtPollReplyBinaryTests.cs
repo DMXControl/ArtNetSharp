@@ -71,12 +71,13 @@ namespace ArtNetTests.Binary_Tests
                         Assert.Fail("Not implementet this case");
                     }
                 }
-                if (testSubject.NodeReport.HasValue)
-                    Assert.That(artPollReply.NodeReport, Is.EqualTo(testSubject.NodeReport.Value));
-
-                if (testSubject.DataLengthIsEqual)
-                    Assert.That(artPollReply.GetPacket().Take(testSubject.Data.Length), Is.EqualTo(testSubject.Data));
             });
+
+            if (testSubject.NodeReport.HasValue)
+                Assert.That(artPollReply.NodeReport, Is.EqualTo(testSubject.NodeReport.Value));
+
+            if (testSubject.DataLengthIsEqual)
+                Assert.That(artPollReply.GetPacket().Take(testSubject.Data.Length), Is.EqualTo(testSubject.Data));
         }
     }
 }
