@@ -2,7 +2,7 @@
 
 namespace ArtNetTests.Binary_Tests.LumenRadio
 {
-    internal class LumenRadio_Stardust_1_1_1 : AbstractArtPollReplyBinaryTestSubject
+    internal class Stardust_1_1_1 : AbstractArtPollReplyBinaryTestSubject
     {
         private static readonly byte[] DATA = [
             0x41, 0x72, 0x74, 0x2d, 0x4e, 0x65, 0x74, 0x00,
@@ -40,7 +40,7 @@ namespace ArtNetTests.Binary_Tests.LumenRadio
         [
             new PortTestSubject(EPortType.DMX512,(PortAddress)32767,(PortAddress)32752)
         ];
-        public LumenRadio_Stardust_1_1_1() : base(
+        public Stardust_1_1_1() : base(
             "LumenRadio Stardust (FW 1.1.1)",
             DATA,
             127,
