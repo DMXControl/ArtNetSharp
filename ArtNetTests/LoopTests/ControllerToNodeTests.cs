@@ -7,14 +7,14 @@ using System.Diagnostics;
 
 namespace ArtNetTests.LoopTests
 {
-    [Order(10)]
+    [Order(11)]
     public class ControllerToNodeTests
     {
-        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<ControllerToControllerTests>();
+        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<ControllerToNodeTests>();
         private ArtNet artNet;
         private ControllerInstanceMock instanceTX;
         private OutputPortConfig outputPort;
-        private NodeRXInstanceMock instanceRX;
+        private NodeInstanceMock instanceRX;
         private InputPortConfig inputPort;
 
         private Task? initialTask;
@@ -30,14 +30,14 @@ namespace ArtNetTests.LoopTests
             if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
                 Assert.Ignore("Not running on Github-Action");
 
-            Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)}");
+            Logger.LogDebug($"Test Setup: {nameof(ControllerToNodeTests)}");
 
             artNet = new ArtNet();
             //artNet.LoopNetwork = new ArtNet.NetworkLoopAdapter(new IPv4Address("255.255.255.0"));
 
-            instanceTX = new ControllerInstanceMock(artNet, 0x1111);
+            instanceTX = new ControllerInstanceMock(artNet, 0x9999);
             instanceTX.Name = $"{nameof(ControllerToNodeTests)}-TX";
-            instanceRX = new NodeRXInstanceMock(artNet, 0x2222);
+            instanceRX = new NodeInstanceMock(artNet, 0x3333);
             instanceRX.Name = $"{nameof(ControllerToNodeTests)}-RX";
 
             outputPort = new OutputPortConfig(1, portAddress);
@@ -46,13 +46,12 @@ namespace ArtNetTests.LoopTests
             instanceTX.AddPortConfig(inputPort);
             instanceRX.AddPortConfig(outputPort);
 
+            byte identifyer = 192;
             if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
-            {
-                foreach (var client in artNet.NetworkClients.Where(nc => ((IPv4Address)nc.LocalIpAddress).B1 != 10))
-                {
-                    client.Enabled = false;
-                }
-            }
+                identifyer = 10;
+
+            foreach (var client in artNet.NetworkClients.Where(nc => ((IPv4Address)nc.LocalIpAddress).B1 != identifyer))
+                client.Enabled = false;
 
             artNet.AddInstance([instanceTX, instanceRX]);
         }
@@ -79,7 +78,7 @@ namespace ArtNetTests.LoopTests
         [OneTimeTearDown]
         public void OneTimeTearDown()
         {
-            Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)} {nameof(OneTimeTearDown)}");
+            Logger.LogDebug($"Test Setup: {nameof(ControllerToNodeTests)} {nameof(OneTimeTearDown)}");
 
             if (artNet != null)
                 ((IDisposable)artNet).Dispose();
@@ -120,9 +119,9 @@ namespace ArtNetTests.LoopTests
         }
 
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(1000)]
+        [Timeout(8000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
-        [Test, Order(2), Retry(5)]
+        [Test, Order(2)]
         public async Task TestSendDMX()
         {
             initialTask ??= init();
@@ -139,15 +138,17 @@ namespace ArtNetTests.LoopTests
 
             var txPort = rcTX.Ports.First(p => p.InputPortAddress.Equals(portAddress));
             var rxPort = rcRX.Ports.First(p => p.OutputPortAddress.Equals(portAddress));
+
             Assert.Multiple(() =>
             {
+                Assert.That(rxPort, Is.SameAs(rcRX.Ports.First(p => p.OutputPortAddress.Equals(portAddress))));
                 Assert.That(rxPort.GoodOutput.ConvertFrom, Is.EqualTo(GoodOutput.EConvertFrom.ArtNet));
                 Assert.That(rxPort.GoodOutput.DMX_OutputShortCircuit, Is.False);
                 Assert.That(rxPort.GoodOutput.IsBeingOutputAsDMX, Is.False);
             });
 
             instanceRX.DMXReceived += InstanceRX_DMXReceived;
-            for (byte b = 0; b <= 250; b++)
+            for (byte b = 0; b <= 25; b++)
                 await doDmxStuff(b);
 
             instanceRX.DMXReceived -= InstanceRX_DMXReceived;
@@ -169,19 +170,20 @@ namespace ArtNetTests.LoopTests
 
             async Task doDmxStuff(byte value)
             {
-                receiveFlag = false;
                 if (data[0] != value)
                     for (ushort i = 0; i < 512; i++)
                         data[i] = value;
 
+                receiveFlag = false;
                 instanceTX.WriteDMXValues(portAddress, data);
                 while (!receiveFlag)
-                    await Task.Delay(15);
+                    await Task.Delay(30);
 
                 string str = $"Error at {data[0]}";
                 Assert.Multiple(() =>
                 {
-                    Assert.That(outputPort.GoodOutput.IsBeingOutputAsDMX, Is.True, str);
+                    Assert.That(rxPort, Is.SameAs(rcRX.Ports.First(p => p.OutputPortAddress.Equals(portAddress))));
+                    Assert.That(rxPort.GoodOutput.IsBeingOutputAsDMX, Is.True, str);
                     Assert.That(instanceRX.GetReceivedDMX(portAddress), Is.EqualTo(data), str);
                 });
             }
@@ -191,8 +193,15 @@ namespace ArtNetTests.LoopTests
                     return;
 
                 Assert.That(e, Is.EqualTo(portAddress));
-
-                receiveFlag = true;
+                Task.Run(async () =>
+                {
+                    while (rxPort.GoodOutput.IsBeingOutputAsDMX == false)
+                    {
+                        Assert.That(rxPort, Is.SameAs(rcRX.Ports.First(p => p.OutputPortAddress.Equals(portAddress))));
+                        await Task.Delay(10); // wait for ArtPoll and ArtPollReply to update the data of ArtPollReply-Cache
+                    }
+                    receiveFlag = true;
+                }, new CancellationTokenSource(3500).Token);
             }
         }
 

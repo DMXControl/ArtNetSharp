@@ -7,14 +7,14 @@ using System.Diagnostics;
 
 namespace ArtNetTests.LoopTests
 {
-    [Order(10)]
-    public class ControllerToControllerTests
+    [Order(13)]
+    public class NodeToNodeTests
     {
-        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<ControllerToControllerTests>();
+        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<NodeToNodeTests>();
         private ArtNet artNet;
-        private ControllerInstanceMock instanceTX;
+        private NodeInstanceMock instanceTX;
         private OutputPortConfig outputPort;
-        private ControllerInstanceMock instanceRX;
+        private NodeInstanceMock instanceRX;
         private InputPortConfig inputPort;
 
         private Task? initialTask;
@@ -30,15 +30,15 @@ namespace ArtNetTests.LoopTests
             if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
                 Assert.Ignore("Not running on Github-Action");
 
-            Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)}");
+            Logger.LogDebug($"Test Setup: {nameof(NodeToNodeTests)}");
 
             artNet = new ArtNet();
             //artNet.LoopNetwork = new ArtNet.NetworkLoopAdapter(new IPv4Address("255.255.255.0"));
 
-            instanceTX = new ControllerInstanceMock(artNet, 0x1111);
-            instanceTX.Name = $"{nameof(ControllerToControllerTests)}-TX";
-            instanceRX = new ControllerInstanceMock(artNet, 0x2222);
-            instanceRX.Name = $"{nameof(ControllerToControllerTests)}-RX";
+            instanceTX = new NodeInstanceMock(artNet, 0x7777);
+            instanceTX.Name = $"{nameof(NodeToNodeTests)}-TX";
+            instanceRX = new NodeInstanceMock(artNet, 0x8888);
+            instanceRX.Name = $"{nameof(NodeToNodeTests)}-RX";
 
             outputPort = new OutputPortConfig(1, portAddress);
             inputPort = new InputPortConfig(1, portAddress);
@@ -50,8 +50,11 @@ namespace ArtNetTests.LoopTests
             if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
                 identifyer = 10;
 
+            var usedNic = artNet.NetworkClients.FirstOrDefault(nc => ((IPv4Address)nc.LocalIpAddress).B1 != identifyer);
+            inputPort.AddAdditionalIPEndpoints(usedNic.LocalIpAddress);
             foreach (var client in artNet.NetworkClients.Where(nc => ((IPv4Address)nc.LocalIpAddress).B1 != identifyer))
                 client.Enabled = false;
+
 
             artNet.AddInstance([instanceTX, instanceRX]);
         }
@@ -78,7 +81,7 @@ namespace ArtNetTests.LoopTests
         [OneTimeTearDown]
         public void OneTimeTearDown()
         {
-            Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)} {nameof(OneTimeTearDown)}");
+            Logger.LogDebug($"Test Setup: {nameof(NodeToNodeTests)} {nameof(OneTimeTearDown)}");
 
             if (artNet != null)
                 ((IDisposable)artNet).Dispose();
@@ -117,6 +120,7 @@ namespace ArtNetTests.LoopTests
                 Assert.That(rxPort.GoodOutput.IsBeingOutputAsDMX, Is.False);
             });
         }
+
 
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
         [Timeout(8000)]

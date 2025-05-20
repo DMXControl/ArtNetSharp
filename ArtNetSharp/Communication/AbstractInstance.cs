@@ -12,7 +12,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 
 [assembly: InternalsVisibleTo("ArtNetTests")]
 namespace ArtNetSharp.Communication
@@ -328,7 +327,7 @@ namespace ArtNetSharp.Communication
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
-
+            
             try
             {
                 switch (packet)
@@ -787,14 +786,16 @@ namespace ArtNetSharp.Communication
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
 
-            if (MajorVersion == artPollReply.MajorVersion
-                && MinorVersion == artPollReply.MinorVersion
-                && OEMProductCode == artPollReply.OemCode
-                && ESTAManufacturerCode == artPollReply.ManufacturerCode
-                && IPv4Address.Equals(artPollReply.OwnIp, localIp)
-                && string.Equals(artPollReply.ShortName, ShortName)
-                && string.Equals(artPollReply.LongName, Name))
-                return; //break loopback
+            if (localIp == sourceIp)
+            {
+                if (MajorVersion == artPollReply.MajorVersion
+                    && MinorVersion == artPollReply.MinorVersion
+                    && OEMProductCode == artPollReply.OemCode
+                    && ESTAManufacturerCode == artPollReply.ManufacturerCode
+                    && IPv4Address.Equals(artPollReply.OwnIp, localIp)
+                    && EstCodes == artPollReply.Style)
+                    return; //break loopback
+            }
 
             string id = RemoteClient.getIDOf(artPollReply);
             RemoteClient remoteClient = null;
@@ -1227,6 +1228,8 @@ namespace ArtNetSharp.Communication
         {
             if (this.IsDisposed || this.IsDisposing || this.IsDeactivated)
                 return;
+            //if (EstCodes != EStCodes.StController)// As Spec. only Controler are allowed to send ArtPoll
+            //    return;
             if (SendArtPollBroadcast)
                 await sendArtPoll();
             else if (SendArtPollTargeted)

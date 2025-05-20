@@ -5,7 +5,7 @@ using RDMSharp.ParameterWrapper;
 
 namespace ArtNetTests.Mocks
 {
-    internal class NodeRXInstanceMock : NodeInstance
+    internal class NodeInstanceMock : NodeInstance
     {
         private readonly ushort _oemProductCode;
         public override ushort OEMProductCode
@@ -14,7 +14,7 @@ namespace ArtNetTests.Mocks
         }
         public override UID UID => new UID((ushort)EManufacturer.DMXControlProjects_eV, 12314);
 
-        public NodeRXInstanceMock(ArtNet artnet, ushort oemProductCode = Constants.DEFAULT_OEM_CODE) : base(artnet)
+        public NodeInstanceMock(ArtNet artnet, ushort oemProductCode = Constants.DEFAULT_OEM_CODE) : base(artnet)
         {
             _oemProductCode = oemProductCode;
         }

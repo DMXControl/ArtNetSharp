@@ -25,9 +25,9 @@ namespace ArtNetSharp
         /// </summary>
         public readonly bool MergingArtNetData;
         /// <summary>
-        /// Channel includes DMX512 test packets. 
+        /// Channel includes DMX512 text packets. 
         /// </summary>
-        public readonly bool DMX_TestPacketsSupported;
+        public readonly bool DMX_TextPacketsSupported;
         /// <summary>
         /// Channel includes DMX512 SIP’s
         /// </summary>
@@ -35,7 +35,7 @@ namespace ArtNetSharp
         /// <summary>
         /// Channel includes DMX512 test packets. 
         /// </summary>
-        public readonly bool DMX_TestPacketsSupported2;
+        public readonly bool DMX_TestPacketsSupported;
         /// <summary>
         /// ArtDmx or sACN data is being output as
         /// DMX512 on this port.
@@ -55,15 +55,16 @@ namespace ArtNetSharp
         public GoodOutput(in byte byte1, in byte byte2)
         {
             Byte1 = byte1;
-            Byte2 = byte2;
+            // Bit 0-3 Not used, set to zero (Mask: 0b11110000 -> ~0b00001111)
+            Byte2 = (byte)(byte2 & 0b11110000);
 
             ConvertFrom = (EConvertFrom)(Byte1 & 0b00000001);
             MergeMode = (EMergeMode)(Byte1 & 0b00000010);
             DMX_OutputShortCircuit = Tools.BitsMatch(Byte1, 0b00000100);
             MergingArtNetData = Tools.BitsMatch(Byte1, 0b00001000);
-            DMX_TestPacketsSupported = Tools.BitsMatch(Byte1, 0b00010000);
+            DMX_TextPacketsSupported = Tools.BitsMatch(Byte1, 0b00010000);
             DMX_SIPsSupported = Tools.BitsMatch(Byte1, 0b00100000);
-            DMX_TestPacketsSupported2 = Tools.BitsMatch(Byte1, 0b01000000);
+            DMX_TestPacketsSupported = Tools.BitsMatch(Byte1, 0b01000000);
             IsBeingOutputAsDMX = Tools.BitsMatch(Byte1, 0b10000000);
 
             BackgroundDiscoveryIsEnabled = Tools.BitsMatch(Byte2, 0b00010000);
@@ -76,23 +77,27 @@ namespace ArtNetSharp
                          in EMergeMode mergeMode = EMergeMode.HTP,
                          in bool dmx_OutputShortCircuit = false,
                          in bool mergingArtNetData = false,
-                         in bool dMX_TestPacketsSupported = false,
-                         in bool dMX_SIPsSupported = false,
-                         in bool dMX_TestPacketsSupported2 = false,
+                         in bool dmx_TextPacketsSupported = false,
+                         in bool dmx_SIPsSupported = false,
+                         in bool dmx_TestPacketsSupported = false,
                          in bool isBeingOutputAsDMX = false,
-                         in EOutputStyle outputStyle = EOutputStyle.Continuous,
-                         in bool rdmIsDisabled = false) : this()
+                         in EOutputStyle outputStyle = EOutputStyle.Delta,
+                         in bool rdmIsDisabled = false,
+                         in bool discoveryIsCurrentlyRunning = false,
+                         in bool backgroundDiscoveryIsEnabled = false) : this()
         {
             ConvertFrom = convertFrom;
             MergeMode = mergeMode;
             DMX_OutputShortCircuit = dmx_OutputShortCircuit;
             MergingArtNetData = mergingArtNetData;
-            DMX_TestPacketsSupported = dMX_TestPacketsSupported;
-            DMX_SIPsSupported = dMX_SIPsSupported;
-            DMX_TestPacketsSupported2 = dMX_TestPacketsSupported2;
+            DMX_TextPacketsSupported = dmx_TextPacketsSupported;
+            DMX_SIPsSupported = dmx_SIPsSupported;
+            DMX_TestPacketsSupported = dmx_TestPacketsSupported;
             IsBeingOutputAsDMX = isBeingOutputAsDMX;
             OutputStyle = outputStyle;
             RDMisDisabled = rdmIsDisabled;
+            DiscoveryIsCurrentlyRunning = discoveryIsCurrentlyRunning;
+            BackgroundDiscoveryIsEnabled = backgroundDiscoveryIsEnabled;
 
             Byte1 |= (byte)ConvertFrom;
             Byte1 |= (byte)MergeMode;
@@ -102,11 +107,11 @@ namespace ArtNetSharp
                 Byte1 |= 0b00000100;
             if (MergingArtNetData)
                 Byte1 |= 0b00001000;
-            if (DMX_TestPacketsSupported)
+            if (DMX_TextPacketsSupported)
                 Byte1 |= 0b00010000;
             if (DMX_SIPsSupported)
                 Byte1 |= 0b00100000;
-            if (DMX_TestPacketsSupported2)
+            if (DMX_TestPacketsSupported)
                 Byte1 |= 0b01000000;
             if (IsBeingOutputAsDMX)
                 Byte1 |= 0b10000000;

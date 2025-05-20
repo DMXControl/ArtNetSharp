@@ -7,12 +7,12 @@ using System.Diagnostics;
 
 namespace ArtNetTests.LoopTests
 {
-    [Order(10)]
-    public class ControllerToControllerTests
+    [Order(12)]
+    public class NodeToControllerTests
     {
-        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<ControllerToControllerTests>();
+        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<NodeToControllerTests>();
         private ArtNet artNet;
-        private ControllerInstanceMock instanceTX;
+        private NodeInstanceMock instanceTX;
         private OutputPortConfig outputPort;
         private ControllerInstanceMock instanceRX;
         private InputPortConfig inputPort;
@@ -30,15 +30,15 @@ namespace ArtNetTests.LoopTests
             if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
                 Assert.Ignore("Not running on Github-Action");
 
-            Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)}");
+            Logger.LogDebug($"Test Setup: {nameof(NodeToControllerTests)}");
 
             artNet = new ArtNet();
             //artNet.LoopNetwork = new ArtNet.NetworkLoopAdapter(new IPv4Address("255.255.255.0"));
 
-            instanceTX = new ControllerInstanceMock(artNet, 0x1111);
-            instanceTX.Name = $"{nameof(ControllerToControllerTests)}-TX";
-            instanceRX = new ControllerInstanceMock(artNet, 0x2222);
-            instanceRX.Name = $"{nameof(ControllerToControllerTests)}-RX";
+            instanceTX = new NodeInstanceMock(artNet, 0x4444);
+            instanceTX.Name = $"{nameof(NodeToControllerTests)}-TX";
+            instanceRX = new ControllerInstanceMock(artNet, 0x5555);
+            instanceRX.Name = $"{nameof(NodeToControllerTests)}-RX";
 
             outputPort = new OutputPortConfig(1, portAddress);
             inputPort = new InputPortConfig(1, portAddress);
@@ -50,6 +50,8 @@ namespace ArtNetTests.LoopTests
             if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
                 identifyer = 10;
 
+            var usedNic = artNet.NetworkClients.FirstOrDefault(nc => ((IPv4Address)nc.LocalIpAddress).B1 != identifyer);
+            inputPort.AddAdditionalIPEndpoints(usedNic.LocalIpAddress);
             foreach (var client in artNet.NetworkClients.Where(nc => ((IPv4Address)nc.LocalIpAddress).B1 != identifyer))
                 client.Enabled = false;
 
@@ -78,7 +80,7 @@ namespace ArtNetTests.LoopTests
         [OneTimeTearDown]
         public void OneTimeTearDown()
         {
-            Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)} {nameof(OneTimeTearDown)}");
+            Logger.LogDebug($"Test Setup: {nameof(NodeToControllerTests)} {nameof(OneTimeTearDown)}");
 
             if (artNet != null)
                 ((IDisposable)artNet).Dispose();
