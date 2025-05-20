@@ -4,7 +4,6 @@ using ArtNetTests.Mocks;
 using Microsoft.Extensions.Logging;
 using RDMSharp;
 using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace ArtNetTests.LoopTests
 {
@@ -248,9 +247,9 @@ namespace ArtNetTests.LoopTests
 
             Random rnd = new Random();
             instanceRX.DMXReceived += (o, e) =>
-                {
-                    receivedFlag = true;
-                    swDMX.Stop();
+            {
+                swDMX.Stop();
+                receivedFlag = true;
                     if (done)
                         return;
                     if (swDMX.Elapsed.TotalMilliseconds != 0)
@@ -258,8 +257,8 @@ namespace ArtNetTests.LoopTests
                 };
             instanceRX.SyncReceived += async (o, e) =>
             {
-                syncFlag = true;
                 swSync.Stop();
+                syncFlag = true;
                 if (done)
                     return;
                 syncRate.Add(swSync.Elapsed.TotalMilliseconds);
@@ -283,12 +282,15 @@ namespace ArtNetTests.LoopTests
             }
             void check()
             {
+                var sync = 1000.0 / syncRate.Average();
+                var dmx = 1000.0 / refreshRate.Average();
+                Logger.LogDebug($"Sync: {syncRate.Average()}ms, DMX: {refreshRate.Average()}ms, SyncRate: {sync}, DMXRate: {dmx}");
                 Assert.Multiple(() =>
                 {
                     Assert.That(syncFlag, Is.True);
                     Assert.That(receivedFlag, Is.True);
-                    Assert.That(1000.0 / syncRate.Average(), Is.AtLeast(40));
-                    Assert.That(1000.0 / refreshRate.Average(), Is.AtLeast(40));
+                    Assert.That(sync, Is.AtLeast(40));
+                    Assert.That(dmx, Is.AtLeast(40));
                 });
             }
 

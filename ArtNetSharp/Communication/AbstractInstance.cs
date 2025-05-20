@@ -602,7 +602,8 @@ namespace ArtNetSharp.Communication
         {
             const double dmxRefreshTime = 1000 / 44.0; // Spec 1.4dh page 56
             const double dmxKeepAliveTime = 800; // Spec 1.4dh page 53
-            const int interval = (int)(dmxRefreshTime / 2);
+            const int interval = (int)(dmxRefreshTime / 3);
+            List<Task> sendTasks = new List<Task>();
             while (!(this.IsDisposing || this.IsDisposed))
             {
                 // Prevent CPU loop
@@ -618,18 +619,18 @@ namespace ArtNetSharp.Communication
                     var ports = RemoteClientsPorts?.Where(port => port.OutputPortAddress.HasValue && !port.Timouted())?.ToList();
 
                     int sended = 0;
-                    List<Task> sendTasks= new List<Task>();
+                    var utcNow = DateTime.UtcNow;
                     foreach (var port in ports)
                         try
                         {
                             if (sendDMXBuffer.TryGetValue(port.OutputPortAddress.Value, out DMXSendBag bag))
-                                if ((bag.Updated && (DateTime.UtcNow - bag.LastSended).TotalMilliseconds >= dmxRefreshTime) || (DateTime.UtcNow - bag.LastSended).TotalMilliseconds >= dmxKeepAliveTime)
+                                if ((bag.Updated && (utcNow - bag.LastSended).TotalMilliseconds >= dmxRefreshTime) || (utcNow - bag.LastSended).TotalMilliseconds >= dmxKeepAliveTime)
                                 {
                                     PortConfig config = null;
                                     byte sourcePort = 0;
                                     try
                                     {
-                                        bag.LastSended = DateTime.UtcNow;
+                                        bag.LastSended = utcNow;
                                         config = portConfigs?.FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, port.OutputPortAddress));
                                         sourcePort = config?.PortNumber ?? 0;
                                         sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, bag.GetSequence(), config?.ForceBroadcast ?? false));
@@ -652,6 +653,7 @@ namespace ArtNetSharp.Communication
                         }
                         catch (Exception e) { Logger.LogError(e, "Outer Block"); }
                     await Task.WhenAll(sendTasks);
+                    sendTasks.Clear();
                     if (EnableSync && sended != 0)
                         await sendArtSync();
 
