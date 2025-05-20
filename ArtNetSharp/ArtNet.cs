@@ -171,6 +171,10 @@ namespace ArtNetSharp
                 IPAddress endpointIp = IPAddress.Any;
                 if (Tools.IsWindows())
                     endpointIp = LocalIpAddress;
+                if (Tools.IsMac())
+                    endpointIp = LocalIpAddress;
+                if (Tools.IsLinux())
+                    endpointIp = LocalIpAddress;
 
                 return endpointIp;
             }
