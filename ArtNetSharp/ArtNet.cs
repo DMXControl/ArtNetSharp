@@ -107,6 +107,9 @@ namespace ArtNetSharp
             internal NetworkClientBag(IPAddress broadcastIpAddress, UnicastIPAddressInformation unicastIPAddressInformation)
             {
                 UnicastIPAddressInfo = unicastIPAddressInformation;
+                if (unicastIPAddressInformation.Address.Equals(IPAddress.Loopback))
+                    broadcastIpAddress = IPAddress.Loopback;
+
                 BroadcastIpAddress = broadcastIpAddress;
                 broadcastEndpoint = new IPEndPoint(broadcastIpAddress, Constants.ARTNET_PORT);
                 Logger?.LogTrace($"Create Client ({LocalIpAddress})");
