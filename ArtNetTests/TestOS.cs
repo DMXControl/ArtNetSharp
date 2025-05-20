@@ -82,6 +82,12 @@ namespace ArtNetTests
 
         private async Task doTests()
         {
+            foreach (var nic in artNet.NetworkClients)
+            {
+                var str = $"NIC: {nic.LocalIpAddress}";
+                Console.WriteLine(str);
+                Debug.WriteLine(str);
+            }
 
             artNet.AddInstance(nodeInstance);
             artNet.AddInstance(controllerInstance);
