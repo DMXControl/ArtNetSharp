@@ -300,7 +300,8 @@ namespace ArtNetSharp.Communication
 
             sendPollThreadBag.SendArtPollEvent += TimerSendPoll_Elapsed;
 
-            Task.Run(sendAllArtDMX);
+            if (this is ControllerInstance)
+                Task.Run(sendAllArtDMX);
 
             KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
         }
