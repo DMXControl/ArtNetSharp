@@ -26,7 +26,7 @@ namespace ArtNetTests.LoopTests
         private static readonly PortAddress portAddress = new PortAddress(2, 13, 4);
 
         //[OneTimeSetUp]
-        public void OneTimeSetUp()
+        public async Task OneTimeSetUp()
         {
 
             Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)}");
@@ -52,12 +52,13 @@ namespace ArtNetTests.LoopTests
             foreach (var client in artNet.NetworkClients.Where(nc => ((IPv4Address)nc.LocalIpAddress).B1 != identifyer))
                 client.Enabled = false;
 
+            await Task.Delay(300);
             artNet.AddInstance([instanceTX, instanceRX]);
         }
 
         private async Task init()
         {
-            OneTimeSetUp();
+            await OneTimeSetUp();
             DateTime startTime = DateTime.UtcNow;
             while ((DateTime.UtcNow - startTime).TotalSeconds < 12 && (rcRX == null || rcTX == null) && !(artNet.IsDisposed || artNet.IsDisposing))
             {
@@ -90,11 +91,12 @@ namespace ArtNetTests.LoopTests
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
         [Timeout(60000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
-        [Test, Order(1), Retry(5)]
+        [Test, Order(1)]
         public async Task TestLoopDetection()
         {
             initialTask ??= init();
             await initialTask;
+            await Task.Delay(300);
             Logger.LogDebug(nameof(TestLoopDetection));
             Assert.Multiple(() =>
             {
@@ -127,6 +129,7 @@ namespace ArtNetTests.LoopTests
         {
             initialTask ??= init();
             await initialTask;
+            await Task.Delay(300);
             Logger.LogDebug(nameof(TestSendDMX));
             Assert.Multiple(() =>
             {
@@ -182,6 +185,7 @@ namespace ArtNetTests.LoopTests
                     Assert.That(rxPort.GoodOutput.IsBeingOutputAsDMX, Is.True, str);
                     Assert.That(instanceRX.GetReceivedDMX(portAddress), Is.EqualTo(data), str);
                 });
+                await Task.Delay(100);
             }
             void InstanceRX_DMXReceived(object? sender, PortAddress e)
             {
@@ -209,6 +213,7 @@ namespace ArtNetTests.LoopTests
         {
             initialTask ??= init();
             await initialTask;
+            await Task.Delay(300);
             Logger.LogDebug(nameof(TestSendDMXTiming));
             //if(ArtNetSharp.Tools.IsRunningOnGithubWorker())
             //    Assert.Ignore("Skiped, only run on Linux");
