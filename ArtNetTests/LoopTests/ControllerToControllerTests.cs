@@ -292,8 +292,8 @@ namespace ArtNetTests.LoopTests
                 {
                     Assert.That(syncFlag, Is.True);
                     Assert.That(receivedFlag, Is.True);
-                    Assert.That(sync, Is.AtLeast(40));
-                    Assert.That(dmx, Is.AtLeast(40));
+                    Assert.That(sync, Is.AtLeast(targetRate));
+                    Assert.That(dmx, Is.AtLeast(targetRate));
                 });
             }
 
