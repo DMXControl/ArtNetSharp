@@ -28,7 +28,7 @@ jobs:
     - name: Build
       run: dotnet build -p:TargetFramework=net${{ matrix.dotnet-version }} --configuration Release --no-restore
     - name: Test
-      run: dotnet test --framework net${{ matrix.dotnet-version }} --collect:"XPlat Code Coverage" --no-restore --verbosity normal --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
+      run: dotnet test --framework net${{ matrix.dotnet-version }} --collect:"XPlat Code Coverage" --no-restore --verbosity detailed --logger trx --results-directory "TestResults-${{ matrix.os }} ${{ matrix.dotnet-version }}"
     - name: Upload a Build Artifact
       if: ${{ failure() || success() }}
       uses: actions/upload-artifact@v4.6.0
