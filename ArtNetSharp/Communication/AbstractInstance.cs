@@ -258,6 +258,8 @@ namespace ArtNetSharp.Communication
 
         internal class SendPollThreadBag
         {
+            private static readonly TimeSpan PollPeriod = TimeSpan.FromSeconds(2.7); // Spec 1.4dd page 13
+
             private readonly Thread sendPollThread;
             public EventHandler SendArtPollEvent;
             public SendPollThreadBag()
@@ -269,8 +271,9 @@ namespace ArtNetSharp.Communication
                     {
                         try
                         {
-                            if ((DateTime.UtcNow - lastSendPollTime).TotalSeconds < 2.7)// Spec 1.4dd page 13
-                                continue;
+                            TimeSpan elapsed = DateTime.UtcNow - lastSendPollTime;
+                            if (elapsed < PollPeriod)
+                                await Task.Delay(PollPeriod - elapsed);
 
                             SendArtPollEvent?.InvokeFailSafe(null,EventArgs.Empty);
                         }
