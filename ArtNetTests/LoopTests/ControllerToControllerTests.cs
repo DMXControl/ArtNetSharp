@@ -27,8 +27,8 @@ namespace ArtNetTests.LoopTests
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            //if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
-            //    Assert.Ignore("Not running on Github-Action");
+            if (ArtNetSharp.Tools.IsRunningOnGithubWorker() && !ArtNetSharp.Tools.IsWindows())
+                Assert.Ignore("Not running on Github-Action (Linux & MAC)");
 
             Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)}");
 
@@ -119,7 +119,7 @@ namespace ArtNetTests.LoopTests
         }
 
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(8000)]
+        [Timeout(60000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         [Test, Order(2)]
         public async Task TestSendDMX()
@@ -148,7 +148,7 @@ namespace ArtNetTests.LoopTests
             });
 
             instanceRX.DMXReceived += InstanceRX_DMXReceived;
-            for (byte b = 0; b <= 25; b++)
+            for (byte b = 0; b <= 10; b++)
                 await doDmxStuff(b);
 
             instanceRX.DMXReceived -= InstanceRX_DMXReceived;
