@@ -19,7 +19,7 @@ namespace ArtNetSharp
     public class ArtNet : IDisposable
     {
         private static readonly Random _random = new Random();
-        private static ILogger<ArtNet> Logger = null;
+        private static ILogger<ArtNet> Logger = ApplicationLogging.CreateLogger<ArtNet>();
         private static ArtNet instance;
         public static ArtNet Instance
         {
@@ -333,12 +333,6 @@ namespace ArtNetSharp
 
         internal ArtNet([CallerFilePath] string caller = "", [CallerLineNumber] int line = -1)
         {
-            if (Logger == null)
-            {
-                ApplicationLogging.LoggerFactory.AddProvider(new FileProvider());
-                Logger = ApplicationLogging.CreateLogger<ArtNet>();
-            }
-
             Logger?.LogTrace($"Initialize {caller} (Line: {line})");
             _updateNetworkClientsTimer = new System.Timers.Timer();
             _updateNetworkClientsTimer.Interval = 1000;
@@ -434,9 +428,8 @@ namespace ArtNetSharp
         }
         private void processPacket(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
         {
-#if DEBUG
             Logger.LogTrace($"Received Packet from {sourceIp} -> {packet}");
-#endif
+
             foreach (var inst in instances) try
                 {
                     ((IInstance)inst.Value).PacketReceived(packet, localIp, sourceIp);
@@ -500,7 +493,7 @@ namespace ArtNetSharp
                 IPAddress _ipToTest = ip;
 
                 var nicWithThisIP = nics.FirstOrDefault(nic => nic.GetIPProperties().UnicastAddresses.Any(_ip => IPAddress.Equals(_ip.Address, _ipToTest)));
-                if (nicWithThisIP != null)
+                if (nicWithThisIP != null && nicWithThisIP.NetworkInterfaceType != NetworkInterfaceType.Loopback)
                     mac = new MACAddress(nicWithThisIP.GetPhysicalAddress().GetAddressBytes());
                 else
                     mac = new MACAddress();

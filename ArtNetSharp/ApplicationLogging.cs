@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using static ArtNetSharp.ApplicationLogging;
 
@@ -18,14 +19,21 @@ namespace ArtNetSharp
             {
                 if (loggerFactory == null)
                 {
-                    bool isTest = Tools.IsRunningOnGithubWorker();
+                    bool isTest = AppDomain.CurrentDomain.GetAssemblies()
+                        .Any(a => a.FullName.StartsWith("NUnit", StringComparison.OrdinalIgnoreCase));
                     loggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create((builder) =>
                     {
+                        FileProvider fp = isTest ? new FileProvider() : null;
+#if Debug
+                        fp ?= new FileProvider();
+#endif
                         if (isTest)
                         {
                             builder.AddConsole();
                             builder.SetMinimumLevel(LogLevel.Trace);
                         }
+                        if (fp != null)
+                            builder.AddProvider(fp);
                     });
                 }
                 return loggerFactory;
