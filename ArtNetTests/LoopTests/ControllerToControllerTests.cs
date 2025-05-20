@@ -285,6 +285,9 @@ namespace ArtNetTests.LoopTests
                 var sync = 1000.0 / syncRate.Average();
                 var dmx = 1000.0 / refreshRate.Average();
                 Logger.LogDebug($"Sync: {syncRate.Average()}ms, DMX: {refreshRate.Average()}ms, SyncRate: {sync}, DMXRate: {dmx}");
+                var targetRate = 40;
+                if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
+                    targetRate = 30;// bacuse the worker have not enougth hoursepower to run 40Hz
                 Assert.Multiple(() =>
                 {
                     Assert.That(syncFlag, Is.True);
