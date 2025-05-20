@@ -23,7 +23,7 @@ namespace ArtNetTests.LoopTests
         private RemoteClient? rcRX = null;
         private RemoteClient? rcTX = null;
 
-        private static readonly PortAddress portAddress = new PortAddress(2, 3, 4);
+        private static readonly PortAddress portAddress = new PortAddress(2, 13, 4);
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
@@ -145,6 +145,12 @@ namespace ArtNetTests.LoopTests
             byte[] data = new byte[512];
             bool receiveFlag = false;
 
+            Assert.That(rcRX.Ports, Has.Count.EqualTo(1), () =>
+            {
+                var portList = string.Join(", ", rcRX.Ports.Select(p => $"{p.ToString()} [{p.PortType} on PortAddress {p.OutputPortAddress}]"));
+                return $"rcRX.Ports.Count != 2. Aktuelle Ports: [{portList}]";
+            });
+            Assert.That(rcRX.Ports, Has.Count.EqualTo(2));
             var rxPort = rcRX.Ports.First(p => p.OutputPortAddress.Equals(portAddress));
 
             Assert.Multiple(() =>
