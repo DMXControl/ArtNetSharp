@@ -87,6 +87,8 @@ namespace ArtNetTests
                 var str = $"NIC: {nic.LocalIpAddress}";
                 Console.WriteLine(str);
                 Debug.WriteLine(str);
+                if (nic.BroadcastIpAddress != System.Net.IPAddress.Loopback)
+                    nic.Enabled = false;
             }
 
             artNet.AddInstance(nodeInstance);
