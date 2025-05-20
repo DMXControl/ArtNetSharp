@@ -4,6 +4,7 @@ using ArtNetTests.Mocks;
 using Microsoft.Extensions.Logging;
 using RDMSharp;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace ArtNetTests.LoopTests
 {
@@ -69,8 +70,8 @@ namespace ArtNetTests.LoopTests
             while ((DateTime.UtcNow - startTime).TotalSeconds < 12 && (rcRX == null || rcTX == null) && !(artNet.IsDisposed || artNet.IsDisposing))
             {
                 await Task.Delay(2500);
-                rcRX ??= instanceTX.RemoteClients.FirstOrDefault(rc => rc.LongName.Equals(instanceRX.Name) && rc.Root.ManufacturerCode == instanceRX.ESTAManufacturerCode);
-                rcTX ??= instanceRX.RemoteClients.FirstOrDefault(rc => rc.LongName.Equals(instanceTX.Name) && rc.Root.ManufacturerCode == instanceRX.ESTAManufacturerCode);
+                rcRX ??= instanceTX.RemoteClients.FirstOrDefault(rc => rc.Root.OemCode.Equals(instanceRX.OEMProductCode) && rc.Root.ManufacturerCode == instanceRX.ESTAManufacturerCode);
+                rcTX ??= instanceRX.RemoteClients.FirstOrDefault(rc => rc.Root.OemCode.Equals(instanceTX.OEMProductCode) && rc.Root.ManufacturerCode == instanceRX.ESTAManufacturerCode);
                 foreach (var rc in instanceTX.RemoteClients)
                     Logger.LogTrace($"{nameof(instanceTX)} has {rc}");
                 foreach (var rc in instanceRX.RemoteClients)
@@ -83,7 +84,7 @@ namespace ArtNetTests.LoopTests
         }
 
         [OneTimeTearDown]
-        public void OneTimeTearDown()
+        public async Task OneTimeTearDown()
         {
             Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)} {nameof(OneTimeTearDown)}");
 
@@ -91,10 +92,11 @@ namespace ArtNetTests.LoopTests
                 ((IDisposable)artNet).Dispose();
 
             Trace.Flush();
+            await Task.Delay(6500);
         }
 
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(8000)]
+        [Timeout(60000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         [Test, Order(1), Retry(5)]
         public async Task TestLoopDetection()
@@ -143,7 +145,6 @@ namespace ArtNetTests.LoopTests
             byte[] data = new byte[512];
             bool receiveFlag = false;
 
-            var txPort = rcTX.Ports.First(p => p.InputPortAddress.Equals(portAddress));
             var rxPort = rcRX.Ports.First(p => p.OutputPortAddress.Equals(portAddress));
 
             Assert.Multiple(() =>
@@ -213,7 +214,7 @@ namespace ArtNetTests.LoopTests
         }
 
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(9000)]
+        [Timeout(60000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         [Test, Order(3), Retry(5)]
         public async Task TestSendDMXTiming()

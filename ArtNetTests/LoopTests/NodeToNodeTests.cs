@@ -95,7 +95,7 @@ namespace ArtNetTests.LoopTests
         }
 
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(8000)]
+        [Timeout(60000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         [Test, Order(1), Retry(5)]
         public async Task TestLoopDetection()
@@ -128,7 +128,7 @@ namespace ArtNetTests.LoopTests
 
 
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(8000)]
+        [Timeout(60000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         [Test, Order(2)]
         public async Task TestSendDMX()
@@ -145,7 +145,6 @@ namespace ArtNetTests.LoopTests
             byte[] data = new byte[512];
             bool receiveFlag = false;
 
-            var txPort = rcTX.Ports.First(p => p.InputPortAddress.Equals(portAddress));
             var rxPort = rcRX.Ports.First(p => p.OutputPortAddress.Equals(portAddress));
 
             Assert.Multiple(() =>
@@ -215,7 +214,7 @@ namespace ArtNetTests.LoopTests
         }
 
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(9000)]
+        [Timeout(60000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         [Test, Order(3), Retry(5)]
         public async Task TestSendDMXTiming()

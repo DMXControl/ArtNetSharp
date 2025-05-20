@@ -11,7 +11,11 @@ namespace ArtNetSharp
     /// </summary>
     internal static class ApplicationLogging
     {
-        internal static readonly ILoggerFactory LoggerFactory = new LoggerFactory();
+        internal static readonly ILoggerFactory LoggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+        {
+            if (Tools.IsRunningOnGithubWorker())
+                builder.AddConsole();
+        });
         internal static ILogger<T> CreateLogger<T>() => LoggerFactory.CreateLogger<T>();
         internal static ILogger CreateLogger(Type type) => LoggerFactory.CreateLogger(type);
         internal static ILogger CreateLogger(string categoryName) => LoggerFactory.CreateLogger(categoryName);

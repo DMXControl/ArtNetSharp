@@ -34,11 +34,12 @@ namespace ArtNetTests
             }
         }
         [OneTimeTearDown]
-        public void OneTimeTearDown()
+        public async Task OneTimeTearDown()
         {
             if (artNet != null)
                 ((IDisposable)artNet).Dispose();
             Trace.Flush();
+            await Task.Delay(6500);
         }
 
         [Test, Order(101)]
