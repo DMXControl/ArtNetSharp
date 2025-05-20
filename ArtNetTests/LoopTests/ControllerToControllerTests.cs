@@ -52,8 +52,14 @@ namespace ArtNetTests.LoopTests
             foreach (var client in artNet.NetworkClients.Where(nc => ((IPv4Address)nc.LocalIpAddress).B1 != identifyer))
                 client.Enabled = false;
 
+            instanceTX.RemoteClientTimedOut += InstanceTX_RemoteClientTimedOut;
             await Task.Delay(300);
             artNet.AddInstance([instanceTX, instanceRX]);
+        }
+
+        private void InstanceTX_RemoteClientTimedOut(object? sender, RemoteClient e)
+        {
+            Assert.Fail($"RemoteClient {e} timed out. Sender: {sender}");
         }
 
         private async Task init()
@@ -80,6 +86,8 @@ namespace ArtNetTests.LoopTests
         public async Task OneTimeTearDown()
         {
             Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)} {nameof(OneTimeTearDown)}");
+
+            instanceTX.RemoteClientTimedOut += InstanceTX_RemoteClientTimedOut;
 
             if (artNet != null)
                 ((IDisposable)artNet).Dispose();
@@ -232,60 +240,62 @@ namespace ArtNetTests.LoopTests
             bool receivedFlag = false;
             bool syncFlag = false;
             bool done = false;
-            var thread = new Thread(() =>
-            {
-                try
+
+            swSync.Start();
+            swDMX.Start();
+            swSync.Stop();
+            swDMX.Stop();
+
+            Random rnd = new Random();
+            instanceRX.DMXReceived += (o, e) =>
                 {
-                    instanceRX.DMXReceived += (o, e) =>
-                    {
-                        receivedFlag = true;
-                        swDMX.Stop();
-                        if (swDMX.Elapsed.TotalMilliseconds != 0)
-                        {
-                            refreshRate.Add(1000.0 / swDMX.Elapsed.TotalMilliseconds);
-                        }
-                        swDMX.Restart();
-                    };
-                    instanceRX.SyncReceived += (o, e) =>
-                    {
-                        syncFlag = true;
-                        swSync.Stop();
-                        syncRate.Add(1000.0 / swSync.Elapsed.TotalMilliseconds);
-                        swSync.Restart();
-                    };
-                    Random rnd = new Random();
-                    swSync.Start();
-                    swDMX.Start();
-                    while ((DateTime.UtcNow - startTime).TotalSeconds <= 5)
-                    {
-                        rnd.NextBytes(data);
-                        instanceTX.WriteDMXValues(portAddress, data); ;
-                        Thread.Sleep(15);
-                    }
-                    swSync.Stop();
+                    receivedFlag = true;
                     swDMX.Stop();
-                }
-                catch (Exception)
-                {
-                }
-                finally
+                    if (done)
+                        return;
+                    if (swDMX.Elapsed.TotalMilliseconds != 0)
+                        refreshRate.Add(swDMX.Elapsed.TotalMilliseconds);
+                };
+            instanceRX.SyncReceived += async (o, e) =>
+            {
+                syncFlag = true;
+                swSync.Stop();
+                if (done)
+                    return;
+                syncRate.Add(swSync.Elapsed.TotalMilliseconds);
+                await nextData();
+            };
+             _ = nextData();
+            async Task nextData()
+            {
+                await Task.Delay(5);
+                if ((DateTime.UtcNow - startTime).TotalSeconds >= 5)
                 {
                     done = true;
+                    check();
+                    return;
                 }
-            });
-            thread.Priority = ThreadPriority.Normal;
-            thread.Name = nameof(TestSendDMXTiming);
-            thread.IsBackground = true;
-            thread.Start();
-            while (!done)
-                await Task.Delay(100);
-            Assert.Multiple(() =>
+
+                rnd.NextBytes(data);
+                instanceTX.WriteDMXValues(portAddress, data);
+                swDMX.Restart();
+                swSync.Restart();
+                
+            }
+            void check()
             {
-                Assert.That(syncFlag, Is.True);
-                Assert.That(receivedFlag, Is.True);
-                Assert.That(syncRate.Average(), Is.AtLeast(40));
-                Assert.That(refreshRate.Average(), Is.AtLeast(40));
-            });
+                Assert.Multiple(() =>
+                {
+                    Assert.That(syncFlag, Is.True);
+                    Assert.That(receivedFlag, Is.True);
+                    Assert.That(1000.0 / syncRate.Average(), Is.AtLeast(40));
+                    Assert.That(1000.0 / refreshRate.Average(), Is.AtLeast(40));
+                });
+            }
+
+            await Task.Delay(4500);
+            while (!done)
+                await Task.Delay(100);            
         }
     }
 }

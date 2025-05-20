@@ -24,7 +24,7 @@ namespace ArtNetSharp.Communication
         bool IDisposableExtended.IsDisposed { get => IsDisposed; }
         bool IDisposableExtended.IsDisposing { get => IsDisposing; }
 
-        public bool IsDeactivated { get { return !ArtNetInstance.Instances.Contains(this); } }
+        public bool IsDeactivated { get { return !ArtNetInstance?.Instances.Contains(this) ?? true; } }
 
         private readonly Random _random;
         internal ArtNet ArtNetInstance;
@@ -257,6 +257,8 @@ namespace ArtNetSharp.Communication
 
         internal class SendPollThreadBag
         {
+            private static readonly TimeSpan PollPeriod = TimeSpan.FromSeconds(2.7); // Spec 1.4dd page 13
+
             private readonly Thread sendPollThread;
             public EventHandler SendArtPollEvent;
             public SendPollThreadBag()
@@ -268,8 +270,9 @@ namespace ArtNetSharp.Communication
                     {
                         try
                         {
-                            if ((DateTime.UtcNow - lastSendPollTime).TotalSeconds < 2.7)// Spec 1.4dd page 13
-                                continue;
+                            TimeSpan elapsed = DateTime.UtcNow - lastSendPollTime;
+                            if (elapsed < PollPeriod)
+                                await Task.Delay(PollPeriod - elapsed);
 
                             SendArtPollEvent?.InvokeFailSafe(null,EventArgs.Empty);
                         }
@@ -599,18 +602,23 @@ namespace ArtNetSharp.Communication
         {
             const double dmxRefreshTime = 1000 / 44.0; // Spec 1.4dh page 56
             const double dmxKeepAliveTime = 800; // Spec 1.4dh page 53
+            const int interval = (int)(dmxRefreshTime / 2);
             while (!(this.IsDisposing || this.IsDisposed))
             {
+                // Prevent CPU loop
+                await Task.Delay(interval);
+
                 if (!this.EnableDmxOutput)
-                    continue;
+                    await Task.Delay(300);
                 if (this.IsDeactivated)
-                    continue;
+                    await Task.Delay(300);
 
                 try
                 {
                     var ports = RemoteClientsPorts?.Where(port => port.OutputPortAddress.HasValue && !port.Timouted())?.ToList();
 
                     int sended = 0;
+                    List<Task> sendTasks= new List<Task>();
                     foreach (var port in ports)
                         try
                         {
@@ -624,7 +632,7 @@ namespace ArtNetSharp.Communication
                                         bag.LastSended = DateTime.UtcNow;
                                         config = portConfigs?.FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, port.OutputPortAddress));
                                         sourcePort = config?.PortNumber ?? 0;
-                                        await sendArtDMX(port, sourcePort, bag.Data, bag.GetSequence(), config?.ForceBroadcast ?? false);
+                                        sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, bag.GetSequence(), config?.ForceBroadcast ?? false));
                                         sended++;
                                         if (config == null)
                                             return;
@@ -636,13 +644,14 @@ namespace ArtNetSharp.Communication
                                     }
                                     foreach (IPv4Address ip in config?.AdditionalIPEndpoints)
                                     {
-                                        await sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, bag.GetSequence());
+                                        sendTasks.Add(sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, bag.GetSequence()));
                                         sended++;
                                     }
                                     bag.LastSended = DateTime.UtcNow;
                                 }
                         }
                         catch (Exception e) { Logger.LogError(e, "Outer Block"); }
+                    await Task.WhenAll(sendTasks);
                     if (EnableSync && sended != 0)
                         await sendArtSync();
 
@@ -1270,7 +1279,7 @@ namespace ArtNetSharp.Communication
                 return;
 
             await triggerSendArtPoll();
-            await Task.Delay(3000);
+            await Task.Delay(4000);
             await pollReplyProcessSemaphoreSlim.WaitAsync();
             try
             {
