@@ -150,7 +150,6 @@ namespace ArtNetTests.LoopTests
                 var portList = string.Join(", ", rcRX.Ports.Select(p => $"{p.ToString()} [{p.PortType} on PortAddress {p.OutputPortAddress}]"));
                 return $"rcRX.Ports.Count != 2. Aktuelle Ports: [{portList}]";
             });
-            Assert.That(rcRX.Ports, Has.Count.EqualTo(2));
             var rxPort = rcRX.Ports.First(p => p.OutputPortAddress.Equals(portAddress));
 
             Assert.Multiple(() =>

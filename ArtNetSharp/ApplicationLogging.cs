@@ -24,7 +24,7 @@ namespace ArtNetSharp
                         if (isTest)
                         {
                             builder.AddConsole();
-                            builder.SetMinimumLevel(LogLevel.Debug);
+                            builder.SetMinimumLevel(LogLevel.Trace);
                         }
                     });
                 }
