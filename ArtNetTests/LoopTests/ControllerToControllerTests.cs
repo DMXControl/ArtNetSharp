@@ -27,8 +27,8 @@ namespace ArtNetTests.LoopTests
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
-                Assert.Ignore("Not running on Github-Action");
+            //if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
+            //    Assert.Ignore("Not running on Github-Action");
 
             Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)}");
 
