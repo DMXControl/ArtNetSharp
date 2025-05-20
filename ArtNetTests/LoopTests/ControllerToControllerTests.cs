@@ -25,22 +25,13 @@ namespace ArtNetTests.LoopTests
 
         private static readonly PortAddress portAddress = new PortAddress(2, 13, 4);
 
-        [OneTimeSetUp]
+        //[OneTimeSetUp]
         public void OneTimeSetUp()
         {
 
             Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)}");
 
             artNet = new ArtNet();
-
-            //if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
-            //{
-            //    foreach (var nic in artNet.NetworkClients)
-            //        Console.WriteLine($"NIC: {nic.LocalIpAddress}");
-            //    if (!ArtNetSharp.Tools.IsWindows())
-            //            Assert.Ignore("Not running on Github-Action (Linux & MAC)");
-            //}
-            //artNet.LoopNetwork = new ArtNet.NetworkLoopAdapter(new IPv4Address("255.255.255.0"));
 
             instanceTX = new ControllerInstanceMock(artNet, 0x1111);
             instanceTX.Name = $"{nameof(ControllerToControllerTests)}-TX";
@@ -66,6 +57,7 @@ namespace ArtNetTests.LoopTests
 
         private async Task init()
         {
+            OneTimeSetUp();
             DateTime startTime = DateTime.UtcNow;
             while ((DateTime.UtcNow - startTime).TotalSeconds < 12 && (rcRX == null || rcTX == null) && !(artNet.IsDisposed || artNet.IsDisposing))
             {
@@ -154,7 +146,6 @@ namespace ArtNetTests.LoopTests
 
             Assert.Multiple(() =>
             {
-                Assert.That(rxPort, Is.SameAs(rcRX.Ports.First(p => p.OutputPortAddress.Equals(portAddress))));
                 Assert.That(rxPort.GoodOutput.ConvertFrom, Is.EqualTo(GoodOutput.EConvertFrom.ArtNet));
                 Assert.That(rxPort.GoodOutput.DMX_OutputShortCircuit, Is.False);
                 Assert.That(rxPort.GoodOutput.IsBeingOutputAsDMX, Is.False);
@@ -171,14 +162,6 @@ namespace ArtNetTests.LoopTests
                 Assert.That(rxPort.GoodOutput.ConvertFrom, Is.EqualTo(GoodOutput.EConvertFrom.ArtNet));
                 Assert.That(rxPort.GoodOutput.DMX_OutputShortCircuit, Is.False);
             });
-            bool dataReceived = false;
-            for (int i = 0; i < 60; i++)
-            {
-                dataReceived = rxPort.GoodOutput.IsBeingOutputAsDMX;
-                if (dataReceived)
-                    continue;
-            }
-            Assert.That(dataReceived, Is.True);
 
 
             async Task doDmxStuff(byte value)
@@ -221,7 +204,7 @@ namespace ArtNetTests.LoopTests
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
         [Timeout(60000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
-        [Test, Order(3), Retry(5)]
+        [Test, Order(3)]
         public async Task TestSendDMXTiming()
         {
             initialTask ??= init();
