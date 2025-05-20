@@ -27,12 +27,18 @@ namespace ArtNetTests.LoopTests
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            if (ArtNetSharp.Tools.IsRunningOnGithubWorker() && !ArtNetSharp.Tools.IsWindows())
-                Assert.Ignore("Not running on Github-Action (Linux & MAC)");
 
             Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)}");
 
             artNet = new ArtNet();
+
+            if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
+            {
+                foreach (var nic in artNet.NetworkClients)
+                    Console.WriteLine($"NIC: {nic.LocalIpAddress}");
+                if (!ArtNetSharp.Tools.IsWindows())
+                        Assert.Ignore("Not running on Github-Action (Linux & MAC)");
+            }
             //artNet.LoopNetwork = new ArtNet.NetworkLoopAdapter(new IPv4Address("255.255.255.0"));
 
             instanceTX = new ControllerInstanceMock(artNet, 0x1111);
