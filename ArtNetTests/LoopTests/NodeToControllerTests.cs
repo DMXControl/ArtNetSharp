@@ -64,8 +64,8 @@ namespace ArtNetTests.LoopTests
             while ((DateTime.UtcNow - startTime).TotalSeconds < 12 && (rcRX == null || rcTX == null) && !(artNet.IsDisposed || artNet.IsDisposing))
             {
                 await Task.Delay(2500);
-                rcRX ??= instanceTX.RemoteClients.FirstOrDefault(rc => rc.LongName.Equals(instanceRX.Name));
-                rcTX ??= instanceRX.RemoteClients.FirstOrDefault(rc => rc.LongName.Equals(instanceTX.Name));
+                rcRX ??= instanceTX.RemoteClients.FirstOrDefault(rc => rc.LongName.Equals(instanceRX.Name) && rc.Root.ManufacturerCode == instanceRX.ESTAManufacturerCode);
+                rcTX ??= instanceRX.RemoteClients.FirstOrDefault(rc => rc.LongName.Equals(instanceTX.Name) && rc.Root.ManufacturerCode == instanceRX.ESTAManufacturerCode);
                 foreach (var rc in instanceTX.RemoteClients)
                     Logger.LogTrace($"{nameof(instanceTX)} has {rc}");
                 foreach (var rc in instanceRX.RemoteClients)

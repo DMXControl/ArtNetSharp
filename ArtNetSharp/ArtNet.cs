@@ -152,8 +152,9 @@ namespace ArtNetSharp
                     _client.ExclusiveAddressUse = false;
                     _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                     _client.EnableBroadcast = true;
-                    var endpointIp = Tools.IsLinux() ? IPAddress.Any : LocalIpAddress;
-                    IPEndPoint localEp = new IPEndPoint(IPAddress.Any, Constants.ARTNET_PORT);
+
+                    IPAddress endpointIp = getEndointIP();
+                    IPEndPoint localEp = new IPEndPoint(endpointIp, Constants.ARTNET_PORT);
                     _client.Client.Bind(localEp);
                     _clientAlive = true;
                     _ = StartListening();
@@ -161,6 +162,14 @@ namespace ArtNetSharp
                 }
                 catch (Exception e) { Logger?.LogError(e, $"Client ({LocalIpAddress}): Error on initialize"); }
                 finally { semaphoreSlim?.Release(); }
+            }
+            private IPAddress getEndointIP()
+            {
+                IPAddress endpointIp = IPAddress.Any;
+                if (Tools.IsWindows())
+                    endpointIp = LocalIpAddress;
+
+                return endpointIp;
             }
 
             private async Task StartListening()
@@ -514,7 +523,7 @@ namespace ArtNetSharp
                 NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
                 foreach (NetworkInterface @interface in interfaces)
                 {
-                    if (@interface.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
+                    //if (@interface.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
                     if (@interface.OperationalStatus != OperationalStatus.Up) continue;
                     UnicastIPAddressInformationCollection unicastIpInfoCol = @interface.GetIPProperties().UnicastAddresses;
                     foreach (UnicastIPAddressInformation ipInfo in unicastIpInfoCol)

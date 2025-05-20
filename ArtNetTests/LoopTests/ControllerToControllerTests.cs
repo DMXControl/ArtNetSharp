@@ -32,13 +32,13 @@ namespace ArtNetTests.LoopTests
 
             artNet = new ArtNet();
 
-            if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
-            {
-                foreach (var nic in artNet.NetworkClients)
-                    Console.WriteLine($"NIC: {nic.LocalIpAddress}");
-                if (!ArtNetSharp.Tools.IsWindows())
-                        Assert.Ignore("Not running on Github-Action (Linux & MAC)");
-            }
+            //if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
+            //{
+            //    foreach (var nic in artNet.NetworkClients)
+            //        Console.WriteLine($"NIC: {nic.LocalIpAddress}");
+            //    if (!ArtNetSharp.Tools.IsWindows())
+            //            Assert.Ignore("Not running on Github-Action (Linux & MAC)");
+            //}
             //artNet.LoopNetwork = new ArtNet.NetworkLoopAdapter(new IPv4Address("255.255.255.0"));
 
             instanceTX = new ControllerInstanceMock(artNet, 0x1111);
@@ -55,6 +55,7 @@ namespace ArtNetTests.LoopTests
             byte identifyer = 192;
             if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
                 identifyer = 10;
+            identifyer = 127;
 
             foreach (var client in artNet.NetworkClients.Where(nc => ((IPv4Address)nc.LocalIpAddress).B1 != identifyer))
                 client.Enabled = false;
@@ -68,8 +69,8 @@ namespace ArtNetTests.LoopTests
             while ((DateTime.UtcNow - startTime).TotalSeconds < 12 && (rcRX == null || rcTX == null) && !(artNet.IsDisposed || artNet.IsDisposing))
             {
                 await Task.Delay(2500);
-                rcRX ??= instanceTX.RemoteClients.FirstOrDefault(rc => rc.LongName.Equals(instanceRX.Name));
-                rcTX ??= instanceRX.RemoteClients.FirstOrDefault(rc => rc.LongName.Equals(instanceTX.Name));
+                rcRX ??= instanceTX.RemoteClients.FirstOrDefault(rc => rc.LongName.Equals(instanceRX.Name) && rc.Root.ManufacturerCode == instanceRX.ESTAManufacturerCode);
+                rcTX ??= instanceRX.RemoteClients.FirstOrDefault(rc => rc.LongName.Equals(instanceTX.Name) && rc.Root.ManufacturerCode == instanceRX.ESTAManufacturerCode);
                 foreach (var rc in instanceTX.RemoteClients)
                     Logger.LogTrace($"{nameof(instanceTX)} has {rc}");
                 foreach (var rc in instanceRX.RemoteClients)
