@@ -303,8 +303,7 @@ namespace ArtNetSharp.Communication
 
             sendPollThreadBag.SendArtPollEvent += TimerSendPoll_Elapsed;
 
-            if (this is ControllerInstance)
-                Task.Run(sendAllArtDMX);
+            Task.Run(sendAllArtDMX);
 
             KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
         }
@@ -606,6 +605,9 @@ namespace ArtNetSharp.Communication
             const double dmxKeepAliveTime = 800; // Spec 1.4dh page 53
             while (!(this.IsDisposing || this.IsDisposed))
             {
+                // Prevent CPU loop
+                await Task.Delay(10);
+
                 if (!this.EnableDmxOutput)
                     continue;
                 if (this.IsDeactivated)
