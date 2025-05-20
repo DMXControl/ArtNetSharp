@@ -398,46 +398,48 @@ namespace ArtNetSharp
 
         private void ReceivedData(object sender, Tuple<IPv4Address, UdpReceiveResult> e)
         {
-            ProcessReceivedData(e.Item2);
-        }
-        private void ProcessReceivedData(UdpReceiveResult result)
-        {
             if (IsDisposed || IsDisposing)
                 return;
-
+            IPAddress localIpAddress = e.Item1;
+            UdpReceiveResult result = e.Item2;
             IPEndPoint RemoteIpEndPoint = result.RemoteEndPoint;
+            IPv4Address sourceIp = RemoteIpEndPoint.Address;
             byte[] received = result.Buffer;
             try
             {
-                IPv4Address sourceIp = RemoteIpEndPoint.Address;
                 if (Tools.TryDeserializePacket(received, out var packet))
                 {
-                    var nic = networkClients.Values.FirstOrDefault(n => Tools.IsInSubnet(n.LocalIpAddress, n.IPv4Mask, sourceIp));
-                    if (nic != null)
-                    {
-                        //Logger?.LogTrace($"Process Network Packet:{packet} {Environment.NewLine} Local:{nic.LocalIpAddress}, Mask: {nic.IPv4Mask}, Remote: {sourceIp}");
-                        processPacket(packet, nic.LocalIpAddress, sourceIp);
-                    }
+                    //var nic = networkClients.Values.FirstOrDefault(n => Tools.IsInSubnet(n.LocalIpAddress, n.IPv4Mask, sourceIp));
+                    //if (nic != null)
+                    //{
+                    //    //Logger?.LogTrace($"Process Network Packet:{packet} {Environment.NewLine} Local:{nic.LocalIpAddress}, Mask: {nic.IPv4Mask}, Remote: {sourceIp}");
+                    //    processPacket(packet, nic.LocalIpAddress, sourceIp);
+                    //}
+                    processPacket(packet, localIpAddress, sourceIp);
                     return;
                 }
                 Logger.LogWarning($"Can't deserialize Data to ArtNet-Packet from {sourceIp}");
             }
             catch (ObjectDisposedException ed) { Logger.LogTrace(ed); }
             catch (SocketException se) { Logger.LogTrace(se); }
-            catch (Exception e) { Logger.LogError(e); }
+            catch (Exception ex) { Logger.LogError(ex); }
         }
         private void processPacket(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
         {
             Logger.LogTrace($"Received Packet from {sourceIp} -> {packet}");
 
-            foreach (var inst in instances) try
+            foreach (var inst in instances)
+                Task.Run(() =>
                 {
-                    ((IInstance)inst.Value).PacketReceived(packet, localIp, sourceIp);
-                }
-                catch (Exception e)
-                {
-                    Logger.LogError(e);
-                }
+                    try
+                    {
+                        ((IInstance)inst.Value).PacketReceived(packet, localIp, sourceIp);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogError(e);
+                    }
+                });
         }
 
         public static bool IsNetworkAvailable(long? minimumSpeed = null)
