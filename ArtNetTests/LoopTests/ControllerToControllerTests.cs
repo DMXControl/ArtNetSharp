@@ -268,7 +268,6 @@ namespace ArtNetTests.LoopTests
              _ = nextData();
             async Task nextData()
             {
-                await Task.Delay(5);
                 if ((DateTime.UtcNow - startTime).TotalSeconds >= 5)
                 {
                     done = true;
