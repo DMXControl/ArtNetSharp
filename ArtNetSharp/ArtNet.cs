@@ -206,6 +206,8 @@ namespace ArtNetSharp
             private readonly List<IPAddress> matchingIpAdddresses = new List<IPAddress>();
             public async Task<bool> MatchIP(IPAddress ip)
             {
+                if (ip == IPAddress.Loopback)
+                    return true;
                 if (ip == null)
                     return false;
                 if (ip.ToString().Equals("0.0.0.0"))
