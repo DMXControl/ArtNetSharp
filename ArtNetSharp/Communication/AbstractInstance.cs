@@ -12,7 +12,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 
 [assembly: InternalsVisibleTo("ArtNetTests")]
 namespace ArtNetSharp.Communication
@@ -25,7 +24,7 @@ namespace ArtNetSharp.Communication
         bool IDisposableExtended.IsDisposed { get => IsDisposed; }
         bool IDisposableExtended.IsDisposing { get => IsDisposing; }
 
-        public bool IsDeactivated { get { return !ArtNetInstance.Instances.Contains(this); } }
+        public bool IsDeactivated { get { return !ArtNetInstance?.Instances.Contains(this) ?? true; } }
 
         private readonly Random _random;
         internal ArtNet ArtNetInstance;
@@ -331,7 +330,7 @@ namespace ArtNetSharp.Communication
         {
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
-
+            
             try
             {
                 switch (packet)
@@ -603,35 +602,38 @@ namespace ArtNetSharp.Communication
         {
             const double dmxRefreshTime = 1000 / 44.0; // Spec 1.4dh page 56
             const double dmxKeepAliveTime = 800; // Spec 1.4dh page 53
+            const int interval = (int)(dmxRefreshTime / 3);
+            List<Task> sendTasks = new List<Task>();
             while (!(this.IsDisposing || this.IsDisposed))
             {
                 // Prevent CPU loop
-                await Task.Delay(10);
+                await Task.Delay(interval);
 
                 if (!this.EnableDmxOutput)
-                    continue;
+                    await Task.Delay(300);
                 if (this.IsDeactivated)
-                    continue;
+                    await Task.Delay(300);
 
                 try
                 {
                     var ports = RemoteClientsPorts?.Where(port => port.OutputPortAddress.HasValue && !port.Timouted())?.ToList();
 
                     int sended = 0;
+                    var utcNow = DateTime.UtcNow;
                     foreach (var port in ports)
                         try
                         {
                             if (sendDMXBuffer.TryGetValue(port.OutputPortAddress.Value, out DMXSendBag bag))
-                                if ((bag.Updated && (DateTime.UtcNow - bag.LastSended).TotalMilliseconds >= dmxRefreshTime) || (DateTime.UtcNow - bag.LastSended).TotalMilliseconds >= dmxKeepAliveTime)
+                                if ((bag.Updated && (utcNow - bag.LastSended).TotalMilliseconds >= dmxRefreshTime) || (utcNow - bag.LastSended).TotalMilliseconds >= dmxKeepAliveTime)
                                 {
                                     PortConfig config = null;
                                     byte sourcePort = 0;
                                     try
                                     {
-                                        bag.LastSended = DateTime.UtcNow;
+                                        bag.LastSended = utcNow;
                                         config = portConfigs?.FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, port.OutputPortAddress));
                                         sourcePort = config?.PortNumber ?? 0;
-                                        await sendArtDMX(port, sourcePort, bag.Data, bag.GetSequence(), config?.ForceBroadcast ?? false);
+                                        sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, bag.GetSequence(), config?.ForceBroadcast ?? false));
                                         sended++;
                                         if (config == null)
                                             return;
@@ -643,13 +645,15 @@ namespace ArtNetSharp.Communication
                                     }
                                     foreach (IPv4Address ip in config?.AdditionalIPEndpoints)
                                     {
-                                        await sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, bag.GetSequence());
+                                        sendTasks.Add(sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, bag.GetSequence()));
                                         sended++;
                                     }
                                     bag.LastSended = DateTime.UtcNow;
                                 }
                         }
                         catch (Exception e) { Logger.LogError(e, "Outer Block"); }
+                    await Task.WhenAll(sendTasks);
+                    sendTasks.Clear();
                     if (EnableSync && sended != 0)
                         await sendArtSync();
 
@@ -793,14 +797,16 @@ namespace ArtNetSharp.Communication
             if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
                 return;
 
-            if (MajorVersion == artPollReply.MajorVersion
-                && MinorVersion == artPollReply.MinorVersion
-                && OEMProductCode == artPollReply.OemCode
-                && ESTAManufacturerCode == artPollReply.ManufacturerCode
-                && IPv4Address.Equals(artPollReply.OwnIp, localIp)
-                && string.Equals(artPollReply.ShortName, ShortName)
-                && string.Equals(artPollReply.LongName, Name))
-                return; //break loopback
+            if (localIp == sourceIp)
+            {
+                if (MajorVersion == artPollReply.MajorVersion
+                    && MinorVersion == artPollReply.MinorVersion
+                    && OEMProductCode == artPollReply.OemCode
+                    && ESTAManufacturerCode == artPollReply.ManufacturerCode
+                    && IPv4Address.Equals(artPollReply.OwnIp, localIp)
+                    && EstCodes == artPollReply.Style)
+                    return; //break loopback
+            }
 
             string id = RemoteClient.getIDOf(artPollReply);
             RemoteClient remoteClient = null;
@@ -1233,6 +1239,8 @@ namespace ArtNetSharp.Communication
         {
             if (this.IsDisposed || this.IsDisposing || this.IsDeactivated)
                 return;
+            //if (EstCodes != EStCodes.StController)// As Spec. only Controler are allowed to send ArtPoll
+            //    return;
             if (SendArtPollBroadcast)
                 await sendArtPoll();
             else if (SendArtPollTargeted)
@@ -1273,7 +1281,7 @@ namespace ArtNetSharp.Communication
                 return;
 
             await triggerSendArtPoll();
-            await Task.Delay(3000);
+            await Task.Delay(4000);
             await pollReplyProcessSemaphoreSlim.WaitAsync();
             try
             {
