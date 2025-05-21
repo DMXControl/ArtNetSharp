@@ -243,27 +243,45 @@ namespace ArtNetTests
             foreach (GoodOutput goodOutput in subjects)
             {
                 GoodOutput result = new GoodOutput(goodOutput.Byte1, goodOutput.Byte2);
-                Assert.Multiple(() =>
+                test();
+                result = new GoodOutput(
+                    goodOutput.ConvertFrom,
+                    goodOutput.MergeMode,
+                    goodOutput.DMX_OutputShortCircuit,
+                    goodOutput.MergingArtNetData,
+                    goodOutput.DMX_TextPacketsSupported,
+                    goodOutput.DMX_SIPsSupported,
+                    goodOutput.DMX_TestPacketsSupported,
+                    goodOutput.IsBeingOutputAsDMX,
+                    goodOutput.OutputStyle,
+                    goodOutput.RDMisDisabled,
+                    goodOutput.DiscoveryIsCurrentlyRunning,
+                    goodOutput.BackgroundDiscoveryIsEnabled);
+                test();
+                void test()
                 {
-                    Assert.That(goodOutput.Byte1, Is.EqualTo(result!.Byte1));
-                    Assert.That(goodOutput.Byte2, Is.EqualTo(result!.Byte2));
-                    Assert.That(goodOutput.ConvertFrom, Is.EqualTo(result!.ConvertFrom));
-                    Assert.That(goodOutput.MergeMode, Is.EqualTo(result!.MergeMode));
-                    Assert.That(goodOutput.DMX_OutputShortCircuit, Is.EqualTo(result!.DMX_OutputShortCircuit));
-                    Assert.That(goodOutput.MergingArtNetData, Is.EqualTo(result!.MergingArtNetData));
-                    Assert.That(goodOutput.DMX_TestPacketsSupported, Is.EqualTo(result!.DMX_TestPacketsSupported));
-                    Assert.That(goodOutput.DMX_SIPsSupported, Is.EqualTo(result!.DMX_SIPsSupported));
-                    Assert.That(goodOutput.DMX_TestPacketsSupported2, Is.EqualTo(result!.DMX_TestPacketsSupported2));
-                    Assert.That(goodOutput.IsBeingOutputAsDMX, Is.EqualTo(result!.IsBeingOutputAsDMX));
-                    Assert.That(goodOutput.OutputStyle, Is.EqualTo(result!.OutputStyle));
-                    Assert.That(goodOutput.RDMisDisabled, Is.EqualTo(result!.RDMisDisabled));
-                    Assert.That(goodOutput.GetHashCode(), Is.EqualTo(result!.GetHashCode()));
-                    Assert.That(goodOutput, Is.EqualTo(result));
-                    Assert.That(goodOutput == result, Is.True);
-                    Assert.That(goodOutput != result, Is.False);
-                    Assert.That(goodOutput.Equals((object)result), Is.True);
-                    Assert.That(goodOutput.Equals(null), Is.False);
-                });
+                    Assert.Multiple(() =>
+                    {
+                        Assert.That(goodOutput.Byte1, Is.EqualTo(result!.Byte1));
+                        Assert.That(goodOutput.Byte2, Is.EqualTo(result!.Byte2));
+                        Assert.That(goodOutput.ConvertFrom, Is.EqualTo(result!.ConvertFrom));
+                        Assert.That(goodOutput.MergeMode, Is.EqualTo(result!.MergeMode));
+                        Assert.That(goodOutput.DMX_OutputShortCircuit, Is.EqualTo(result!.DMX_OutputShortCircuit));
+                        Assert.That(goodOutput.MergingArtNetData, Is.EqualTo(result!.MergingArtNetData));
+                        Assert.That(goodOutput.DMX_TextPacketsSupported, Is.EqualTo(result!.DMX_TextPacketsSupported));
+                        Assert.That(goodOutput.DMX_SIPsSupported, Is.EqualTo(result!.DMX_SIPsSupported));
+                        Assert.That(goodOutput.DMX_TestPacketsSupported, Is.EqualTo(result!.DMX_TestPacketsSupported));
+                        Assert.That(goodOutput.IsBeingOutputAsDMX, Is.EqualTo(result!.IsBeingOutputAsDMX));
+                        Assert.That(goodOutput.OutputStyle, Is.EqualTo(result!.OutputStyle));
+                        Assert.That(goodOutput.RDMisDisabled, Is.EqualTo(result!.RDMisDisabled));
+                        Assert.That(goodOutput.GetHashCode(), Is.EqualTo(result!.GetHashCode()));
+                        Assert.That(goodOutput, Is.EqualTo(result));
+                        Assert.That(goodOutput == result, Is.True);
+                        Assert.That(goodOutput != result, Is.False);
+                        Assert.That(goodOutput.Equals((object)result), Is.True);
+                        Assert.That(goodOutput.Equals(null), Is.False);
+                    });
+                }
             }
 
             GoodOutput a = new GoodOutput(0b01010101, 0b10101010);
@@ -296,6 +314,106 @@ namespace ArtNetTests
             Assert.That(c, Is.EqualTo(a));
             c = ~a & b;
             Assert.That(c, Is.EqualTo(b));
+
+            a = new GoodOutput(0b00000000, 0b00001111);
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(convertFrom: GoodOutput.EConvertFrom.ArtNet);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(convertFrom: GoodOutput.EConvertFrom.sACN);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000001));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(mergeMode: EMergeMode.HTP);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(mergeMode: EMergeMode.LTP);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000010));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(dmx_OutputShortCircuit: false);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(dmx_OutputShortCircuit: true);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000100));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(mergingArtNetData: false);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(mergingArtNetData: true);
+            Assert.That(a.Byte1, Is.EqualTo(0b00001000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(dmx_TextPacketsSupported: false);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(dmx_TextPacketsSupported: true);
+            Assert.That(a.Byte1, Is.EqualTo(0b00010000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(dmx_SIPsSupported: false);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(dmx_SIPsSupported: true);
+            Assert.That(a.Byte1, Is.EqualTo(0b00100000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(dmx_TestPacketsSupported: false);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(dmx_TestPacketsSupported: true);
+            Assert.That(a.Byte1, Is.EqualTo(0b01000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(isBeingOutputAsDMX: false);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(isBeingOutputAsDMX: true);
+            Assert.That(a.Byte1, Is.EqualTo(0b10000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+
+            a = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Delta);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b01000000));
+
+            a = new GoodOutput(rdmIsDisabled: false);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(rdmIsDisabled: true);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b10000000));
+
+            a = new GoodOutput(discoveryIsCurrentlyRunning: false);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(discoveryIsCurrentlyRunning: true);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00100000));
+
+            a = new GoodOutput(backgroundDiscoveryIsEnabled: false);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00000000));
+
+            a = new GoodOutput(backgroundDiscoveryIsEnabled: true);
+            Assert.That(a.Byte1, Is.EqualTo(0b00000000));
+            Assert.That(a.Byte2, Is.EqualTo(0b00010000));
         }
         [Test]
         public void TestGoodInput()

@@ -19,7 +19,7 @@ namespace ArtNetSharp
     public class ArtNet : IDisposable
     {
         private static readonly Random _random = new Random();
-        private static ILogger<ArtNet> Logger = null;
+        private static ILogger<ArtNet> Logger = ApplicationLogging.CreateLogger<ArtNet>();
         private static ArtNet instance;
         public static ArtNet Instance
         {
@@ -107,6 +107,9 @@ namespace ArtNetSharp
             internal NetworkClientBag(IPAddress broadcastIpAddress, UnicastIPAddressInformation unicastIPAddressInformation)
             {
                 UnicastIPAddressInfo = unicastIPAddressInformation;
+                if (unicastIPAddressInformation.Address.Equals(IPAddress.Loopback))
+                    broadcastIpAddress = IPAddress.Loopback;
+
                 BroadcastIpAddress = broadcastIpAddress;
                 broadcastEndpoint = new IPEndPoint(broadcastIpAddress, Constants.ARTNET_PORT);
                 Logger?.LogTrace($"Create Client ({LocalIpAddress})");
@@ -152,8 +155,9 @@ namespace ArtNetSharp
                     _client.ExclusiveAddressUse = false;
                     _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                     _client.EnableBroadcast = true;
-                    var endpointIp = Tools.IsLinux() ? IPAddress.Any : LocalIpAddress;
-                    IPEndPoint localEp = new IPEndPoint(IPAddress.Any, Constants.ARTNET_PORT);
+
+                    IPAddress endpointIp = getEndointIP();
+                    IPEndPoint localEp = new IPEndPoint(endpointIp, Constants.ARTNET_PORT);
                     _client.Client.Bind(localEp);
                     _clientAlive = true;
                     _ = StartListening();
@@ -161,6 +165,18 @@ namespace ArtNetSharp
                 }
                 catch (Exception e) { Logger?.LogError(e, $"Client ({LocalIpAddress}): Error on initialize"); }
                 finally { semaphoreSlim?.Release(); }
+            }
+            private IPAddress getEndointIP()
+            {
+                IPAddress endpointIp = IPAddress.Any;
+                if (Tools.IsWindows())
+                    endpointIp = LocalIpAddress;
+                if (Tools.IsMac())
+                    endpointIp = LocalIpAddress;
+                if (Tools.IsLinux())
+                    endpointIp = LocalIpAddress;
+
+                return endpointIp;
             }
 
             private async Task StartListening()
@@ -194,6 +210,8 @@ namespace ArtNetSharp
             private readonly List<IPAddress> matchingIpAdddresses = new List<IPAddress>();
             public async Task<bool> MatchIP(IPAddress ip)
             {
+                if (ip == IPAddress.Loopback)
+                    return true;
                 if (ip == null)
                     return false;
                 if (ip.ToString().Equals("0.0.0.0"))
@@ -315,12 +333,6 @@ namespace ArtNetSharp
 
         internal ArtNet([CallerFilePath] string caller = "", [CallerLineNumber] int line = -1)
         {
-            if (Logger == null)
-            {
-                ApplicationLogging.LoggerFactory.AddProvider(new FileProvider());
-                Logger = ApplicationLogging.CreateLogger<ArtNet>();
-            }
-
             Logger?.LogTrace($"Initialize {caller} (Line: {line})");
             _updateNetworkClientsTimer = new System.Timers.Timer();
             _updateNetworkClientsTimer.Interval = 1000;
@@ -386,47 +398,48 @@ namespace ArtNetSharp
 
         private void ReceivedData(object sender, Tuple<IPv4Address, UdpReceiveResult> e)
         {
-            ProcessReceivedData(e.Item2);
-        }
-        private void ProcessReceivedData(UdpReceiveResult result)
-        {
             if (IsDisposed || IsDisposing)
                 return;
-
+            IPAddress localIpAddress = e.Item1;
+            UdpReceiveResult result = e.Item2;
             IPEndPoint RemoteIpEndPoint = result.RemoteEndPoint;
+            IPv4Address sourceIp = RemoteIpEndPoint.Address;
             byte[] received = result.Buffer;
             try
             {
-                IPv4Address sourceIp = RemoteIpEndPoint.Address;
                 if (Tools.TryDeserializePacket(received, out var packet))
                 {
-                    var nic = networkClients.Values.FirstOrDefault(n => Tools.IsInSubnet(n.LocalIpAddress, n.IPv4Mask, sourceIp));
-                    if (nic != null)
-                    {
-                        //Logger?.LogTrace($"Process Network Packet:{packet} {Environment.NewLine} Local:{nic.LocalIpAddress}, Mask: {nic.IPv4Mask}, Remote: {sourceIp}");
-                        processPacket(packet, nic.LocalIpAddress, sourceIp);
-                    }
+                    //var nic = networkClients.Values.FirstOrDefault(n => Tools.IsInSubnet(n.LocalIpAddress, n.IPv4Mask, sourceIp));
+                    //if (nic != null)
+                    //{
+                    //    //Logger?.LogTrace($"Process Network Packet:{packet} {Environment.NewLine} Local:{nic.LocalIpAddress}, Mask: {nic.IPv4Mask}, Remote: {sourceIp}");
+                    //    processPacket(packet, nic.LocalIpAddress, sourceIp);
+                    //}
+                    processPacket(packet, localIpAddress, sourceIp);
                     return;
                 }
                 Logger.LogWarning($"Can't deserialize Data to ArtNet-Packet from {sourceIp}");
             }
             catch (ObjectDisposedException ed) { Logger.LogTrace(ed); }
             catch (SocketException se) { Logger.LogTrace(se); }
-            catch (Exception e) { Logger.LogError(e); }
+            catch (Exception ex) { Logger.LogError(ex); }
         }
         private void processPacket(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
         {
-#if DEBUG
             Logger.LogTrace($"Received Packet from {sourceIp} -> {packet}");
-#endif
-            foreach (var inst in instances) try
+
+            foreach (var inst in instances)
+                Task.Run(() =>
                 {
-                    ((IInstance)inst.Value).PacketReceived(packet, localIp, sourceIp);
-                }
-                catch (Exception e)
-                {
-                    Logger.LogError(e);
-                }
+                    try
+                    {
+                        ((IInstance)inst.Value).PacketReceived(packet, localIp, sourceIp);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogError(e);
+                    }
+                });
         }
 
         public static bool IsNetworkAvailable(long? minimumSpeed = null)
@@ -482,7 +495,7 @@ namespace ArtNetSharp
                 IPAddress _ipToTest = ip;
 
                 var nicWithThisIP = nics.FirstOrDefault(nic => nic.GetIPProperties().UnicastAddresses.Any(_ip => IPAddress.Equals(_ip.Address, _ipToTest)));
-                if (nicWithThisIP != null)
+                if (nicWithThisIP != null && nicWithThisIP.NetworkInterfaceType != NetworkInterfaceType.Loopback)
                     mac = new MACAddress(nicWithThisIP.GetPhysicalAddress().GetAddressBytes());
                 else
                     mac = new MACAddress();
@@ -514,7 +527,7 @@ namespace ArtNetSharp
                 NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
                 foreach (NetworkInterface @interface in interfaces)
                 {
-                    if (@interface.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
+                    //if (@interface.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
                     if (@interface.OperationalStatus != OperationalStatus.Up) continue;
                     UnicastIPAddressInformationCollection unicastIpInfoCol = @interface.GetIPProperties().UnicastAddresses;
                     foreach (UnicastIPAddressInformation ipInfo in unicastIpInfoCol)

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using static ArtNetSharp.ApplicationLogging;
 
@@ -11,7 +12,34 @@ namespace ArtNetSharp
     /// </summary>
     internal static class ApplicationLogging
     {
-        internal static readonly ILoggerFactory LoggerFactory = new LoggerFactory();
+        private static ILoggerFactory loggerFactory;
+        internal static ILoggerFactory LoggerFactory
+        {
+            get
+            {
+                if (loggerFactory == null)
+                {
+                    bool isTest = AppDomain.CurrentDomain.GetAssemblies()
+                        .Any(a => a.FullName.StartsWith("NUnit", StringComparison.OrdinalIgnoreCase));
+                    loggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create((builder) =>
+                    {
+                        FileProvider fp = isTest ? new FileProvider() : null;
+#if Debug
+                        fp ?= new FileProvider();
+#endif
+                        if (isTest)
+                        {
+                            builder.AddConsole();
+                            builder.SetMinimumLevel(LogLevel.Trace);
+                        }
+                        if (fp != null)
+                            builder.AddProvider(fp);
+                    });
+                }
+                return loggerFactory;
+            }
+        }
+        
         internal static ILogger<T> CreateLogger<T>() => LoggerFactory.CreateLogger<T>();
         internal static ILogger CreateLogger(Type type) => LoggerFactory.CreateLogger(type);
         internal static ILogger CreateLogger(string categoryName) => LoggerFactory.CreateLogger(categoryName);

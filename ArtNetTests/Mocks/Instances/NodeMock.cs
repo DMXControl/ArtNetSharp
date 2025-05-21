@@ -8,6 +8,7 @@ namespace ArtNetTests.Mocks.Instances
         public NodeMock(ArtNet _artnet) : base(_artnet)
         {
         }
+        public override ushort ESTAManufacturerCode => (ushort)Tools.ParseDotNetMajorVersion();
 
         protected override bool SendArtData => true;
         protected override string UrlProduct => "https://github.com/DMXControl/ArtNetSharp";

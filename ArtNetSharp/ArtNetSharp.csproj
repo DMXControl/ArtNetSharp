@@ -33,7 +33,8 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="DMXControlProjects.WellKnownDataTypes" Version="0.0.4" />
-		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.5" />
 		<PackageReference Include="RDMSharp" Version="0.0.13" />
 	</ItemGroup>
 </Project>

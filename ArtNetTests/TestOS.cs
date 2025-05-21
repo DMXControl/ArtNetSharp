@@ -34,11 +34,12 @@ namespace ArtNetTests
             }
         }
         [OneTimeTearDown]
-        public void OneTimeTearDown()
+        public async Task OneTimeTearDown()
         {
             if (artNet != null)
                 ((IDisposable)artNet).Dispose();
             Trace.Flush();
+            await Task.Delay(6500);
         }
 
         [Test, Order(101)]
@@ -82,6 +83,14 @@ namespace ArtNetTests
 
         private async Task doTests()
         {
+            foreach (var nic in artNet.NetworkClients)
+            {
+                var str = $"NIC: {nic.LocalIpAddress}";
+                Console.WriteLine(str);
+                Debug.WriteLine(str);
+                if (nic.BroadcastIpAddress != System.Net.IPAddress.Loopback)
+                    nic.Enabled = false;
+            }
 
             artNet.AddInstance(nodeInstance);
             artNet.AddInstance(controllerInstance);

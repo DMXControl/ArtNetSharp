@@ -1,4 +1,5 @@
 ﻿using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
 
 namespace ArtNetTests
 {
@@ -29,6 +30,18 @@ namespace ArtNetTests
             }
 
             return list.ToArray();
+        }
+
+        internal static int ParseDotNetMajorVersion()
+        {
+            // Beispiel: ".NET 8.0.0"
+            var parts = RuntimeInformation.FrameworkDescription.Split(' ');
+            if (parts.Length >= 2 && Version.TryParse(parts[1], out var version))
+            {
+                return version.Major;
+            }
+
+            return -1; // oder Fehler werfen
         }
     }
 }
