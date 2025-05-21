@@ -203,6 +203,11 @@ namespace ArtNetTests.LoopTests
             Logger.LogDebug($"Test Setup: {nameof(LoopTest)} {nameof(OneTimeTearDown)}");
 
             instanceTX.RemoteClientTimedOut += InstanceTX_RemoteClientTimedOut;
+            artNet.RemoveInstance(instanceTX);
+            artNet.RemoveInstance(instanceRX);
+
+            ((IDisposable)instanceTX).Dispose();
+            ((IDisposable)instanceRX).Dispose();
 
             if (artNet != null)
                 ((IDisposable)artNet).Dispose();
@@ -216,6 +221,7 @@ namespace ArtNetTests.LoopTests
         [Test, Order(1)]
         public async Task TestLoopDetection()
         {
+            TestContext.Out.WriteLine($"{nameof(TestLoopDetection)} [{testSubject.TestLabel}]");
             initialTask ??= init();
             await initialTask;
             await Task.Delay(300);
@@ -249,6 +255,7 @@ namespace ArtNetTests.LoopTests
         [Test, Order(2)]
         public async Task TestSendDMX()
         {
+            TestContext.Out.WriteLine($"{nameof(TestSendDMX)} [{testSubject.TestLabel}]");
             initialTask ??= init();
             await initialTask;
             await Task.Delay(300);
@@ -333,6 +340,7 @@ namespace ArtNetTests.LoopTests
         [Test, Order(3)]
         public async Task TestSendDMXTiming()
         {
+            TestContext.Out.WriteLine($"{nameof(TestSendDMXTiming)} [{testSubject.TestLabel}]");
             initialTask ??= init();
             await initialTask;
             await Task.Delay(300);
