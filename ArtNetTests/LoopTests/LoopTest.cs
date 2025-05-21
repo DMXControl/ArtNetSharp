@@ -2,43 +2,155 @@ using ArtNetSharp;
 using ArtNetSharp.Communication;
 using ArtNetTests.Mocks;
 using Microsoft.Extensions.Logging;
+using org.dmxc.wkdt.Light.ArtNet;
 using RDMSharp;
 using System.Diagnostics;
+using System.Reflection;
+using System.Xml.Linq;
 
 namespace ArtNetTests.LoopTests
 {
-    [Order(10)]
-    public class ControllerToControllerTests
+
+    public abstract class AbstractLoopTestTestSubject
     {
-        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<ControllerToControllerTests>();
+        public static readonly object[] TestSubjects = getTestSubjects();
+        private static object[] getTestSubjects()
+        {
+            Type abstractType = typeof(AbstractLoopTestTestSubject);
+
+            // Get all types in the current assembly that inherit from the abstract class
+            IEnumerable<Type> concreteTypes = Assembly.GetExecutingAssembly().GetTypes()
+                .Where(t => t.IsClass && !t.IsAbstract && t.GetConstructors().Any(c => c.IsPublic && c.GetParameters().Length == 0) && abstractType.IsAssignableFrom(t));
+
+            // Create instances of each concrete class
+            List<AbstractLoopTestTestSubject> instances = new List<AbstractLoopTestTestSubject>();
+            foreach (Type concreteType in concreteTypes)
+            {
+                if (Activator.CreateInstance(concreteType) is AbstractLoopTestTestSubject instance)
+                    instances.Add(instance);
+            }
+
+            return instances.ToArray();
+        }
+
+        public override string ToString() => TestLabel;
+
+        public readonly string TestLabel;
+
+        public readonly InstanceTestSubject InstanceTestSubjectTX;
+        public readonly InstanceTestSubject InstanceTestSubjectRX;
+        public readonly PortAddress PortAddress;
+        public readonly byte BindIndex;
+
+        protected AbstractLoopTestTestSubject(string testLabel, InstanceTestSubject instanceTestSubjectTX, InstanceTestSubject instanceTestSubjectRX, PortAddress portAddress, byte bindIndex)
+        {
+            TestLabel = testLabel;
+            InstanceTestSubjectTX = instanceTestSubjectTX;
+            InstanceTestSubjectRX = instanceTestSubjectRX;
+            PortAddress = portAddress;
+            BindIndex = bindIndex;
+        }
+
+        public readonly struct InstanceTestSubject
+        {
+            public readonly Type Type;
+            public readonly string Name;
+            public readonly ushort ProductCode;
+
+            public InstanceTestSubject(Type type, string name, ushort productCode)
+            {
+                Type = type;
+                Name = name;
+                ProductCode = productCode;
+            }
+        }
+    }
+    public sealed class ControllerToControllerTestSubject : AbstractLoopTestTestSubject
+    {
+        public ControllerToControllerTestSubject() : base(
+            "ControllerToController",
+            new InstanceTestSubject(typeof(ControllerInstanceMock), "Controller-TX", 0x1111),
+            new InstanceTestSubject(typeof(ControllerInstanceMock), "Controller-RX", 0x2222),
+            new PortAddress(2, 13, 4),
+            1)
+        {
+        }
+    }
+    public sealed class ControllerToNodeTestSubject : AbstractLoopTestTestSubject
+    {
+        public ControllerToNodeTestSubject() : base(
+            "ControllerToNode",
+            new InstanceTestSubject(typeof(ControllerInstanceMock), "Controller-TX", 0x3333),
+            new InstanceTestSubject(typeof(NodeInstanceMock), "Node-RX", 0x4444),
+            new PortAddress(2, 15, 4),
+            1)
+        {
+        }
+    }
+    public sealed class NodeToControllerTestSubject : AbstractLoopTestTestSubject
+    {
+        public NodeToControllerTestSubject() : base(
+            "NodeToController",
+            new InstanceTestSubject(typeof(NodeInstanceMock), "Node-TX", 0x5555),
+            new InstanceTestSubject(typeof(ControllerInstanceMock), "Controller-RX", 0x6666),
+            new PortAddress(2, 1, 4),
+            1)
+        {
+        }
+    }
+    public sealed class NodeToNodeTestSubject : AbstractLoopTestTestSubject
+    {
+        public NodeToNodeTestSubject() : base(
+            "NodeToNode",
+            new InstanceTestSubject(typeof(NodeInstanceMock), "Node-TX", 0x7777),
+            new InstanceTestSubject(typeof(NodeInstanceMock), "Node-RX", 0x8888),
+            new PortAddress(2, 5, 4),
+            1)
+        {
+        }
+    }
+
+    [Order(10)]
+    [TestFixtureSource(typeof(AbstractLoopTestTestSubject), nameof(AbstractLoopTestTestSubject.TestSubjects))]
+    public class LoopTest
+    {
+        private readonly AbstractLoopTestTestSubject testSubject;
+
+        public LoopTest(AbstractLoopTestTestSubject _TestSubject)
+        {
+            testSubject = _TestSubject;
+            Logger.LogDebug($"Initialize Test for {nameof(LoopTest)} ({testSubject.ToString()})");
+        }
+        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<LoopTest>();
         private ArtNet artNet;
-        private ControllerInstanceMock instanceTX;
+        private AbstractInstance instanceTX;
         private OutputPortConfig outputPort;
-        private ControllerInstanceMock instanceRX;
+        private AbstractInstance instanceRX;
         private InputPortConfig inputPort;
+        private PortAddress portAddress;
 
         private Task? initialTask;
 
         private RemoteClient? rcRX = null;
         private RemoteClient? rcTX = null;
 
-        private static readonly PortAddress portAddress = new PortAddress(2, 13, 4);
 
         //[OneTimeSetUp]
         public async Task OneTimeSetUp()
         {
 
-            Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)}");
+            Logger.LogDebug($"Test Setup: {nameof(LoopTest)}");
 
             artNet = new ArtNet();
 
-            instanceTX = new ControllerInstanceMock(artNet, 0x1111);
-            instanceTX.Name = $"{nameof(ControllerToControllerTests)}-TX";
-            instanceRX = new ControllerInstanceMock(artNet, 0x2222);
-            instanceRX.Name = $"{nameof(ControllerToControllerTests)}-RX";
+            instanceTX = (AbstractInstance)Activator.CreateInstance(testSubject.InstanceTestSubjectTX.Type, artNet, testSubject.InstanceTestSubjectTX.ProductCode)!;
+            instanceTX.Name = testSubject.InstanceTestSubjectTX.Name;
+            instanceRX = (AbstractInstance)Activator.CreateInstance(testSubject.InstanceTestSubjectRX.Type, artNet, testSubject.InstanceTestSubjectRX.ProductCode)!;
+            instanceRX.Name = testSubject.InstanceTestSubjectRX.Name;
 
-            outputPort = new OutputPortConfig(1, portAddress);
-            inputPort = new InputPortConfig(1, portAddress);
+            portAddress = testSubject.PortAddress;
+            outputPort = new OutputPortConfig(testSubject.BindIndex, portAddress);
+            inputPort = new InputPortConfig(testSubject.BindIndex, portAddress);
 
             instanceTX.AddPortConfig(inputPort);
             instanceRX.AddPortConfig(outputPort);
@@ -65,9 +177,13 @@ namespace ArtNetTests.LoopTests
         {
             await OneTimeSetUp();
             DateTime startTime = DateTime.UtcNow;
-            while ((DateTime.UtcNow - startTime).TotalSeconds < 12 && (rcRX == null || rcTX == null) && !(artNet.IsDisposed || artNet.IsDisposing))
+            int count = 0;
+            while ((rcRX == null || rcTX == null) && !(artNet.IsDisposed || artNet.IsDisposing))
             {
                 await Task.Delay(2500);
+                count++;
+                if (count > 7)
+                    break;
                 rcRX ??= instanceTX.RemoteClients.FirstOrDefault(rc => rc.Root.OemCode.Equals(instanceRX.OEMProductCode) && rc.Root.ManufacturerCode == instanceRX.ESTAManufacturerCode);
                 rcTX ??= instanceRX.RemoteClients.FirstOrDefault(rc => rc.Root.OemCode.Equals(instanceTX.OEMProductCode) && rc.Root.ManufacturerCode == instanceRX.ESTAManufacturerCode);
                 foreach (var rc in instanceTX.RemoteClients)
@@ -82,9 +198,9 @@ namespace ArtNetTests.LoopTests
         }
 
         [OneTimeTearDown]
-        public async Task OneTimeTearDown()
+        public void OneTimeTearDown()
         {
-            Logger.LogDebug($"Test Setup: {nameof(ControllerToControllerTests)} {nameof(OneTimeTearDown)}");
+            Logger.LogDebug($"Test Setup: {nameof(LoopTest)} {nameof(OneTimeTearDown)}");
 
             instanceTX.RemoteClientTimedOut += InstanceTX_RemoteClientTimedOut;
 
@@ -92,11 +208,10 @@ namespace ArtNetTests.LoopTests
                 ((IDisposable)artNet).Dispose();
 
             Trace.Flush();
-            await Task.Delay(6500);
         }
 
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(60000)]
+        [Timeout(20000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         [Test, Order(1)]
         public async Task TestLoopDetection()
@@ -129,7 +244,7 @@ namespace ArtNetTests.LoopTests
         }
 
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(60000)]
+        [Timeout(20000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         [Test, Order(2)]
         public async Task TestSendDMX()
@@ -213,7 +328,7 @@ namespace ArtNetTests.LoopTests
         }
 
 #pragma warning disable CS0618 // Typ oder Element ist veraltet
-        [Timeout(60000)]
+        [Timeout(20000)]
 #pragma warning restore CS0618 // Typ oder Element ist veraltet
         [Test, Order(3)]
         public async Task TestSendDMXTiming()
@@ -267,6 +382,7 @@ namespace ArtNetTests.LoopTests
              _ = nextData();
             async Task nextData()
             {
+                await Task.Delay(5);
                 if ((DateTime.UtcNow - startTime).TotalSeconds >= 5)
                 {
                     done = true;
