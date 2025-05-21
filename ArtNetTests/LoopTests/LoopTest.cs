@@ -2,11 +2,9 @@ using ArtNetSharp;
 using ArtNetSharp.Communication;
 using ArtNetTests.Mocks;
 using Microsoft.Extensions.Logging;
-using org.dmxc.wkdt.Light.ArtNet;
 using RDMSharp;
 using System.Diagnostics;
 using System.Reflection;
-using System.Xml.Linq;
 
 namespace ArtNetTests.LoopTests
 {
@@ -116,7 +114,9 @@ namespace ArtNetTests.LoopTests
     {
         private readonly AbstractLoopTestTestSubject testSubject;
 
+#pragma warning disable CS8618
         public LoopTest(AbstractLoopTestTestSubject _TestSubject)
+#pragma warning restore CS8618
         {
             testSubject = _TestSubject;
             Logger.LogDebug($"Initialize Test for {nameof(LoopTest)} ({testSubject.ToString()})");
