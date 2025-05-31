@@ -428,8 +428,8 @@ namespace ArtNetSharp
 
             p[16] = MajorVersion;                                   // 5 VersInfoH
             p[17] = MinorVersion;                                   // 6 VersInfoL
-            p[18] = Net;                                            // 7 NetSwitch
-            p[19] = Subnet;                                         // 8 SubSwitch
+            p[18] = Net.Value;                                      // 7 NetSwitch
+            p[19] = Subnet.Value;                                   // 8 SubSwitch
             Tools.FromUShort(OemCode, out p[21], out p[20]);        // 9 & 10 OEM code
             p[22] = UbeaVersion;                                    // 11 UbeaVersion
             p[23] = Status.StatusByte1;//p[23] = 0xD0;    // 12 Status 1 - Indicator normal, addresses set by "front panel"
@@ -465,15 +465,25 @@ namespace ArtNetSharp
             //p[186] = ReceiveUniverse;
             if (InputUniverses != null)
                 for (int i = 0; i < InputUniverses.Length; i++)
-                    p[186 + i] = InputUniverses[i] is Universe universe ? universe : (Address)InputUniverses[i];
+                {
+                    if (InputUniverses[i] is Universe universe)
+                        p[186 + i] = universe.Value;
+                    else if (InputUniverses[i] is Address address)
+                        p[186 + i] = address.Combined;
+                }
 
             // 24 SwIn [4] Input Universe
             //p[190] = SendUniverse;
             if (OutputUniverses != null)
                 for (int i = 0; i < OutputUniverses.Length; i++)
-                    p[190 + i] = OutputUniverses[i] is Universe universe ? universe : (Address)OutputUniverses[i];
+                {
+                    if (OutputUniverses[i] is Universe universe)
+                        p[190 + i] = universe.Value;
+                    else if (OutputUniverses[i] is Address address)
+                        p[190 + i] = address.Combined;
+                }
 
-            p[194] = AcnPriority; // 25 AcnPriority
+                p[194] = AcnPriority; // 25 AcnPriority
             p[195] = (byte)Macro; // 26 SwMacro
             p[196] = (byte)Remote; // 27 SwRemote
 

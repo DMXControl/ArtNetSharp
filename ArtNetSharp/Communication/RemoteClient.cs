@@ -386,6 +386,8 @@ namespace ArtNetSharp.Communication
 
         public override string ToString()
         {
+            if (Root == null)
+                return base.ToString() + "NULL";
             return $"{Root.LongName} / {Root.ShortName} ({Root.Ports}) - IP:{Root.OwnIp} MAC: {Root.MAC}";
         }
     }
