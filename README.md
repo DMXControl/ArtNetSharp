@@ -37,7 +37,7 @@ Receive DMX data from Art-Net:
 ## Documentation
 
 - [API Reference](https://github.com/DMXControl/ArtNetSharp/wiki)
-- [Art-Net Protocol Specification](https://art-net.org.uk/structure/)
+- [Art-Net Protocol Specification](https://art-net.org.uk/downloads/art-net.pdf)
 
 ## Supported Platforms
 
