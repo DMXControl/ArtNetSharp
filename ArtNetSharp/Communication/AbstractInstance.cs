@@ -635,12 +635,12 @@ namespace ArtNetSharp.Communication
                                         sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, bag.GetSequence(), config?.ForceBroadcast ?? false));
                                         sended++;
                                         if (config == null)
-                                            return;
+                                            continue;
                                     }
                                     catch (Exception e)
                                     {
                                         Logger.LogError(e, "Inner Block");
-                                        return;
+                                        continue;
                                     }
                                     foreach (IPv4Address ip in config?.AdditionalIPEndpoints)
                                     {
