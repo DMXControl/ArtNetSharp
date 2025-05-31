@@ -467,6 +467,10 @@ namespace ArtNetSharp.Communication
 
                         Task task = Task.Run(async () =>
                         {
+                            var goodInput = portConfig.GoodInput;
+                            if (portConfig.Input)
+                                if (sendDMXBuffer.ContainsKey(portConfig.PortAddress))
+                                    goodInput = new GoodInput((byte)(goodInput.Byte1 | 0b10000000));
                             ArtPollReply reply = new ArtPollReply(ownIp,
                                                      ownIp,
                                                      ownMacAddress,
@@ -484,7 +488,7 @@ namespace ArtNetSharp.Communication
                                                      ESTAManufacturerCode,
                                                      nodeReport,
                                                      portConfig.Type,
-                                                     portConfig.GoodInput,
+                                                     goodInput,
                                                      portConfig.GoodOutput,
                                                      style: EstCodes);
 

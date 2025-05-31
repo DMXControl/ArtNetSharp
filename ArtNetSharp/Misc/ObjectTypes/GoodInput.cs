@@ -21,9 +21,9 @@ namespace ArtNetSharp
         /// </summary>
         public readonly bool InputDisabled;
         /// <summary>
-        /// Channel includes DMX512 test packets. 
+        /// Channel includes DMX512 text packets. 
         /// </summary>
-        public readonly bool DMX_TestPacketsSupported;
+        public readonly bool DMX_TextPacketsSupported;
         /// <summary>
         /// Channel includes DMX512 SIP’s.
         /// </summary>
@@ -31,7 +31,7 @@ namespace ArtNetSharp
         /// <summary>
         /// Channel includes DMX512 test packets. 
         /// </summary>
-        public readonly bool DMX_TestPacketsSupported2;
+        public readonly bool DMX_TestPacketsSupported;
         /// <summary>
         /// Data received.
         /// </summary>
@@ -44,26 +44,26 @@ namespace ArtNetSharp
             ConvertTo = (EConvertTo)(Byte1 & 0b00000001);
             ReceiveErrorsDetected = Tools.BitsMatch(Byte1, 0b00000100);
             InputDisabled = Tools.BitsMatch(Byte1, 0b00001000);
-            DMX_TestPacketsSupported = Tools.BitsMatch(Byte1, 0b00010000);
+            DMX_TextPacketsSupported = Tools.BitsMatch(Byte1, 0b00010000);
             DMX_SIPsSupported = Tools.BitsMatch(Byte1, 0b00100000);
-            DMX_TestPacketsSupported2 = Tools.BitsMatch(Byte1, 0b01000000);
+            DMX_TestPacketsSupported = Tools.BitsMatch(Byte1, 0b01000000);
             DataReceived = Tools.BitsMatch(Byte1, 0b10000000);
         }
 
         public GoodInput(in EConvertTo convertTo = EConvertTo.ArtNet,
                          in bool receiveErrorsDetected = false,
                          in bool inputDisabled = false,
-                         in bool dMX_TestPacketsSupported = false,
+                         in bool dMX_TextPacketsSupported = false,
                          in bool dMX_SIPsSupported = false,
-                         in bool dMX_TestPacketsSupported2 = false,
+                         in bool dMX_TestPacketsSupported = false,
                          in bool dataReceived = false) : this()
         {
             ConvertTo = convertTo;
             ReceiveErrorsDetected = receiveErrorsDetected;
             InputDisabled = inputDisabled;
-            DMX_TestPacketsSupported = dMX_TestPacketsSupported;
+            DMX_TextPacketsSupported = dMX_TextPacketsSupported;
             DMX_SIPsSupported = dMX_SIPsSupported;
-            DMX_TestPacketsSupported2 = dMX_TestPacketsSupported2;
+            DMX_TestPacketsSupported = dMX_TestPacketsSupported;
             DataReceived = dataReceived;
 
             Byte1 |= (byte)ConvertTo;
@@ -73,11 +73,11 @@ namespace ArtNetSharp
                 Byte1 |= 0b00000100;
             if (InputDisabled)
                 Byte1 |= 0b00001000;
-            if (DMX_TestPacketsSupported)
+            if (DMX_TextPacketsSupported)
                 Byte1 |= 0b00010000;
             if (DMX_SIPsSupported)
                 Byte1 |= 0b00100000;
-            if (DMX_TestPacketsSupported2)
+            if (DMX_TestPacketsSupported)
                 Byte1 |= 0b01000000;
             if (DataReceived)
                 Byte1 |= 0b10000000;

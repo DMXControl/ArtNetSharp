@@ -435,9 +435,9 @@ namespace ArtNetTests
                     Assert.That(goodInput.ConvertTo, Is.EqualTo(result!.ConvertTo));
                     Assert.That(goodInput.ReceiveErrorsDetected, Is.EqualTo(result!.ReceiveErrorsDetected));
                     Assert.That(goodInput.InputDisabled, Is.EqualTo(result!.InputDisabled));
-                    Assert.That(goodInput.DMX_TestPacketsSupported, Is.EqualTo(result!.DMX_TestPacketsSupported));
+                    Assert.That(goodInput.DMX_TextPacketsSupported, Is.EqualTo(result!.DMX_TextPacketsSupported));
                     Assert.That(goodInput.DMX_SIPsSupported, Is.EqualTo(result!.DMX_SIPsSupported));
-                    Assert.That(goodInput.DMX_TestPacketsSupported2, Is.EqualTo(result!.DMX_TestPacketsSupported2));
+                    Assert.That(goodInput.DMX_TestPacketsSupported, Is.EqualTo(result!.DMX_TestPacketsSupported));
                     Assert.That(goodInput.DataReceived, Is.EqualTo(result!.DataReceived));
                     Assert.That(goodInput.GetHashCode(), Is.EqualTo(result!.GetHashCode()));
                     Assert.That(goodInput, Is.EqualTo(result));
