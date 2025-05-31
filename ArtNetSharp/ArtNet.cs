@@ -281,7 +281,7 @@ namespace ArtNetSharp
                 }
                 finally
                 {
-                    semaphoreSlim.Release();
+                    semaphoreSlim?.Release();
                     await openClient();
                 }
             }

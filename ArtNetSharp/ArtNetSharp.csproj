@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<Version>0.0.36</Version>
 		<RepositoryUrl>https://github.com/DMXControl/ArtNetSharp</RepositoryUrl>
@@ -33,8 +33,14 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="DMXControlProjects.WellKnownDataTypes" Version="0.0.4" />
+		<PackageReference Include="RDMSharp" Version="0.0.13" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0'">
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.5" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.5" />
-		<PackageReference Include="RDMSharp" Version="0.0.13" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net7.0'">
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
 	</ItemGroup>
 </Project>
