@@ -2,14 +2,13 @@
 using ArtNetSharp.Communication;
 using org.dmxc.wkdt.Light.RDM;
 using RDMSharp;
-using RDMSharp.ParameterWrapper;
 
 namespace ControlerRDMExample
 {
     public abstract class AbstractRDMDeviceGeneratedMock : AbstractGeneratedRDMDevice
     {
         internal static ControllerInstance Controller = ArtNet.Instance.Instances.OfType<ControllerInstance>().First();
-        public AbstractRDMDeviceGeneratedMock(UID uid, ERDM_Parameter[] parameters, string? manufacturer = null) : base(uid, parameters, manufacturer)
+        public AbstractRDMDeviceGeneratedMock(UID uid, ERDM_Parameter[]? parameters = null, string? manufacturer = null) : base(uid, parameters, manufacturer)
         {
             Controller.ControllerRDMMessageReceived += Controller_ControllerRDMMessageReceived;
         }
@@ -84,20 +83,43 @@ namespace ControlerRDMExample
                 new Slot(7, ERDM_SlotCategory.COLOR_ADD_BLUE, "Blue" ),
                 new Slot(8, ERDM_SlotCategory.COLOR_ADD_BLUE,ERDM_SlotType.SEC_FINE, "Blue Fine" ))];
 
-        private static readonly Sensor[] SENSORS = [
-            new MockSensorTemp(0, 1, 3000),
-            new MockSensorTemp(1, 2, 8000),
-            new MockSensorTemp(2, 3, 12000),
-            new MockSensorVolt3_3(3, 331),
-            new MockSensorVolt5(4, 498)];
+        private static Sensor[] getSensors()
+        {
+            return new Sensor[]
+            {
+                new MockSensorTemp(0, 1, 3000),
+                new MockSensorTemp(1, 2, 8000),
+                new MockSensorTemp(2, 3, 12000),
+                new MockSensorVolt3_3(3, 331),
+                new MockSensorVolt5(4, 498)
+            };
+        }
         public override GeneratedPersonality[] Personalities => PERSONALITYS;
-        public override Sensor[] Sensors => SENSORS;
 
-        public TestRDMDevice(UID uid) : base(uid, [ERDM_Parameter.IDENTIFY_DEVICE, ERDM_Parameter.BOOT_SOFTWARE_VERSION_LABEL], "Dummy Manufacturer 9FFF")
+        public override bool SupportQueued => true;
+
+        public override bool SupportStatus => true;
+        public override bool SupportRealTimeClock => true;
+
+        public TestRDMDevice(UID uid) : base(uid, manufacturer: "Dummy Manufacturer 9FFF")
         {
             this.DeviceLabel = "Dummy Device 1";
-            this.TrySetParameter(ERDM_Parameter.IDENTIFY_DEVICE, false);
-            this.TrySetParameter(ERDM_Parameter.BOOT_SOFTWARE_VERSION_LABEL, $"Dummy Software");
+            this.SoftwareVersionLabel = $"Dummy Software";
+            this.BootSoftwareVersionLabel = $"Dummy Bootloader Software";
+            AddSensors(getSensors());
+            Task.Run(async () =>
+            {
+                Random random = new Random();
+                RDMStatusMessage rDMStatusMessage = new RDMStatusMessage(0, ERDM_Status.ADVISORY, ERDM_StatusMessage.WATTS, 500);
+                this.AddStatusMessage(rDMStatusMessage);
+                while (true)
+                {
+                    await Task.Delay(1000);
+                    this.RemoveStatusMessage(rDMStatusMessage);
+                    rDMStatusMessage = new RDMStatusMessage(0, ERDM_Status.ADVISORY, ERDM_StatusMessage.WATTS, (short)random.Next(500, 600));
+                    this.AddStatusMessage(rDMStatusMessage);
+                }
+            });
         }
 
         private class MockSensorTemp : Sensor
@@ -105,6 +127,15 @@ namespace ControlerRDMExample
             public MockSensorTemp(in byte sensorId, byte number, short initValue) : base(sensorId, ERDM_SensorType.TEMPERATURE, ERDM_SensorUnit.CENTIGRADE, ERDM_UnitPrefix.CENTI, $"Mock Temp. {number}", -2000, 10000, 2000, 5000, true, true)
             {
                 UpdateValue(initValue);
+                Task.Run(async () =>
+                {
+                    Random random = new Random();
+                    while (true)
+                    {
+                        await Task.Delay(300);
+                        UpdateValue((short)random.Next((short)this.NormalMinimum, (short)(this.NormalMaximum + 10)));
+                    }
+                });
             }
         }
         private class MockSensorVolt3_3 : Sensor
@@ -112,6 +143,15 @@ namespace ControlerRDMExample
             public MockSensorVolt3_3(in byte sensorId, short initValue) : base(sensorId, ERDM_SensorType.VOLTAGE, ERDM_SensorUnit.VOLTS_DC, ERDM_UnitPrefix.CENTI, $"Mock 3.3V Rail", -200, 500, 330, 360, true, true)
             {
                 UpdateValue(initValue);
+                Task.Run(async () =>
+                {
+                    Random random = new Random();
+                    while (true)
+                    {
+                        await Task.Delay(300);
+                        UpdateValue((short)random.Next((short)this.NormalMinimum, (short)(this.NormalMaximum + 10)));
+                    }
+                });
             }
         }
         private class MockSensorVolt5 : Sensor
@@ -119,7 +159,21 @@ namespace ControlerRDMExample
             public MockSensorVolt5(in byte sensorId, short initValue) : base(sensorId, ERDM_SensorType.VOLTAGE, ERDM_SensorUnit.VOLTS_DC, ERDM_UnitPrefix.CENTI, $"Mock 5V Rail ", -200, 1000, 470, 530, true, true)
             {
                 UpdateValue(initValue);
+                Task.Run(async () =>
+                {
+                    Random random = new Random();
+                    while (true)
+                    {
+                        await Task.Delay(300);
+                        UpdateValue((short)random.Next((short)this.NormalMinimum, (short)(this.NormalMaximum + 10)));
+                    }
+                });
             }
+        }
+
+        protected override void onDispose()
+        {
+            throw new NotImplementedException();
         }
     }
 }

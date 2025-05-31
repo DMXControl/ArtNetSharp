@@ -5,7 +5,7 @@
 		<Version>0.0.36</Version>
 		<RepositoryUrl>https://github.com/DMXControl/ArtNetSharp</RepositoryUrl>
 		<PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
-		<PackageTags>RDM; ArtNet; E1.20; E1.33; E1.37-1; E1.37-2; E1.37-7</PackageTags>
+		<PackageTags>RDM; ArtNet; E1.20; E1.33; E1.37-1; E1.37-2; E1.37-5; E1.37-7</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageIcon>ArtNetSharp.png</PackageIcon>
 		<ApplicationIcon>Icons\ArtNetSharp.ico</ApplicationIcon>
@@ -33,7 +33,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="DMXControlProjects.WellKnownDataTypes" Version="0.0.4" />
-		<PackageReference Include="RDMSharp" Version="0.0.13" />
+		<PackageReference Include="RDMSharp" Version="0.0.14" />
 	</ItemGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0'">
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.5" />
