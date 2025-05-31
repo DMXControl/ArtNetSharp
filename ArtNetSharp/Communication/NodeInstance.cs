@@ -4,13 +4,16 @@ namespace ArtNetSharp.Communication
 {
     public class NodeInstance : AbstractInstance
     {
-        public NodeInstance(ArtNet _artnet) : base(_artnet)
+        public NodeInstance(ArtNet _artnet, bool supportRDM = false) : base(_artnet)
         {
+            this.supportRDM = supportRDM;
         }
 
         public sealed override EStCodes EstCodes => EStCodes.StNode;
         protected sealed override bool SendArtPollBroadcast => false;
         protected sealed override bool SendArtPollTargeted => true;
+        private bool supportRDM = false;
+        protected override bool SupportRDM => supportRDM;
 
         protected override void OnPacketReceived(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
         {

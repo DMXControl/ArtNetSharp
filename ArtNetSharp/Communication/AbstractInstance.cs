@@ -250,8 +250,8 @@ namespace ArtNetSharp.Communication
         private readonly ConcurrentDictionary<UID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<UID, RDMUID_ReceivedBag>();
         public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs;
         public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
-        public event EventHandler<ResponderRDMMessageReceivedEventArgs> ResponderRDMMessageReceived;
-        public event EventHandler<ControllerRDMMessageReceivedEventArgs> ControllerRDMMessageReceived;
+        public event EventHandler<ResponseRDMMessageReceivedEventArgs> ResponseRDMMessageReceived;
+        public event EventHandler<RequestRDMMessageReceivedEventArgs> RequestRDMMessageReceived;
 
         internal static readonly SendPollThreadBag sendPollThreadBag = new SendPollThreadBag();
 
@@ -1027,16 +1027,16 @@ namespace ArtNetSharp.Communication
             {
                 if (!artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE))
                 {
-                    var eventArgs = new ControllerRDMMessageReceivedEventArgs(artRDM.RDMMessage, artRDM.PortAddress);
-                    ControllerRDMMessageReceived?.InvokeFailSafe(this, eventArgs);
+                    var eventArgs = new RequestRDMMessageReceivedEventArgs(artRDM.RDMMessage, artRDM.PortAddress);
+                    RequestRDMMessageReceived?.InvokeFailSafe(this, eventArgs);
                     if (eventArgs.Handled)
                         await sendArtRDM(eventArgs.Response, artRDM.PortAddress, source);
                 }
                 else
                 {
-                    var eventArgs = new ResponderRDMMessageReceivedEventArgs(artRDM.RDMMessage, artRDM.PortAddress);
+                    var eventArgs = new ResponseRDMMessageReceivedEventArgs(artRDM.RDMMessage, artRDM.PortAddress);
 
-                    ResponderRDMMessageReceived?.InvokeFailSafe(this, eventArgs);
+                    ResponseRDMMessageReceived?.InvokeFailSafe(this, eventArgs);
                 }
             }
             catch (Exception ex) { Logger.LogError(ex); }

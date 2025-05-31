@@ -4,7 +4,7 @@ using ControlerRDMExample;
 using org.dmxc.wkdt.Light.RDM;
 using System.Collections.Concurrent;
 
-Console.WriteLine("Controller RDM Example!");
+Console.WriteLine("Node RDM Example!");
 
 //Add Logging
 //ArtNet.SetLoggerFectory(YOUR_LOGGER_FACTORY);
@@ -14,13 +14,13 @@ Console.WriteLine("Controller RDM Example!");
 //ArtNet.Instance.NetworkClients.ToList().ForEach(ncb => ncb.Enabled = IPAddress.Equals(broadcastIp, ncb.BroadcastIpAddress));
 
 // Create Instance
-ControllerInstance controllerInstance = new ControllerInstance(ArtNet.Instance);
-controllerInstance.Name = controllerInstance.ShortName = "Controller RDM Example";
+NodeInstance nodeInstance = new NodeInstance(ArtNet.Instance, true);
+nodeInstance.Name = nodeInstance.ShortName = "Node RDM Example";
 ConcurrentDictionary<UID, TestRDMDevice> devices = new();
 
 
 // Add Instance
-ArtNet.Instance.AddInstance(controllerInstance);
+ArtNet.Instance.AddInstance(nodeInstance);
 
 // Configure Ports
 for (ushort i = 1; i <= 1; i++)
@@ -29,8 +29,8 @@ for (ushort i = 1; i <= 1; i++)
     {
         var outputConfig = new PortConfig((byte)i, new PortAddress((ushort)(i - 1)), true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, isBeingOutputAsDMX: true), };
         outputConfig.AddAdditionalRdmUIDs(generateUIDs(i));
-        controllerInstance.AddPortConfig(outputConfig);
-        controllerInstance.AddPortConfig(new PortConfig((byte)(i + 4), new PortAddress((ushort)(i - 1)), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
+        nodeInstance.AddPortConfig(outputConfig);
+        nodeInstance.AddPortConfig(new PortConfig((byte)(i + 4), new PortAddress((ushort)(i - 1)), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
     }
     catch (Exception ex)
     {

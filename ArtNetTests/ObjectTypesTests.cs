@@ -480,9 +480,9 @@ namespace ArtNetTests
             Assert.That(c, Is.EqualTo(b));
         }
         [Test]
-        public void TestControllerRDMMessageReceivedEventArgs()
+        public void TestRequestRDMMessageReceivedEventArgs()
         {
-            var e = new ControllerRDMMessageReceivedEventArgs(new RDMMessage() { Command = ERDM_Command.SET_COMMAND, Parameter = ERDM_Parameter.CURVE }, new PortAddress(123));
+            var e = new RequestRDMMessageReceivedEventArgs(new RDMMessage() { Command = ERDM_Command.SET_COMMAND, Parameter = ERDM_Parameter.CURVE }, new PortAddress(123));
 
             Assert.That(e.Handled, Is.False);
             e.SetResponse(new RDMMessage() { Command = ERDM_Command.SET_COMMAND_RESPONSE, Parameter = ERDM_Parameter.CURVE });

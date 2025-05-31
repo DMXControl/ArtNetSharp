@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NodeOutputExample", "Exampl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NodeInputExample", "Examples\NodeInputExample\NodeInputExample.csproj", "{9CCE08DE-6ED6-4A19-AB0D-C01413A2E5D3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ControlerRDMExample", "Examples\ControlerRDMExample\ControlerRDMExample.csproj", "{90BF6833-7425-4D6B-A8F9-8487A60F1B78}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NodeOutputRDMExample", "Examples\NodeOutputRDMExample\NodeOutputRDMExample.csproj", "{90BF6833-7425-4D6B-A8F9-8487A60F1B78}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigExample", "Examples\ConfigExample\ConfigExample.csproj", "{DF3AFD9A-0629-43C9-AAC6-5EF22728C5E8}"
 EndProject
