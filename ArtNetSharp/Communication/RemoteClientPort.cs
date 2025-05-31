@@ -201,7 +201,7 @@ namespace ArtNetSharp.Communication
                 if (output is Universe outputUniverse)
                     OutputPortAddress = new PortAddress(artPollReply.Net, artPollReply.Subnet, outputUniverse);
                 else if (output is Address outputAddress)
-                    OutputPortAddress = new PortAddress(outputAddress);
+                    OutputPortAddress = new PortAddress(artPollReply.Net, outputAddress);
             }
             else
                 OutputPortAddress = null;
@@ -211,7 +211,7 @@ namespace ArtNetSharp.Communication
                 if (input is Universe inputUniverse)
                     InputPortAddress = new PortAddress(artPollReply.Net, artPollReply.Subnet, inputUniverse);
                 else if (input is Address inputAddress)
-                    InputPortAddress = new PortAddress(inputAddress);
+                    InputPortAddress = new PortAddress(artPollReply.Net, inputAddress);
             }
             else
                 InputPortAddress = null;

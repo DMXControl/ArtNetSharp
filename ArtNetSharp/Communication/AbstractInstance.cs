@@ -432,7 +432,30 @@ namespace ArtNetSharp.Communication
                 if (artPoll.Flags.HasFlag(EArtPollFlags.EnableTargetedMode))
                     ports = ports.Where(pc => pc.PortAddress >= artPoll.TargetPortBottom && pc.PortAddress <= artPoll.TargetPortTop).ToList();
 
+
+                Task taskRoot = Task.Run(async () =>
+                {
+                    ArtPollReply reply = new ArtPollReply(ownIp,
+                                                      ownIp,
+                                                      ownMacAddress,
+                                                      ShortName,
+                                                      Name,
+                                                      0,
+                                                      nodeStatus,
+                                                      MajorVersion,
+                                                      MinorVersion,
+                                                      net,
+                                                      subnet,
+                                                      new object[0],
+                                                      new object[0],
+                                                      OEMProductCode,
+                                                      ESTAManufacturerCode,
+                                                      nodeReport: nodeReport);
+                    await TrySendPacket(reply, destinationIp);
+                });
+                tasks.Add(taskRoot);
                 if (ports.Count != 0)
+                {
                     foreach (PortConfig portConfig in ports.OrderBy(p => p.BindIndex).ToList())
                     {
                         if (artPoll?.Flags.HasFlag(EArtPollFlags.EnableTargetedMode) ?? false)
@@ -470,30 +493,6 @@ namespace ArtNetSharp.Communication
                         });
                         tasks.Add(task);
                     }
-                else if (!artPoll.Flags.HasFlag(EArtPollFlags.EnableTargetedMode))
-                {
-
-                    Task task = Task.Run(async () =>
-                    {
-                        ArtPollReply reply = new ArtPollReply(ownIp,
-                                                          ownIp,
-                                                          ownMacAddress,
-                                                          ShortName,
-                                                          Name,
-                                                          0,
-                                                          nodeStatus,
-                                                          MajorVersion,
-                                                          MinorVersion,
-                                                          net,
-                                                          subnet,
-                                                          new object[0],
-                                                          new object[0],
-                                                          OEMProductCode,
-                                                          ESTAManufacturerCode,
-                                                          nodeReport: nodeReport);
-                        await TrySendPacket(reply, destinationIp);
-                    });
-                    tasks.Add(task);
                 }
                 await Task.WhenAll(tasks);
             }
