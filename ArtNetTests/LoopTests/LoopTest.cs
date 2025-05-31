@@ -287,6 +287,8 @@ namespace ArtNetTests.LoopTests
             for (byte b = 0; b <= 10; b++)
                 await doDmxStuff(b);
 
+            instanceTX.WriteDMXValues(portAddress, new byte[] { 0, 1, 2, 3, 4, 5 }, 10, 5);
+
             instanceRX.DMXReceived -= InstanceRX_DMXReceived;
 
             Assert.Multiple(() =>

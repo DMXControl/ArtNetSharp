@@ -186,7 +186,7 @@ namespace ArtNetSharp.Communication
                 PortAddress = portAddress;
             }
 
-            internal async void Update(byte[] data, ushort? startindex = null, ushort? count = null)
+            internal async void Update(byte[] data, ushort? destinationIndex = null, ushort? count = null)
             {
                 if (IsDisposed || IsDisposing)
                     return;
@@ -194,8 +194,8 @@ namespace ArtNetSharp.Communication
                 await SemaphoreSlim?.WaitAsync();
                 try
                 {
-                    if ((startindex + count) <= Data.Length)
-                        Array.Copy(data, 0, Data, startindex.Value, count.Value);
+                    if ((destinationIndex + count) <= Data.Length)
+                        Array.Copy(data, 0, Data, destinationIndex.Value, count.Value);
                     else
                         Array.Copy(data, 0, Data, 0, Math.Min(data.Length, Data.Length));
 
@@ -1072,7 +1072,7 @@ namespace ArtNetSharp.Communication
             }
         }
 
-        public void WriteDMXValues(PortAddress portAddress, byte[] data, ushort? startindex = null, ushort? count = null)
+        public void WriteDMXValues(PortAddress portAddress, byte[] data, ushort? destinationIndex = null, ushort? count = null)
         {
             if (this.IsDisposing || this.IsDisposed)
                 return;
@@ -1081,18 +1081,20 @@ namespace ArtNetSharp.Communication
                 throw new ArgumentOutOfRangeException();
 
             ushort length = (ushort)data.Length;
+            if(count is null)
+                count = length;
 
-            if (startindex > length)
-                throw new ArgumentOutOfRangeException();
+            if (count > length)
+                throw new ArgumentOutOfRangeException($"{nameof(count)} has to be less then {nameof(data)}.{nameof(data.Length)}");
 
 
-            if ((startindex + count) > length)
-                throw new ArgumentOutOfRangeException();
+            if ((destinationIndex + count) > 512)
+                throw new ArgumentOutOfRangeException($"{nameof(destinationIndex)} + {nameof(count)} has to be less then 512");
 
             int _startIndex = 0;
             int _count = length;
-            if (startindex.HasValue)
-                _startIndex = startindex.Value;
+            if (destinationIndex.HasValue)
+                _startIndex = destinationIndex.Value;
             if (count.HasValue)
                 _count = Math.Min(_count, count.Value);
 
@@ -1100,7 +1102,7 @@ namespace ArtNetSharp.Communication
             try
             {
                 if (sendDMXBuffer.TryGetValue(portAddress, out DMXSendBag bag))
-                    bag.Update(data, startindex, count);
+                    bag.Update(data, destinationIndex, count);
                 else
                 {
                     var newBag = new DMXSendBag(data, portAddress);
