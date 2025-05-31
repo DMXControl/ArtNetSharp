@@ -23,12 +23,12 @@ ConcurrentDictionary<UID, TestRDMDevice> devices = new();
 ArtNet.Instance.AddInstance(controllerInstance);
 
 // Configure Ports
-for (ushort i = 1; i <= 4; i++)
+for (ushort i = 1; i <= 1; i++)
 {
     try
     {
         var outputConfig = new PortConfig((byte)i, new PortAddress((ushort)(i - 1)), true, false) { PortNumber = (byte)i, Type = EPortType.OutputFromArtNet, GoodOutput = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, isBeingOutputAsDMX: true), };
-        outputConfig.AddAdditionalRdmUIDs(generateUIDs());
+        outputConfig.AddAdditionalRdmUIDs(generateUIDs(i));
         controllerInstance.AddPortConfig(outputConfig);
         controllerInstance.AddPortConfig(new PortConfig((byte)(i + 4), new PortAddress((ushort)(i - 1)), false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet });
     }
@@ -38,12 +38,12 @@ for (ushort i = 1; i <= 4; i++)
     }
 }
 
-UID[] generateUIDs()
+UID[] generateUIDs(ushort port)
 {
-    UID[] uids = new UID[30];
+    UID[] uids = new UID[5];
     for (int i = 0; i < uids.Length; i++)
     {
-        var uid = new UID(0x9fff, (uint)devices.Count + 1);
+        var uid = new UID(0x9fff, (uint)(devices.Count + 1 + (1000 * port)));
         devices.TryAdd(uid, new TestRDMDevice(uid));
         uids[i] = uid;
     }

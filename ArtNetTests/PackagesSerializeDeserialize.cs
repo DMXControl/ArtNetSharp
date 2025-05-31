@@ -250,8 +250,8 @@ namespace ArtNetTests
         {
             PackagesSerializeDeserialize.doTests(new ArtNzs(53, 0xED, 2, new Address(3, 4), new byte[] { 1, 2, 3, 44, 55, 66, 88, 222, 111, 0x33 }));
 
-            Assert.Throws(typeof(ArgumentException), () => new ArtNzs(53, Constants.DMX_STARTCODE, 2, new Address(3, 4), new byte[] { 1, 2, 3, 44, 55, 66, 88, 222, 111, 0x33 }));
-            Assert.Throws(typeof(ArgumentException), () => new ArtNzs(53, Constants.RDM_STARTCODE, 2, new Address(3, 4), new byte[] { 1, 2, 3, 44, 55, 66, 88, 222, 111, 0x33 }));
+            Assert.Throws(typeof(ArgumentException), () => new ArtNzs(53, ArtNetSharp.Constants.DMX_STARTCODE, 2, new Address(3, 4), new byte[] { 1, 2, 3, 44, 55, 66, 88, 222, 111, 0x33 }));
+            Assert.Throws(typeof(ArgumentException), () => new ArtNzs(53, ArtNetSharp.Constants.RDM_STARTCODE, 2, new Address(3, 4), new byte[] { 1, 2, 3, 44, 55, 66, 88, 222, 111, 0x33 }));
         }
         [Test]
         public void ArtVlc()

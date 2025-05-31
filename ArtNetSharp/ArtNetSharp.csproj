@@ -33,7 +33,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="DMXControlProjects.WellKnownDataTypes" Version="0.0.4" />
-		<PackageReference Include="RDMSharp" Version="0.0.14" />
+		<ProjectReference Include="..\..\RDMSharp\RDMSharp\RDMSharp.csproj" />
 	</ItemGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0'">
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.5" />
