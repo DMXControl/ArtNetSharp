@@ -95,7 +95,7 @@ namespace ArtNetTests
             artNet.AddInstance(nodeInstance);
             artNet.AddInstance(controllerInstance);
 
-            while (controllerInstance.RemoteClients?.FirstOrDefault(rc => nodeInstance.Name.Equals(rc?.LongName))?.Ports.Count != ports)
+            while (controllerInstance.RemoteClients?.FirstOrDefault(rc => string.Equals(nodeInstance.Name, rc?.LongName))?.Ports?.Count != ports)
                 await Task.Delay(1000);
 
             var nodeRD = controllerInstance.RemoteClients.FirstOrDefault(rc => nodeInstance.Name.Equals(rc?.LongName));
