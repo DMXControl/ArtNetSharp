@@ -12,7 +12,7 @@ namespace ArtNetSharp.Communication
 {
     public class PortConfig
     {
-        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<PortConfig>();
+        private static readonly ILogger Logger = Logging.CreateLogger<PortConfig>();
         public virtual PortAddress PortAddress { get; set; }
         public Net Net { get => PortAddress.Net; }
         public Subnet Subnet { get => PortAddress.Subnet; }

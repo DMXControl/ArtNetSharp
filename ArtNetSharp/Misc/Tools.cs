@@ -10,7 +10,7 @@ namespace ArtNetSharp
 {
     public static class Tools
     {
-        private static readonly ILogger Logger = ApplicationLogging.CreateLogger("Tools");
+        private static readonly ILogger Logger = Logging.CreateLogger("Tools");
         public static bool IsAndroid()
         {
             return

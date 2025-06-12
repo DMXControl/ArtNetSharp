@@ -12,7 +12,7 @@ namespace ArtNetSharp.Communication
 {
     public sealed class RemoteClientPort : INotifyPropertyChanged
     {
-        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<RemoteClientPort>();
+        private static readonly ILogger Logger = Logging.CreateLogger<RemoteClientPort>();
         public readonly IPv4Address IpAddress;
         public readonly string ID;
         public readonly byte BindIndex;

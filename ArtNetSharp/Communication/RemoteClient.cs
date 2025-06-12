@@ -13,7 +13,7 @@ namespace ArtNetSharp.Communication
 {
     public sealed class RemoteClient : INotifyPropertyChanged
     {
-        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<RemoteClient>();
+        private static readonly ILogger Logger = Logging.CreateLogger<RemoteClient>();
         public readonly string ID;
         public readonly MACAddress MacAddress;
         private IPv4Address ipAddress;

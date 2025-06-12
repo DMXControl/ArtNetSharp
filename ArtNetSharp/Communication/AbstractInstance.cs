@@ -295,7 +295,7 @@ namespace ArtNetSharp.Communication
         {
             _random = new Random();
             ArtNetInstance = _artnet;
-            Logger = ApplicationLogging.CreateLogger(this.GetType());
+            Logger = Logging.CreateLogger(this.GetType());
 
             ArtNetInstance.OnInstanceAdded += ArtNet_OnInstanceAdded;
             ArtNetInstance.OnInstanceRemoved += ArtNet_OnInstanceRemoved;

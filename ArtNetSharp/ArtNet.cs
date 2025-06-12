@@ -19,7 +19,7 @@ namespace ArtNetSharp
     public class ArtNet : IDisposable
     {
         private static readonly Random _random = new Random();
-        private static ILogger<ArtNet> Logger = ApplicationLogging.CreateLogger<ArtNet>();
+        private static ILogger<ArtNet> Logger = Logging.CreateLogger<ArtNet>();
         private static ArtNet instance;
         public static ArtNet Instance
         {
@@ -74,7 +74,7 @@ namespace ArtNetSharp
 
         public class NetworkClientBag : IDisposable
         {
-            private static readonly ILogger<NetworkClientBag> Logger = ApplicationLogging.CreateLogger<NetworkClientBag>();
+            private static readonly ILogger<NetworkClientBag> Logger = Logging.CreateLogger<NetworkClientBag>();
             private readonly IPEndPoint broadcastEndpoint;
             public readonly IPAddress BroadcastIpAddress;
             public readonly UnicastIPAddressInformation UnicastIPAddressInfo;
@@ -387,7 +387,7 @@ namespace ArtNetSharp
         {
             if (loggerProviders.Contains(loggerProvider))
                 return;
-            ApplicationLogging.LoggerFactory.AddProvider(loggerProvider);
+            Logging.LoggerFactory.AddProvider(loggerProvider);
             loggerProviders.Add(loggerProvider);
         }
 
