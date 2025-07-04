@@ -725,8 +725,8 @@ namespace ArtNetSharp.Communication
             if (!rdmMessage.Command.HasFlag(ERDM_Command.RESPONSE) && rdmMessage.SourceUID == UID.Empty)
                 rdmMessage.SourceUID = UID;
 
-            if (knownRDMUIDs.TryGetValue(rdmMessage.DestUID, out RDMUID_ReceivedBag uidBag))
-                rdmMessage.TransactionCounter = uidBag.NewTransactionNumber();
+            //if (knownRDMUIDs.TryGetValue(rdmMessage.DestUID, out RDMUID_ReceivedBag uidBag))
+            //    rdmMessage.TransactionCounter = uidBag.NewTransactionNumber();
 
             if (!rdmMessage.Command.HasFlag(ERDM_Command.RESPONSE)) // Response
             {
