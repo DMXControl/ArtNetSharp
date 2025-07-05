@@ -1,6 +1,6 @@
 ﻿using ArtNetSharp;
 
-namespace ArtNetTests.Binary_Tests.Astera
+namespace ArtNetTests.Binary_Tests.Robe
 {
     internal class Robe_Esprite_3_9 : AbstractArtPollReplyBinaryTestSubject
     {

@@ -732,6 +732,7 @@ namespace ArtNetSharp.Communication
             {
                 var ports = RemoteClientsPorts.Where(port => port.KnownResponderRDMUIDs.Count != 0).Where(port => port.OutputPortAddress.HasValue && port.KnownResponderRDMUIDs.Any(bag => bag.Uid == rdmMessage.DestUID)).ToList();
                 List<Task> tasks = new List<Task>();
+                List<Tuple<IPv4Address, PortAddress>> tuples = new List<Tuple<IPv4Address, PortAddress>>();
                 foreach (var port in ports)
                 {
                     PortAddress pa = default;
@@ -740,6 +741,9 @@ namespace ArtNetSharp.Communication
                     else if (rdmMessage.Command.HasFlag(ERDM_Command.RESPONSE) && port.InputPortAddress.HasValue)
                         pa = port.InputPortAddress.Value;
                     //Todo Buffer per IP address to prevent Hardware from overflow
+                    if (tuples.Any(t => t.Item2 == pa && t.Item1 == port.IpAddress))// skip multiple send the same Package to the same IP
+                        continue;
+                    tuples.Add(new Tuple<IPv4Address, PortAddress>(port.IpAddress, pa));
                     ArtRDM artRDM = new ArtRDM(pa, rdmMessage);
                     tasks.Add(Task.Run(async () => await TrySendPacket(artRDM, port.IpAddress)));
                 }

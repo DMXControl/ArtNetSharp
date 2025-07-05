@@ -10,7 +10,7 @@ namespace ArtNetTests
     [Order(30)]
     public class TestOS
     {
-        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<TestOS>();
+        private static readonly ILogger Logger = ArtNetSharp.Logging.CreateLogger<TestOS>();
         private NodeInstance nodeInstance;
         private ControllerInstance controllerInstance;
         private const byte ports = 2;

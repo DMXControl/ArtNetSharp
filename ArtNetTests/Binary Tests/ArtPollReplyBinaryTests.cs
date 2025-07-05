@@ -9,7 +9,7 @@ namespace ArtNetTests.Binary_Tests
     [TestFixtureSource(typeof(AbstractArtPollReplyBinaryTestSubject), nameof(AbstractArtPollReplyBinaryTestSubject.TestSubjects))]
     public class ArtPollReplyBinaryTests
     {
-        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<ArtPollReplyBinaryTests>();
+        private static readonly ILogger Logger = ArtNetSharp.Logging.CreateLogger<ArtPollReplyBinaryTests>();
         private readonly AbstractArtPollReplyBinaryTestSubject testSubject;
 
         public ArtPollReplyBinaryTests(AbstractArtPollReplyBinaryTestSubject _TestSubject)
