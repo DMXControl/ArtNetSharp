@@ -2,7 +2,7 @@
 
 namespace ArtNetTests.Binary_Tests.Showtec
 {
-    internal class Showtec_Net2 : AbstractArtPollReplyBinaryTestSubject
+    internal class Showtec_Net2_V1_2 : AbstractArtPollReplyBinaryTestSubject
     {
         private static readonly byte[] DATA = [
             0x41, 0x72, 0x74, 0x2d, 0x4e, 0x65, 0x74, 0x00,
@@ -40,7 +40,7 @@ namespace ArtNetTests.Binary_Tests.Showtec
         [
             new PortTestSubject(EPortType.OutputFromArtNet,(PortAddress)259,(PortAddress)259)
         ];
-        public Showtec_Net2() : base(
+        public Showtec_Net2_V1_2() : base(
             "Showtec Net2 (FW 1.2)",
             DATA,
             1,
