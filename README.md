@@ -45,7 +45,7 @@ Receive DMX data from Art-Net:
 - [![.NET 7](https://img.shields.io/badge/.NET%207-5C2D91?logo=.net&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/7.0) (not recommended)
 - [![.NET 8](https://img.shields.io/badge/.NET%208-5C2D91?logo=.net&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [![.NET 9](https://img.shields.io/badge/.NET%209-5C2D91?logo=.net&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/9.0)
-- [![.NET 10](https://img.shields.io/badge/.NET%2010-5C2D91?logo=.net&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/10.0) (upcoming)
+- [![.NET 10](https://img.shields.io/badge/.NET%2010-5C2D91?logo=.net&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 ## Contributing
 
