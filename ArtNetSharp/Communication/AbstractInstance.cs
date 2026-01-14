@@ -966,12 +966,15 @@ public abstract class AbstractInstance : IInstance
         if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
             return;
 
+        if (artTodData.UidTotalCount == 0 || artTodData.Uids.Length == 0)
+            return;
+
         try
         {
             if (RemoteClientsPorts.Count != 0)
             {
                 var ports = RemoteClientsPorts
-                    .Where(p => IPv4Address.Equals(p.IpAddress, source) && PortAddress.Equals(p.OutputPortAddress, artTodData.PortAddress))
+                    .Where(p => IPv4Address.Equals(p.IpAddress, source) && p.BindIndex == artTodData.BindIndex)
                     .ToList();
 
                 foreach (var port in ports)
