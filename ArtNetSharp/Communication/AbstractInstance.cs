@@ -755,6 +755,10 @@ public abstract class AbstractInstance : IInstance
         ArtRDM artRDM = new ArtRDM(portAddress, rdmMessage);
         await TrySendPacket(artRDM, ip);
     }
+    public async Task SendArtNzs(ArtNzs artNzs, IPv4Address ip)
+    {
+        await TrySendPacket(artNzs, ip);
+    }
 
     #region Send ArtAddress
     public async Task SendArtAddress(ArtAddress artAddress, IPv4Address ipAddress)
