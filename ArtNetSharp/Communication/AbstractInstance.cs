@@ -7,6 +7,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -61,6 +62,8 @@ public abstract class AbstractInstance : IInstance
 
     private readonly ConcurrentDictionary<Tuple<PortAddress, IPv4Address>, DMXReceiveBag> receivedDMXBuffer = new ConcurrentDictionary<Tuple<PortAddress, IPv4Address>, DMXReceiveBag>();
     private readonly ConcurrentDictionary<RDM_TransactionID, RDMMessage> artRDMdeBumbReceive = new();
+
+    private readonly ConcurrentDictionary<IPv4Address, GatewayRDMFiFoQueue> artRDMgatewayQueues = new();
 
     private readonly SemaphoreSlim pollReplyProcessSemaphoreSlim = new SemaphoreSlim(1);
 
@@ -735,6 +738,7 @@ public abstract class AbstractInstance : IInstance
             List<Tuple<IPv4Address, PortAddress>> tuples = new List<Tuple<IPv4Address, PortAddress>>();
             foreach (var port in ports)
             {
+                RDMUID_ReceivedBag bag = port.KnownResponderRDMUIDs.FirstOrDefault(b => b.Uid == rdmMessage.DestUID);
                 PortAddress pa = default;
                 if (!rdmMessage.Command.HasFlag(ERDM_Command.RESPONSE) && port.OutputPortAddress.HasValue)
                     pa = port.OutputPortAddress.Value;
@@ -744,8 +748,12 @@ public abstract class AbstractInstance : IInstance
                 if (tuples.Any(t => t.Item2 == pa && t.Item1 == port.IpAddress))// skip multiple send the same Package to the same IP
                     continue;
                 tuples.Add(new Tuple<IPv4Address, PortAddress>(port.IpAddress, pa));
-                ArtRDM artRDM = new ArtRDM(pa, rdmMessage);
-                tasks.Add(Task.Run(async () => await TrySendPacket(artRDM, port.IpAddress)));
+                ArtRDM artRDM = new ArtRDM(bag?.PortAddress ?? pa, rdmMessage);
+                tasks.Add(Task.Run(async () =>
+                {
+                    await handleGatewayQueue(artRDM, port.IpAddress);
+                    await TrySendPacket(artRDM, port.IpAddress);
+                }));
             }
             await Task.WhenAll(tasks);
         }
@@ -753,7 +761,22 @@ public abstract class AbstractInstance : IInstance
     private async Task sendArtRDM(RDMMessage rdmMessage, PortAddress portAddress, IPv4Address ip)
     {
         ArtRDM artRDM = new ArtRDM(portAddress, rdmMessage);
+        await handleGatewayQueue(artRDM, ip);
         await TrySendPacket(artRDM, ip);
+    }
+
+    private async Task handleGatewayQueue(ArtRDM artRDM, IPv4Address ip)
+    {
+        await Task.CompletedTask;
+        //if (artRDMgatewayQueues.TryGetValue(ip, out GatewayRDMFiFoQueue gatewayRDMFiFoQueue))
+        //    await gatewayRDMFiFoQueue.AwaitSlot();
+        //else
+        //{
+        //    gatewayRDMFiFoQueue = new GatewayRDMFiFoQueue(ip);
+        //    artRDMgatewayQueues.TryAdd(ip, gatewayRDMFiFoQueue);
+        //}
+        //gatewayRDMFiFoQueue.AddToQueue(artRDM);
+
     }
     public async Task SendArtNzs(ArtNzs artNzs, IPv4Address ip)
     {
@@ -982,7 +1005,7 @@ public abstract class AbstractInstance : IInstance
                     .ToList();
 
                 foreach (var port in ports)
-                    port.AddResponderRdmUIDs(artTodData.Uids);
+                    port.AddResponderRdmUIDs(artTodData.PortAddress, artTodData.BindIndex, artTodData.Uids);
             }
         }
         catch (Exception ex) { Logger.LogError(ex); }
@@ -994,13 +1017,13 @@ public abstract class AbstractInstance : IInstance
                 .ToList();
 
             foreach (var config in configs)
-                config.AddDiscoveredRdmUIDs(artTodData.Uids);
+                config.AddDiscoveredRdmUIDs(artTodData.PortAddress, artTodData.BindIndex, artTodData.Uids);
         }
         catch (Exception ex) { Logger.LogError(ex); }
 
         try
         {
-            AddRdmUIDs(artTodData.Uids);
+            AddRdmUIDs(artTodData.PortAddress, artTodData.BindIndex, artTodData.Uids);
         }
         catch (Exception ex) { Logger.LogError(ex); }
     }
@@ -1011,6 +1034,10 @@ public abstract class AbstractInstance : IInstance
         ControllerRDMUID_Bag bag = null;
         try
         {
+            if (artRDMgatewayQueues.TryGetValue(source, out GatewayRDMFiFoQueue gatewayRDMFiFoQueue))
+            {
+                gatewayRDMFiFoQueue.Update(artRDM);
+            }
             if (!artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE))
             {
                 if (knownControllerRDMUIDs.TryGetValue(artRDM.Source, out bag))
@@ -1223,7 +1250,7 @@ public abstract class AbstractInstance : IInstance
 
         return nodeStatus;
     }
-    private void AddRdmUIDs(params UID[] rdmuids)
+    private void AddRdmUIDs(PortAddress portAddress, byte bindIndex, params UID[] rdmuids)
     {
         if (rdmuids.Length == 0)
             return;
@@ -1231,10 +1258,10 @@ public abstract class AbstractInstance : IInstance
         foreach (UID rdmuid in rdmuids)
         {
             if (knownRDMUIDs.TryGetValue(rdmuid, out RDMUID_ReceivedBag bag))
-                bag.Seen();
+                bag.Seen(portAddress, bindIndex);
             else
             {
-                bag = new RDMUID_ReceivedBag(rdmuid);
+                bag = new RDMUID_ReceivedBag(portAddress, bindIndex, rdmuid);
                 if (knownRDMUIDs.TryAdd(rdmuid, bag))
                     RDMUIDReceived?.InvokeFailSafe(this, bag);
             }
@@ -1376,5 +1403,87 @@ public abstract class AbstractInstance : IInstance
     protected virtual void Dispose()
     {
 
+    }
+
+    public class GatewayRDMFiFoQueue : INotifyPropertyChanged
+    {
+        private int available = 0;
+        private byte max = 0;
+        private bool implemented;
+
+        public readonly IPv4Address IpAddress;
+
+        private readonly List<ArtRDM> bag = new List<ArtRDM>();
+
+        public int Available
+        {
+            get { return available; }
+            private set
+            {
+                if (available == value)
+                    return;
+
+                available = value;
+                PropertyChanged?.InvokeFailSafe(this, new PropertyChangedEventArgs(nameof(Available)));
+            }
+        }
+        public byte Max
+        {
+            get { return max; }
+        }
+        public bool Implemented
+        {
+            get { return implemented; }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public GatewayRDMFiFoQueue(IPv4Address ipAddress)
+        {
+            IpAddress = ipAddress;
+        }
+
+        internal void Update(ArtRDM response)
+        {
+            if (!response.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE))
+                return;
+
+            max = response.FifoMax;
+            implemented = max != 0;
+            if (implemented)
+            {
+                Available = response.FifoAvailable;
+            }
+            else
+            {
+                if (bag.FirstOrDefault(b => b.PortAddress == response.PortAddress && b.RDMMessage.DestUID == response.RDMMessage.SourceUID) is ArtRDM request)
+                {
+                    bag.Remove(request);
+                    Available = 1;
+                }
+            }
+
+        }
+
+        internal void AddToQueue(ArtRDM request)
+        {
+            bag.Add(request);
+            Available--;
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(10000);
+                bag.Remove(request);
+                Available++;
+            });
+        }
+        internal async Task AwaitSlot()
+        {
+            Task.Run(async () =>
+            {
+                while (Available <= 0)
+                    await Task.Delay(30);
+            }).Wait(3000);
+        }
     }
 }
