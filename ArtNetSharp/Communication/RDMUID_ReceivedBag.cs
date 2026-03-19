@@ -27,7 +27,7 @@ public sealed class RDMUID_ReceivedBag : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PortAddress)));
         }
     }
-    public byte BIndIndex
+    public byte BindIndex
     {
         get { return bindIndex; }
         private set
@@ -50,7 +50,7 @@ public sealed class RDMUID_ReceivedBag : INotifyPropertyChanged
     internal void Seen(in PortAddress portAddress, in byte bindIndex)
     {
         PortAddress = portAddress;
-        BIndIndex = bindIndex;
+        BindIndex = bindIndex;
         LastSeen = DateTime.UtcNow;
     }
 
