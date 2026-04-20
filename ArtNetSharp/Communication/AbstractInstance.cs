@@ -996,16 +996,31 @@ public abstract class AbstractInstance : IInstance
         if (artTodData.UidTotalCount == 0 || artTodData.Uids.Length == 0)
             return;
 
+        byte bindIndex = artTodData.BindIndex;
+        byte port = artTodData.Port;
+
         try
         {
             if (RemoteClientsPorts.Count != 0)
             {
                 var ports = RemoteClientsPorts
-                    .Where(p => IPv4Address.Equals(p.IpAddress, source) && p.BindIndex == artTodData.BindIndex)
+                    .Where(p => IPv4Address.Equals(p.IpAddress, source) && p.BindIndex == bindIndex)
                     .ToList();
 
-                foreach (var port in ports)
-                    port.AddResponderRdmUIDs(artTodData.PortAddress, artTodData.BindIndex, artTodData.Uids);
+                if (ports.Count == 0)
+                {
+                    Logger?.LogWarning($"No Port found for Port: {port}, BindIndex: {bindIndex}");
+                    ports = RemoteClientsPorts
+                    .Where(p => IPv4Address.Equals(p.IpAddress, source) && p.BindIndex == port)
+                    .ToList();
+                    foreach (var _port in ports)
+                        _port.AddResponderRdmUIDs(artTodData.PortAddress, port, artTodData.Uids);
+                }
+                else
+                {
+                    foreach (var _port in ports)
+                        _port.AddResponderRdmUIDs(artTodData.PortAddress, bindIndex, artTodData.Uids);
+                }
             }
         }
         catch (Exception ex) { Logger.LogError(ex); }
