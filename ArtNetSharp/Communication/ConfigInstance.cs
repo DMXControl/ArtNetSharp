@@ -35,9 +35,6 @@ namespace ArtNetSharp.Communication
             await Task.WhenAll(tasks);
         }
 
-        public async Task PerformRDMDiscovery(PortAddress? portAddress = null, bool flush = false)
-        {
-            await base.PerformRDMDiscovery(portAddress, flush);
-        }
+        public async Task PerformRDMDiscovery(PortAddress? portAddress = null, bool flush = false) => await base.PerformRDMDiscovery(portAddress, flush);
     }
 }
