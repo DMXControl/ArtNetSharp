@@ -625,12 +625,16 @@ public abstract class AbstractInstance : IInstance
                                 try
                                 {
                                     bag.LastSended = utcNow;
-                                    config = portConfigs?.FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, port.OutputPortAddress));
+                                    // Send only to ports which are inputs into ArtNet
+                                    config = portConfigs?.Where(cfg => cfg.Input)
+                                                         .FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, port.OutputPortAddress));
+
+                                    if (config == null)
+                                        continue;
+
                                     sourcePort = config?.PortNumber ?? 0;
                                     sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, bag.GetSequence(), config?.ForceBroadcast ?? false));
                                     sended++;
-                                    if (config == null)
-                                        continue;
                                 }
                                 catch (Exception e)
                                 {
@@ -647,13 +651,16 @@ public abstract class AbstractInstance : IInstance
                                 bag.LastSended = DateTime.UtcNow;
                             }
                     }
-                    catch (Exception e) { Logger.LogError(e, "Outer Block"); }
+                    catch (Exception e)
+                    {
+                        Logger.LogError(e, "Outer Block");
+                    }
 
                 await Task.WhenAll(sendTasks);
                 sendTasks.Clear();
+
                 if (EnableSync && sended != 0)
                     await sendArtSync();
-
             }
             catch (Exception ex) { Logger.LogError(ex); }
         }
