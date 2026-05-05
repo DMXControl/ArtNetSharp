@@ -14,16 +14,16 @@ public class PortConfig
 {
     private static readonly ILogger Logger = Logging.CreateLogger<PortConfig>();
     public virtual PortAddress PortAddress { get; set; }
-    public Net Net { get => PortAddress.Net; }
-    public Subnet Subnet { get => PortAddress.Subnet; }
-    public Universe Universe { get => PortAddress.Universe; }
-    public Address Address { get { return PortAddress.Address; } }
+    public Net Net => PortAddress.Net;
+    public Subnet Subnet => PortAddress.Subnet;
+    public Universe Universe => PortAddress.Universe;
+    public Address Address => PortAddress.Address;
 
     public virtual byte PortNumber { get; set; }
     public readonly byte BindIndex;
 
-    public virtual bool Output { get => this.Type.HasFlag(EPortType.OutputFromArtNet); }
-    public virtual bool Input { get => this.Type.HasFlag(EPortType.InputToArtNet); }
+    public virtual bool Output => Type.HasFlag(EPortType.OutputFromArtNet);
+    public virtual bool Input => Type.HasFlag(EPortType.InputToArtNet);
     public virtual EPortType Type { get; set; }
     public virtual GoodInput GoodInput { get; set; }
     public virtual GoodOutput GoodOutput { get; set; }
@@ -32,7 +32,6 @@ public class PortConfig
 
     private readonly List<IPv4Address> additionalIPEndpoints;
     public IReadOnlyCollection<IPv4Address> AdditionalIPEndpoints { get; private set; }
-
 
     private readonly ConcurrentDictionary<UID, RDMUID_ReceivedBag> discoveredRDMUIDs = new ConcurrentDictionary<UID, RDMUID_ReceivedBag>();
     public IReadOnlyCollection<RDMUID_ReceivedBag> DiscoveredRDMUIDs;
@@ -65,9 +64,9 @@ public class PortConfig
         BindIndex = bindIndex;
         PortAddress = portAddress;
         if (output)
-            this.Type |= EPortType.OutputFromArtNet;
+            Type |= EPortType.OutputFromArtNet;
         if (input)
-            this.Type |= EPortType.InputToArtNet;
+            Type |= EPortType.InputToArtNet;
 
         additionalIPEndpoints = new List<IPv4Address>();
         AdditionalIPEndpoints = additionalIPEndpoints.AsReadOnly();
@@ -115,6 +114,7 @@ public class PortConfig
                 }
             }
         }
+
         DiscoveredRDMUIDs = discoveredRDMUIDs.Values.ToList().AsReadOnly();
     }
     public void AddAdditionalRdmUIDs(params UID[] rdmuids)
@@ -146,10 +146,7 @@ public class PortConfig
         if (removed)
             DiscoveredRDMUIDs = discoveredRDMUIDs.Values.ToList().AsReadOnly();
     }
-    public UID[] GetReceivedRDMUIDs()
-    {
-        return DiscoveredRDMUIDs.Where(k => !k.Timouted()).Select(k => k.Uid).ToArray();
-    }
+    public UID[] GetReceivedRDMUIDs() => DiscoveredRDMUIDs.Where(k => !k.Timouted()).Select(k => k.Uid).ToArray();
 
     public override string ToString()
     {

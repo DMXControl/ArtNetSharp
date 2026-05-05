@@ -97,21 +97,14 @@ namespace ArtNetSharp
             });
         }
 
-        public ILogger CreateLogger(string categoryName)
-        {
-            return new TextLogger(this, categoryName.Split('.').Last());
-        }
+        public ILogger CreateLogger(string categoryName) => new TextLogger(this, categoryName.Split('.').Last());
 
-        public void Dispose()
-        {
-            isDisposing = true;
-        }
+        public void Dispose() => isDisposing = true;
 
         private class TextLogger : ILogger
         {
             private readonly string CategoryName;
             private readonly FileProvider Provider;
-
 
             public TextLogger(FileProvider provider, in string categoryName)
             {
@@ -119,15 +112,9 @@ namespace ArtNetSharp
                 Provider = provider;
             }
 
-            public IDisposable BeginScope<TState>(TState state)
-            {
-                return null;
-            }
+            public IDisposable BeginScope<TState>(TState state) => null;
 
-            public bool IsEnabled(LogLevel logLevel)
-            {
-                return true;
-            }
+            public bool IsEnabled(LogLevel logLevel) => true;
 
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {

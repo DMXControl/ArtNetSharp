@@ -21,10 +21,10 @@ namespace ArtNetSharp
         public readonly byte Physical;
         public readonly byte[] Data;
 
-        public override sealed EOpCodes OpCode => EOpCodes.OpOutput;
-        protected override sealed ushort PacketMinLength => 20;
-        protected override sealed ushort PacketMaxLength => 18 + 512;
-        protected override sealed ushort PacketBuildLength => (ushort)(18 + Data.Length);
+        public sealed override EOpCodes OpCode => EOpCodes.OpOutput;
+        protected sealed override ushort PacketMinLength => 20;
+        protected sealed override ushort PacketMaxLength => 18 + 512;
+        protected sealed override ushort PacketBuildLength => (ushort)(18 + Data.Length);
 
         protected override ushort NetByte => 15;
         protected override ushort AddressByte => 14;
@@ -43,6 +43,7 @@ namespace ArtNetSharp
                 Data = data.Take(512).ToArray();
                 return;
             }
+
             Data = data;
         }
         public ArtDMX(in byte[] packet) : base(packet)
@@ -53,11 +54,12 @@ namespace ArtNetSharp
             ushort length = (ushort)((packet[16] << 8) | packet[17]);
             if (length <= 512)
             {
-                length = (ushort)(Math.Max(0, Math.Min(length, packet.Length - 18)));
+                length = (ushort)Math.Max(0, Math.Min(length, packet.Length - 18));
                 Data = new byte[length];
                 Array.Copy(packet, 18, Data, 0, length);
                 return;
             }
+
             Data = new byte[0];
         }
 
@@ -77,13 +79,10 @@ namespace ArtNetSharp
 
             return base.Equals(obj)
                 && obj is ArtDMX other
-                && this.Sequence == other.Sequence
-                && this.Physical == other.Physical
-                && this.Data.SequenceEqual(other.Data);
+                && Sequence == other.Sequence
+                && Physical == other.Physical
+                && Data.SequenceEqual(other.Data);
         }
-        public override string ToString()
-        {
-            return $"{nameof(ArtDMX)}: Sequence: {Sequence}, Physical: {Physical}, Data[{Data?.Length ?? 0}]";
-        }
+        public override string ToString() => $"{nameof(ArtDMX)}: Sequence: {Sequence}, Physical: {Physical}, Data[{Data?.Length ?? 0}]";
     }
 }

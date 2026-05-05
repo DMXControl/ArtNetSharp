@@ -22,10 +22,10 @@ public abstract class AbstractInstance : IInstance
     protected static ILogger Logger { get; private set; } = null;
     protected bool IsDisposed { get; private set; }
     protected bool IsDisposing { get; private set; }
-    bool IDisposableExtended.IsDisposed { get => IsDisposed; }
-    bool IDisposableExtended.IsDisposing { get => IsDisposing; }
+    bool IDisposableExtended.IsDisposed => IsDisposed;
+    bool IDisposableExtended.IsDisposing => IsDisposing;
 
-    public bool IsDeactivated { get { return !ArtNetInstance?.Instances.Contains(this) ?? true; } }
+    public bool IsDeactivated => !ArtNetInstance?.Instances.Contains(this) ?? true;
 
     private readonly Random _random;
     internal ArtNet ArtNetInstance;
@@ -58,7 +58,7 @@ public abstract class AbstractInstance : IInstance
     public virtual UID UID { get; } = UID.Empty;
 
     private readonly List<PortConfig> portConfigs = new List<PortConfig>();
-    public ReadOnlyCollection<PortConfig> PortConfigs { get => portConfigs.AsReadOnly(); }
+    public ReadOnlyCollection<PortConfig> PortConfigs => portConfigs.AsReadOnly();
 
     private readonly ConcurrentDictionary<Tuple<PortAddress, IPv4Address>, DMXReceiveBag> receivedDMXBuffer = new ConcurrentDictionary<Tuple<PortAddress, IPv4Address>, DMXReceiveBag>();
     private readonly ConcurrentDictionary<RDM_TransactionID, RDMMessage> artRDMdeBumbReceive = new();
@@ -79,15 +79,9 @@ public abstract class AbstractInstance : IInstance
             Controller = controller;
             Responder = responder;
         }
-        public override string ToString()
-        {
-            return $"{Transaction} C: {Controller} R: {Responder}";
-        }
+        public override string ToString() => $"{Transaction} C: {Controller} R: {Responder}";
 
-        public override bool Equals(object obj)
-        {
-            return obj is RDM_TransactionID iD && Equals(iD);
-        }
+        public override bool Equals(object obj) => obj is RDM_TransactionID iD && Equals(iD);
 
         public bool Equals(RDM_TransactionID other)
         {
@@ -96,10 +90,7 @@ public abstract class AbstractInstance : IInstance
                    Responder.Equals(other.Responder);
         }
 
-        public override int GetHashCode()
-        {
-            return Transaction.GetHashCode() + Controller.GetHashCode() + Responder.GetHashCode();
-        }
+        public override int GetHashCode() => Transaction.GetHashCode() + Controller.GetHashCode() + Responder.GetHashCode();
     }
     private class DMXReceiveBag : IDisposable
     {
@@ -148,7 +139,7 @@ public abstract class AbstractInstance : IInstance
             if (_old < _new)
                 return true;
 
-            if (_old > _new && ((byte.MaxValue - _old) < _new))
+            if (_old > _new && (byte.MaxValue - _old < _new))
                 return true;
 
             return false;
@@ -197,7 +188,7 @@ public abstract class AbstractInstance : IInstance
             await SemaphoreSlim?.WaitAsync();
             try
             {
-                if ((destinationIndex + count) <= Data.Length)
+                if (destinationIndex + count <= Data.Length)
                     Array.Copy(data, 0, Data, destinationIndex.Value, count.Value);
                 else
                     Array.Copy(data, 0, Data, 0, Math.Min(data.Length, Data.Length));
@@ -208,6 +199,7 @@ public abstract class AbstractInstance : IInstance
             {
                 Logger.LogError(e);
             }
+
             SemaphoreSlim?.Release();
         }
 
@@ -241,7 +233,7 @@ public abstract class AbstractInstance : IInstance
     private readonly ConcurrentDictionary<string, RemoteClient> remoteClients = new ConcurrentDictionary<string, RemoteClient>();
     private readonly ConcurrentDictionary<string, RemoteClient> remoteClientsTimeouted = new ConcurrentDictionary<string, RemoteClient>();
     public IReadOnlyCollection<RemoteClient> RemoteClients { get; private set; } = new List<RemoteClient>();
-    public IReadOnlyCollection<RemoteClientPort> RemoteClientsPorts { get { return remoteClients?.Where(rc => rc.Value?.Ports != null).ToList().SelectMany(rc => rc.Value.Ports).ToList().AsReadOnly(); } }
+    public IReadOnlyCollection<RemoteClientPort> RemoteClientsPorts => remoteClients?.Where(rc => rc.Value?.Ports != null).ToList().SelectMany(rc => rc.Value.Ports).ToList().AsReadOnly();
 
     public event EventHandler<PortAddress> DMXReceived;
     public event EventHandler SyncReceived;
@@ -283,6 +275,7 @@ public abstract class AbstractInstance : IInstance
                     {
                         Logger.LogError(ex);
                     }
+
                     lastSendPollTime = DateTime.UtcNow;
                     await Task.Delay(300);
                 }
@@ -298,7 +291,7 @@ public abstract class AbstractInstance : IInstance
     {
         _random = new Random();
         ArtNetInstance = _artnet;
-        Logger = Logging.CreateLogger(this.GetType());
+        Logger = Logging.CreateLogger(GetType());
 
         ArtNetInstance.OnInstanceAdded += ArtNet_OnInstanceAdded;
         ArtNetInstance.OnInstanceRemoved += ArtNet_OnInstanceRemoved;
@@ -331,7 +324,7 @@ public abstract class AbstractInstance : IInstance
 
     void IInstance.PacketReceived(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         try
@@ -392,14 +385,14 @@ public abstract class AbstractInstance : IInstance
     #region Send
     protected async Task TrySendPacket(AbstractArtPacketCore packet, IPv4Address destinationIp)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         await ArtNetInstance.TrySendPacket(packet, destinationIp);
     }
     protected async Task TrySendBroadcastPacket(AbstractArtPacketCore packet)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         await ArtNetInstance.TrySendBroadcastPacket(packet);
@@ -407,7 +400,7 @@ public abstract class AbstractInstance : IInstance
 
     private async Task sendArtPoll(PortAddress targetPortTop = default, PortAddress targetPortBottom = default)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         using ArtPoll artPoll = new ArtPoll(OEMProductCode, ESTAManufacturerCode, targetPortTop: targetPortTop, targetPortBottom: targetPortBottom);
@@ -415,14 +408,14 @@ public abstract class AbstractInstance : IInstance
     }
     private async Task sendArtPollReply(IPv4Address ownIp, IPv4Address destinationIp, ArtPoll artPoll = null)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated || ArtNetInstance == null)
+        if (IsDisposing || IsDisposed || IsDeactivated || ArtNetInstance == null)
             return;
 
         try
         {
             await Task.Delay((int)(800 * _random.NextDouble())); //Art-Net 4 Protocol Release V1.4 Document Revision 1.4dh 19/7/2023 - 23 -
 
-            if (this.IsDisposing || this.IsDisposed || this.IsDeactivated || ArtNetInstance == null)
+            if (IsDisposing || IsDisposed || IsDeactivated || ArtNetInstance == null)
                 return;
 
             MACAddress ownMacAddress = ArtNetInstance.GetMacAdress(ownIp);
@@ -434,7 +427,6 @@ public abstract class AbstractInstance : IInstance
             var ports = portConfigs.OrderBy(pc => pc.PortAddress).ToList();
             if (artPoll.Flags.HasFlag(EArtPollFlags.EnableTargetedMode))
                 ports = ports.Where(pc => pc.PortAddress >= artPoll.TargetPortBottom && pc.PortAddress <= artPoll.TargetPortTop).ToList();
-
 
             Task taskRoot = Task.Run(async () =>
             {
@@ -501,6 +493,7 @@ public abstract class AbstractInstance : IInstance
                     tasks.Add(task);
                 }
             }
+
             await Task.WhenAll(tasks);
         }
         catch (Exception e)
@@ -514,13 +507,10 @@ public abstract class AbstractInstance : IInstance
     }
 
     #region Send ArtTimeCode
-    public async Task SendArtTimeCode(ArtTimeCode timeCode, IPv4Address? ipAddress = null, bool broadcast = true)
-    {
-        await sendArtTimeCode(timeCode, ipAddress, broadcast);
-    }
+    public async Task SendArtTimeCode(ArtTimeCode timeCode, IPv4Address? ipAddress = null, bool broadcast = true) => await sendArtTimeCode(timeCode, ipAddress, broadcast);
     private async Task sendArtTimeCode(ArtTimeCode timeCode, IPv4Address? ipAddress = null, bool broadcast = true)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         if (broadcast)
@@ -536,13 +526,10 @@ public abstract class AbstractInstance : IInstance
     #endregion
 
     #region Send ArtTimeSync
-    public async Task SendArtTimeSync(ArtTimeSync timeSync, IPv4Address? ipAddress = null, bool broadcast = true)
-    {
-        await sendArtTimeSync(timeSync, ipAddress, broadcast);
-    }
+    public async Task SendArtTimeSync(ArtTimeSync timeSync, IPv4Address? ipAddress = null, bool broadcast = true) => await sendArtTimeSync(timeSync, ipAddress, broadcast);
     private async Task sendArtTimeSync(ArtTimeSync timeSync, IPv4Address? ipAddress = null, bool broadcast = true)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         if (broadcast)
@@ -565,7 +552,7 @@ public abstract class AbstractInstance : IInstance
     }
     private async Task sendArtSync(params IPv4Address[] addresses)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
         using ArtSync artSync = new ArtSync();
         if (addresses.Length == 0)
@@ -574,7 +561,8 @@ public abstract class AbstractInstance : IInstance
         {
             var smalArray = addresses.Distinct();
             var networkClients = ArtNetInstance.NetworkClients.ToList();
-            var broadcastAddresses = smalArray.Select(a => networkClients.FirstOrDefault(n => Tools.IsInSubnet(a, n.IPv4Mask, n.LocalIpAddress)).BroadcastIpAddress).Distinct().ToList(); ;
+            var broadcastAddresses = smalArray.Select(a => networkClients.FirstOrDefault(n => Tools.IsInSubnet(a, n.IPv4Mask, n.LocalIpAddress)).BroadcastIpAddress).Distinct().ToList();
+            ;
             broadcastAddresses.ForEach(async (b) => await TrySendPacket(artSync, b));
         }
     }
@@ -583,7 +571,7 @@ public abstract class AbstractInstance : IInstance
     #region Send ArtDMX
     internal async Task sendArtDMX(RemoteClientPort remoteClientPort, byte sourcePort, byte[] data, byte sequence, bool broadcast = false)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         if (!remoteClientPort.OutputPortAddress.HasValue)
@@ -598,7 +586,7 @@ public abstract class AbstractInstance : IInstance
     }
     public async Task sendArtDMX(IPv4Address ipAddress, PortAddress portAddress, byte sourcePort, byte[] data, byte sequence)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         ArtDMX artDMX = new ArtDMX(sequence, sourcePort, portAddress.Net, portAddress.Address, data, sequence);
@@ -610,14 +598,14 @@ public abstract class AbstractInstance : IInstance
         const double dmxKeepAliveTime = 800; // Spec 1.4dh page 53
         const int interval = (int)(dmxRefreshTime / 3);
         List<Task> sendTasks = new List<Task>();
-        while (!(this.IsDisposing || this.IsDisposed))
+        while (!(IsDisposing || IsDisposed))
         {
             // Prevent CPU loop
             await Task.Delay(interval);
 
-            if (!this.EnableDmxOutput)
+            if (!EnableDmxOutput)
                 await Task.Delay(300);
-            if (this.IsDeactivated)
+            if (IsDeactivated)
                 await Task.Delay(300);
 
             try
@@ -649,15 +637,18 @@ public abstract class AbstractInstance : IInstance
                                     Logger.LogError(e, "Inner Block");
                                     continue;
                                 }
+
                                 foreach (IPv4Address ip in config?.AdditionalIPEndpoints)
                                 {
                                     sendTasks.Add(sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, bag.GetSequence()));
                                     sended++;
                                 }
+
                                 bag.LastSended = DateTime.UtcNow;
                             }
                     }
                     catch (Exception e) { Logger.LogError(e, "Outer Block"); }
+
                 await Task.WhenAll(sendTasks);
                 sendTasks.Clear();
                 if (EnableSync && sended != 0)
@@ -722,7 +713,7 @@ public abstract class AbstractInstance : IInstance
     }
     public async Task SendArtRDM(RDMMessage rdmMessage)
     {
-        if (this.IsDisposed || this.IsDisposing || this.IsDeactivated)
+        if (IsDisposed || IsDisposing || IsDeactivated)
             return;
 
         if (!rdmMessage.Command.HasFlag(ERDM_Command.RESPONSE) && rdmMessage.SourceUID == UID.Empty)
@@ -755,6 +746,7 @@ public abstract class AbstractInstance : IInstance
                     await TrySendPacket(artRDM, port.IpAddress);
                 }));
             }
+
             await Task.WhenAll(tasks);
         }
     }
@@ -765,35 +757,25 @@ public abstract class AbstractInstance : IInstance
         await TrySendPacket(artRDM, ip);
     }
 
-    private async Task handleGatewayQueue(ArtRDM artRDM, IPv4Address ip)
-    {
-        await Task.CompletedTask;
-        //if (artRDMgatewayQueues.TryGetValue(ip, out GatewayRDMFiFoQueue gatewayRDMFiFoQueue))
-        //    await gatewayRDMFiFoQueue.AwaitSlot();
-        //else
-        //{
-        //    gatewayRDMFiFoQueue = new GatewayRDMFiFoQueue(ip);
-        //    artRDMgatewayQueues.TryAdd(ip, gatewayRDMFiFoQueue);
-        //}
-        //gatewayRDMFiFoQueue.AddToQueue(artRDM);
-
-    }
-    public async Task SendArtNzs(ArtNzs artNzs, IPv4Address ip)
-    {
-        await TrySendPacket(artNzs, ip);
-    }
+    //if (artRDMgatewayQueues.TryGetValue(ip, out GatewayRDMFiFoQueue gatewayRDMFiFoQueue))
+    //    await gatewayRDMFiFoQueue.AwaitSlot();
+    //else
+    //{
+    //    gatewayRDMFiFoQueue = new GatewayRDMFiFoQueue(ip);
+    //    artRDMgatewayQueues.TryAdd(ip, gatewayRDMFiFoQueue);
+    //}
+    //gatewayRDMFiFoQueue.AddToQueue(artRDM);
+    private async Task handleGatewayQueue(ArtRDM artRDM, IPv4Address ip) => await Task.CompletedTask;
+    public async Task SendArtNzs(ArtNzs artNzs, IPv4Address ip) => await TrySendPacket(artNzs, ip);
 
     #region Send ArtAddress
-    public async Task SendArtAddress(ArtAddress artAddress, IPv4Address ipAddress)
-    {
-        await sendArtAddress(artAddress, ipAddress);
-    }
+    public async Task SendArtAddress(ArtAddress artAddress, IPv4Address ipAddress) => await sendArtAddress(artAddress, ipAddress);
     private async Task sendArtAddress(ArtAddress artAddress, IPv4Address ipAddress)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
-        switch (this.EstCodes)
+        switch (EstCodes)
         {
             case EStCodes.StController:
             case EStCodes.StConfig:
@@ -804,16 +786,13 @@ public abstract class AbstractInstance : IInstance
     #endregion
 
     #region Send ArtIpProg
-    public async Task SendArtIpProg(ArtIpProg artIpProg, IPv4Address ipAddress)
-    {
-        await sendArtIpProg(artIpProg, ipAddress);
-    }
+    public async Task SendArtIpProg(ArtIpProg artIpProg, IPv4Address ipAddress) => await sendArtIpProg(artIpProg, ipAddress);
     private async Task sendArtIpProg(ArtIpProg artIpProg, IPv4Address ipAddress)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
-        switch (this.EstCodes)
+        switch (EstCodes)
         {
             case EStCodes.StController:
             case EStCodes.StConfig:
@@ -828,7 +807,7 @@ public abstract class AbstractInstance : IInstance
     #region Process
     private async Task processArtPollReply(ArtPollReply artPollReply, IPv4Address localIp, IPv4Address sourceIp)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         if (localIp == sourceIp)
@@ -861,6 +840,7 @@ public abstract class AbstractInstance : IInstance
                 remoteClient = new RemoteClient(artPollReply) { Instance = this };
                 add(remoteClient);
             }
+
             void add(RemoteClient rc)
             {
                 var res = remoteClients.AddOrUpdate(rc.ID, (x) => { return rc; }, (x, y) => { return rc; });
@@ -870,16 +850,18 @@ public abstract class AbstractInstance : IInstance
                     Task.Run(() => RemoteClientDiscovered?.InvokeFailSafe(this, rc));
                     return;
                 }
+
                 Logger.LogWarning($"Cant add {rc.ID} to Dictionary");
             }
         }
         catch (Exception ex) { Logger.LogError(ex); }
+
         RemoteClients = remoteClients.Select(p => p.Value).ToList().AsReadOnly();
         pollReplyProcessSemaphoreSlim.Release();
     }
     private void processArtDMX(ArtDMX artDMX, IPv4Address sourceIp)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         var port = portConfigs.FirstOrDefault(p => p.Type.HasFlag(EPortType.OutputFromArtNet) && p.Universe == artDMX.Address.Universe && p.Subnet == artDMX.Address.Subnet && p.Net == artDMX.Net);
@@ -904,7 +886,7 @@ public abstract class AbstractInstance : IInstance
     }
     protected async Task processArtData(ArtData artData, IPv4Address source)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated || !this.SendArtData)
+        if (IsDisposing || IsDisposed || IsDeactivated || !SendArtData)
             return;
 
         try
@@ -914,16 +896,28 @@ public abstract class AbstractInstance : IInstance
                 await TrySendPacket(new ArtDataReply(OEMProductCode, ESTAManufacturerCode, data: null), source);
                 return;
             }
+
             ArtDataReply packet = null;
             string str = null;
             switch (artData.Request)
             {
-                case EDataRequest.UrlProduct: str = UrlProduct; break;
-                case EDataRequest.UrlUserGuide: str = UrlUserGuid; break;
-                case EDataRequest.UrlSupport: str = UrlSupport; break;
-                case EDataRequest.UrlPersUdr: str = UrlPersonalityUDR; break;
-                case EDataRequest.UrlPersGdtf: str = UrlPersonalityGDTF; break;
+                case EDataRequest.UrlProduct:
+                    str = UrlProduct;
+                    break;
+                case EDataRequest.UrlUserGuide:
+                    str = UrlUserGuid;
+                    break;
+                case EDataRequest.UrlSupport:
+                    str = UrlSupport;
+                    break;
+                case EDataRequest.UrlPersUdr:
+                    str = UrlPersonalityUDR;
+                    break;
+                case EDataRequest.UrlPersGdtf:
+                    str = UrlPersonalityGDTF;
+                    break;
             }
+
             if (!string.IsNullOrWhiteSpace(str))
                 packet = new ArtDataReply(OEMProductCode, ESTAManufacturerCode, artData.Request, str);
 
@@ -936,16 +930,11 @@ public abstract class AbstractInstance : IInstance
         catch (Exception ex) { Logger.LogError(ex); }
     }
 
-    protected virtual ArtDataReply buildArtDataReply(ArtData artData)
-    {
-
-        return new ArtDataReply(OEMProductCode, ESTAManufacturerCode, artData.Request, data: null);
-    }
-
+    protected virtual ArtDataReply buildArtDataReply(ArtData artData) => new ArtDataReply(OEMProductCode, ESTAManufacturerCode, artData.Request, data: null);
 
     protected async Task processArtTodRequest(ArtTodRequest artTodRequest, IPv4Address source)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         try
@@ -966,7 +955,7 @@ public abstract class AbstractInstance : IInstance
     }
     protected async Task processArtTodControl(ArtTodControl artTodControl, IPv4Address source)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         try
@@ -990,7 +979,7 @@ public abstract class AbstractInstance : IInstance
     }
     protected void processArtTodData(ArtTodData artTodData, IPv4Address source)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
         if (artTodData.UidTotalCount == 0 || artTodData.Uids.Length == 0)
@@ -1044,7 +1033,7 @@ public abstract class AbstractInstance : IInstance
     }
     private async void processArtRDM(ArtRDM artRDM, IPv4Address source)
     {
-        if (this.IsDisposing || this.IsDisposed || this.IsDeactivated)
+        if (IsDisposing || IsDisposed || IsDeactivated)
             return;
         ControllerRDMUID_Bag bag = null;
         try
@@ -1053,6 +1042,7 @@ public abstract class AbstractInstance : IInstance
             {
                 gatewayRDMFiFoQueue.Update(artRDM);
             }
+
             if (!artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE))
             {
                 if (knownControllerRDMUIDs.TryGetValue(artRDM.Source, out bag))
@@ -1097,6 +1087,7 @@ public abstract class AbstractInstance : IInstance
             }
         }
         catch (Exception ex) { Logger.LogError(ex); }
+
         _ = Task.Run(async () =>
         {
             await Task.Delay(2000);
@@ -1107,7 +1098,7 @@ public abstract class AbstractInstance : IInstance
 
     public void AddPortConfig(params PortConfig[] portConfigs)
     {
-        if (this.IsDisposing || this.IsDisposed)
+        if (IsDisposing || IsDisposed)
             return;
 
         foreach (var portConfig in portConfigs)
@@ -1118,7 +1109,7 @@ public abstract class AbstractInstance : IInstance
     }
     public void RemovePortConfig(params PortConfig[] portConfigs)
     {
-        if (this.IsDisposing || this.IsDisposed)
+        if (IsDisposing || IsDisposed)
             return;
 
         foreach (var portConfig in portConfigs)
@@ -1130,7 +1121,7 @@ public abstract class AbstractInstance : IInstance
 
     public void WriteDMXValues(PortAddress portAddress, byte[] data, ushort? destinationIndex = null, ushort? count = null)
     {
-        if (this.IsDisposing || this.IsDisposed)
+        if (IsDisposing || IsDisposed)
             return;
 
         if (data.Length > 512)
@@ -1143,8 +1134,7 @@ public abstract class AbstractInstance : IInstance
         if (count > length)
             throw new ArgumentOutOfRangeException($"{nameof(count)} has to be less then {nameof(data)}.{nameof(data.Length)}");
 
-
-        if ((destinationIndex + count) > 512)
+        if (destinationIndex + count > 512)
             throw new ArgumentOutOfRangeException($"{nameof(destinationIndex)} + {nameof(count)} has to be less then 512");
 
         int _startIndex = 0;
@@ -1153,7 +1143,6 @@ public abstract class AbstractInstance : IInstance
             _startIndex = destinationIndex.Value;
         if (count.HasValue)
             _count = Math.Min(_count, count.Value);
-
 
         try
         {
@@ -1170,7 +1159,7 @@ public abstract class AbstractInstance : IInstance
 
     public byte[] GetReceivedDMX(PortAddress portAddress, EMergeMode mergeMode = EMergeMode.HTP)
     {
-        if (this.IsDisposing || this.IsDisposed || this.receivedDMXBuffer.IsEmpty)
+        if (IsDisposing || IsDisposed || receivedDMXBuffer.IsEmpty)
             return null;
 
         var bags = receivedDMXBuffer.Values.Where(v => v.PortAddress == portAddress).ToList();
@@ -1203,7 +1192,7 @@ public abstract class AbstractInstance : IInstance
     }
     public UID[] GetReceivedRDMUIDs()
     {
-        if (this.IsDisposing || this.IsDisposed)
+        if (IsDisposing || IsDisposed)
             return null;
 
         return KnownRDMUIDs.Where(k => !k.Timouted()).Select(k => k.Uid).ToArray();
@@ -1211,7 +1200,7 @@ public abstract class AbstractInstance : IInstance
 
     protected async Task PerformRDMDiscovery(PortAddress? portAddress = null, bool flush = false, bool broadcast = false)
     {
-        if (this.IsDisposing || this.IsDisposed)
+        if (IsDisposing || IsDisposed)
             return;
 
         List<RemoteClientPort> ports = null;
@@ -1244,18 +1233,13 @@ public abstract class AbstractInstance : IInstance
                 }
             }));
         }
+
         await Task.WhenAll(tasks);
     }
 
-    protected virtual async Task PerformRDMDiscoverOnOutput(PortConfig portConfig)
-    {
-        await Task.Delay(500);
-    }
+    protected virtual async Task PerformRDMDiscoverOnOutput(PortConfig portConfig) => await Task.Delay(500);
 
-    protected virtual NodeStatus GetOwnNodeStatus()
-    {
-        return NodeStatus.None;
-    }
+    protected virtual NodeStatus GetOwnNodeStatus() => NodeStatus.None;
     private NodeStatus getOwnNodeStatus()
     {
         NodeStatus nodeStatus = GetOwnNodeStatus() | NodeStatus.NodeSupports15BitPortAddress;
@@ -1281,6 +1265,7 @@ public abstract class AbstractInstance : IInstance
                     RDMUIDReceived?.InvokeFailSafe(this, bag);
             }
         }
+
         KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
     }
     public void RemoveOutdatedRdmUIDs()
@@ -1295,7 +1280,7 @@ public abstract class AbstractInstance : IInstance
 
     private async Task triggerSendArtPoll()
     {
-        if (this.IsDisposed || this.IsDisposing || this.IsDeactivated)
+        if (IsDisposed || IsDisposing || IsDeactivated)
             return;
         //if (EstCodes != EStCodes.StController)// As Spec. only Controler are allowed to send ArtPoll
         //    return;
@@ -1321,7 +1306,6 @@ public abstract class AbstractInstance : IInstance
                     continue;
                 else
                     top = port.PortAddress;
-
 
                 if (bottom.HasValue && top.HasValue)
                 {
@@ -1366,21 +1350,22 @@ public abstract class AbstractInstance : IInstance
         {
             Logger.LogError(ex);
         }
+
         RemoteClients = remoteClients.Select(p => p.Value).ToList().AsReadOnly();
         pollReplyProcessSemaphoreSlim.Release();
     }
 
     void IDisposable.Dispose()
     {
-        if (this.IsDisposed || this.IsDisposing)
+        if (IsDisposed || IsDisposing)
             return;
 
         Logger.LogInformation($"Disposing {Name}");
-        this.IsDisposing = true;
+        IsDisposing = true;
         try
         {
 
-            if (!this.IsDeactivated)
+            if (!IsDeactivated)
                 ArtNetInstance.RemoveInstance(this);
 
             ArtNetInstance.OnInstanceAdded -= ArtNet_OnInstanceAdded;
@@ -1408,8 +1393,8 @@ public abstract class AbstractInstance : IInstance
         finally
         {
             ArtNetInstance = null;
-            this.IsDisposed = true;
-            this.IsDisposing = false;
+            IsDisposed = true;
+            IsDisposing = false;
             Logger.LogInformation($"Disposed {Name}");
             GC.SuppressFinalize(this);
         }
@@ -1422,34 +1407,24 @@ public abstract class AbstractInstance : IInstance
 
     public class GatewayRDMFiFoQueue : INotifyPropertyChanged
     {
-        private int available = 0;
-        private byte max = 0;
-        private bool implemented;
-
         public readonly IPv4Address IpAddress;
 
         private readonly List<ArtRDM> bag = new List<ArtRDM>();
 
         public int Available
         {
-            get { return available; }
+            get;
             private set
             {
-                if (available == value)
+                if (field == value)
                     return;
 
-                available = value;
+                field = value;
                 PropertyChanged?.InvokeFailSafe(this, new PropertyChangedEventArgs(nameof(Available)));
             }
-        }
-        public byte Max
-        {
-            get { return max; }
-        }
-        public bool Implemented
-        {
-            get { return implemented; }
-        }
+        } = 0;
+        public byte Max { get; private set; } = 0;
+        public bool Implemented { get; private set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -1463,9 +1438,9 @@ public abstract class AbstractInstance : IInstance
             if (!response.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE))
                 return;
 
-            max = response.FifoMax;
-            implemented = max != 0;
-            if (implemented)
+            Max = response.FifoMax;
+            Implemented = Max != 0;
+            if (Implemented)
             {
                 Available = response.FifoAvailable;
             }
@@ -1477,7 +1452,6 @@ public abstract class AbstractInstance : IInstance
                     Available = 1;
                 }
             }
-
         }
 
         internal void AddToQueue(ArtRDM request)

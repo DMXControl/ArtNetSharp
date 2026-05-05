@@ -19,14 +19,14 @@ namespace ArtNetSharp;
 public class ArtNet : IDisposable
 {
     private static readonly Random _random = new Random();
-    private static ILogger<ArtNet> Logger = Logging.CreateLogger<ArtNet>();
-    private static ArtNet instance;
+    private static readonly ILogger<ArtNet> Logger = Logging.CreateLogger<ArtNet>();
+
     public static ArtNet Instance
     {
         get
         {
-            instance ??= new ArtNet();
-            return instance;
+            field ??= new ArtNet();
+            return field;
         }
     }
 
@@ -36,7 +36,7 @@ public class ArtNet : IDisposable
     private readonly Dictionary<IPv4Address, MACAddress> ipTomacAddressCache = new Dictionary<IPv4Address, MACAddress>();
 
     private readonly ConcurrentDictionary<uint, AbstractInstance> instances = new ConcurrentDictionary<uint, AbstractInstance>();
-    public ReadOnlyCollection<AbstractInstance> Instances { get => instances.Values.ToList().AsReadOnly(); }
+    public ReadOnlyCollection<AbstractInstance> Instances => instances.Values.ToList().AsReadOnly();
 
     private readonly ConcurrentDictionary<uint, NetworkClientBag> networkClients = new ConcurrentDictionary<uint, NetworkClientBag>();
     public IReadOnlyCollection<NetworkClientBag> NetworkClients => networkClients.Values.ToList().AsReadOnly();
@@ -46,20 +46,16 @@ public class ArtNet : IDisposable
     public bool IsDisposing { get; private set; }
     public bool IsDisposed { get; private set; }
 
-    private NetworkLoopAdapter loopNetwork;
     internal NetworkLoopAdapter LoopNetwork
     {
-        get
-        {
-            return loopNetwork;
-        }
+        get;
         set
         {
-            if (loopNetwork != null)
-                loopNetwork.DataReceived -= LoopNetwork_DataReceived;
-            loopNetwork = value;
-            if (loopNetwork != null)
-                loopNetwork.DataReceived += LoopNetwork_DataReceived;
+            if (field != null)
+                field.DataReceived -= LoopNetwork_DataReceived;
+            field = value;
+            if (field != null)
+                field.DataReceived += LoopNetwork_DataReceived;
         }
     }
 
@@ -83,31 +79,22 @@ public class ArtNet : IDisposable
 
         private UdpClient _client = null;
         private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
-        private bool _clientAlive = false;
-        public bool ClientAlive
-        {
-            get
-            {
-                return _clientAlive;
-            }
-        }
 
-        private bool enabled = true;
+        public bool ClientAlive { get; private set; } = false;
+
         public bool Enabled
         {
-            get { return enabled; }
-            set
+            get; set
             {
-                if (enabled == value)
+                if (field == value)
                     return;
-                enabled = value;
+                field = value;
 
-                Logger.LogDebug($"Client ({LocalIpAddress ?? BroadcastIpAddress}) {(enabled ? "Enabled" : "Disabled")}");
+                Logger.LogDebug($"Client ({LocalIpAddress ?? BroadcastIpAddress}) {(field ? "Enabled" : "Disabled")}");
             }
-        }
+        } = true;
         public bool IsDisposing { get; private set; }
         public bool IsDisposed { get; private set; }
-
 
         public event EventHandler<Tuple<IPv4Address, UdpReceiveResult>> ReceivedData;
 
@@ -133,7 +120,7 @@ public class ArtNet : IDisposable
             await semaphoreSlim.WaitAsync();
             try
             {
-                _clientAlive = false;
+                ClientAlive = false;
                 _client?.Close();
                 (_client as IDisposable)?.Dispose();
                 notMatchingIpAdddresses.Clear();
@@ -171,7 +158,7 @@ public class ArtNet : IDisposable
                 IPAddress endpointIp = getEndointIP();
                 IPEndPoint localEp = new IPEndPoint(endpointIp, Constants.ARTNET_PORT);
                 _client.Client.Bind(localEp);
-                _clientAlive = true;
+                ClientAlive = true;
                 _ = StartListening();
                 Logger?.LogTrace($"Client ({LocalIpAddress}): initialized!");
             }
@@ -197,7 +184,7 @@ public class ArtNet : IDisposable
             {
                 while (true)
                 {
-                    if (this.IsDisposed || this.IsDisposing)
+                    if (IsDisposed || IsDisposing)
                         return;
 
                     UdpReceiveResult received = await _client.ReceiveAsync();
@@ -208,7 +195,6 @@ public class ArtNet : IDisposable
                             Logger?.LogTrace($"Drop Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
                             return;
                         }
-
 
                     if (Enabled)
                         ReceivedData?.InvokeFailSafe(this, new Tuple<IPv4Address, UdpReceiveResult>(LocalIpAddress, received));
@@ -258,6 +244,7 @@ public class ArtNet : IDisposable
             {
                 Logger.LogError(e);
             }
+
             return null;
         }
 
@@ -273,19 +260,19 @@ public class ArtNet : IDisposable
             await semaphoreSlim.WaitAsync();
             try
             {
-                if (!_clientAlive || _client?.Client == null)
+                if (!ClientAlive || _client?.Client == null)
                     return;
 
                 await _client.SendAsync(data, data.Length, new IPEndPoint(destinationIp, Constants.ARTNET_PORT));
                 //#if DEBUG
-                //                    Logger.LogTrace($"Send Packet to {destinationIp} -> {packet}");
+                //  Logger.LogTrace($"Send Packet to {destinationIp} -> {packet}");
                 //#endif
                 return;
             }
             catch (SocketException se)
             {
                 Logger?.LogWarning(se, $"On Client {LocalIpAddress}, could not send packet: {packet}, Client will be Disposed");
-                this.Dispose();
+                Dispose();
             }
             catch (Exception e)
             {
@@ -306,7 +293,7 @@ public class ArtNet : IDisposable
             await semaphoreSlim.WaitAsync();
             try
             {
-                if (!_clientAlive || _client?.Client == null)
+                if (!ClientAlive || _client?.Client == null)
                     return;
                 await _client.SendAsync(data, data.Length, broadcastEndpoint);
                 //#if DEBUG
@@ -317,7 +304,7 @@ public class ArtNet : IDisposable
             catch (SocketException se)
             {
                 Logger?.LogWarning(se, $"On Client {LocalIpAddress}, could not send packet: {packet}, Client will be Disposed");
-                this.Dispose();
+                Dispose();
             }
             catch (Exception e)
             {
@@ -403,10 +390,7 @@ public class ArtNet : IDisposable
         loggerProviders.Add(loggerProvider);
     }
 
-    private void UpdateNetworkClientsTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-    {
-        updateNetworkClients();
-    }
+    private void UpdateNetworkClientsTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e) => updateNetworkClients();
 
     private void ReceivedData(object sender, Tuple<IPv4Address, UdpReceiveResult> e)
     {
@@ -430,6 +414,7 @@ public class ArtNet : IDisposable
                 processPacket(packet, localIpAddress, sourceIp);
                 return;
             }
+
             Logger.LogWarning($"Can't deserialize Data to ArtNet-Packet from {sourceIp}");
         }
         catch (ObjectDisposedException ed) { Logger.LogTrace(ed); }
@@ -493,6 +478,7 @@ public class ArtNet : IDisposable
         {
             Logger.LogError(e);
         }
+
         return false;
     }
     public MACAddress GetMacAdress(IPv4Address ip)
@@ -519,6 +505,7 @@ public class ArtNet : IDisposable
         {
             Logger.LogError(e);
         }
+
         return new MACAddress();
     }
     private readonly SemaphoreSlim updateNetworkSenaphoreSlim = new SemaphoreSlim(1);
@@ -530,7 +517,7 @@ public class ArtNet : IDisposable
         if (IsDisposed || IsDisposing || updateNetworkSenaphoreSlim == null)
             return;
 
-        if (this.networkClients.Where(nc => !nc.Value.ClientAlive).Select(nc => nc.Key) is List<uint> networkClientBagsToDestroyKeys)
+        if (networkClients.Where(nc => !nc.Value.ClientAlive).Select(nc => nc.Key) is List<uint> networkClientBagsToDestroyKeys)
             foreach (var ncb_key in networkClientBagsToDestroyKeys)
                 if (networkClients.TryRemove(ncb_key, out NetworkClientBag ncb))
                     ncb.Dispose();
@@ -545,7 +532,8 @@ public class ArtNet : IDisposable
             foreach (NetworkInterface @interface in interfaces)
             {
                 //if (@interface.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
-                if (@interface.OperationalStatus != OperationalStatus.Up) continue;
+                if (@interface.OperationalStatus != OperationalStatus.Up)
+                    continue;
                 UnicastIPAddressInformationCollection unicastIpInfoCol = @interface.GetIPProperties().UnicastAddresses;
                 foreach (UnicastIPAddressInformation ipInfo in unicastIpInfoCol)
                 {
@@ -616,7 +604,7 @@ public class ArtNet : IDisposable
 
     internal async Task TrySendPacket(AbstractArtPacketCore packet, IPv4Address destinationIp)
     {
-        if (this.IsDisposed || this.IsDisposing)
+        if (IsDisposed || IsDisposing)
             return;
         if (LoopNetwork == null)
         {
@@ -632,7 +620,7 @@ public class ArtNet : IDisposable
     }
     internal async Task TrySendBroadcastPacket(AbstractArtPacketCore packet)
     {
-        if (this.IsDisposed || this.IsDisposing)
+        if (IsDisposed || IsDisposing)
             return;
 
         if (LoopNetwork == null)
@@ -662,6 +650,7 @@ public class ArtNet : IDisposable
             _updateNetworkClientsTimer.Elapsed -= UpdateNetworkClientsTimer_Elapsed;
             _updateNetworkClientsTimer = null;
         }
+
         foreach (var instance in instances)
             ((IDisposable)instance.Value).Dispose();
         instances.Clear();
@@ -670,6 +659,7 @@ public class ArtNet : IDisposable
             net.Value.Enabled = false;
             net.Value.Dispose();
         }
+
         networkClients?.Clear();
         loggerProviders?.Clear();
 
