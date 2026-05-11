@@ -1005,7 +1005,7 @@ public abstract class AbstractInstance : IInstance
 
                 if (ports.Count == 0)
                 {
-                    Logger?.LogWarning($"No Port found for Port: {port}, BindIndex: {bindIndex}");
+                    Logger?.LogWarning($"No Port found for Port: {port}, BindIndex: {bindIndex}, SourceIp: {source}");
                     ports = RemoteClientsPorts
                     .Where(p => IPv4Address.Equals(p.IpAddress, source) && p.BindIndex == port)
                     .ToList();
