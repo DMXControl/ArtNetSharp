@@ -21,6 +21,7 @@ public sealed class ArtPollReply : AbstractArtPacketCore
     public readonly string ShortName;
     public readonly string LongName;
     public readonly ushort OemCode;
+    public readonly ushort ArtNetPort = Constants.ARTNET_PORT;
     /// <summary>
     /// The ESTA manufacturer code. The ESTA
     /// Manufacturer Code is assigned by ESTA and
@@ -274,7 +275,8 @@ public sealed class ArtPollReply : AbstractArtPacketCore
 
         //3 IP Address[4]
         OwnIp = new IPv4Address(packet[10], packet[11], packet[12], packet[13]);
-        // 4 Port (Not needet)
+
+        ArtNetPort = (ushort)(packet[15] << 8 | packet[14]); // 4 Port
 
         MajorVersion = packet[16]; // 5 VersInfoH
         MinorVersion = packet[17]; // 6 VersInfoL
@@ -430,7 +432,7 @@ public sealed class ArtPollReply : AbstractArtPacketCore
         p[13] = OwnIp.B4; // IP Address 4
 
         // 4 Port
-        Tools.FromUShort(Constants.ARTNET_PORT, out p[14], out p[15]);
+        Tools.FromUShort(ArtNetPort, out p[14], out p[15]);
 
         p[16] = MajorVersion;                                   // 5 VersInfoH
         p[17] = MinorVersion;                                   // 6 VersInfoL
