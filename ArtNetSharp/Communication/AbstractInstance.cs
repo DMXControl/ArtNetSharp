@@ -614,10 +614,13 @@ public abstract class AbstractInstance : IInstance
 
                 int sended = 0;
                 var utcNow = DateTime.UtcNow;
-                foreach (var port in ports)
+                foreach (var group in ports.GroupBy(p => p.OutputPortAddress))
                     try
                     {
-                        if (sendDMXBuffer.TryGetValue(port.OutputPortAddress.Value, out DMXSendBag bag))
+                        if (!group.Key.HasValue)
+                            continue;
+                        PortAddress outputPortAddress = group.Key.Value;
+                        if (sendDMXBuffer.TryGetValue(outputPortAddress, out DMXSendBag bag))
                             if ((bag.Updated && (utcNow - bag.LastSended).TotalMilliseconds >= dmxRefreshTime) || (utcNow - bag.LastSended).TotalMilliseconds >= dmxKeepAliveTime)
                             {
                                 PortConfig config = null;
@@ -627,14 +630,20 @@ public abstract class AbstractInstance : IInstance
                                     bag.LastSended = utcNow;
                                     // Send only to ports which are inputs into ArtNet
                                     config = portConfigs?.Where(cfg => cfg.Input)
-                                                         .FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, port.OutputPortAddress));
+                                                         .FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, outputPortAddress));
 
                                     if (config == null)
                                         continue;
 
                                     sourcePort = config?.PortNumber ?? 0;
-                                    sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, bag.GetSequence(), config?.ForceBroadcast ?? false));
-                                    sended++;
+                                    var sequence = bag.GetSequence();
+                                    var ipGroups = group.GroupBy(g => g.IpAddress);
+                                    foreach (var ipGroup in ipGroups)
+                                    {
+                                        var port = ipGroup.First();
+                                        sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, sequence, config?.ForceBroadcast ?? false));
+                                        sended++;
+                                    }
                                 }
                                 catch (Exception e)
                                 {
@@ -642,7 +651,8 @@ public abstract class AbstractInstance : IInstance
                                     continue;
                                 }
 
-                                foreach (IPv4Address ip in config?.AdditionalIPEndpoints)
+                                var additionalEndpoints = config?.AdditionalIPEndpoints.ToList();
+                                foreach (IPv4Address ip in additionalEndpoints)
                                 {
                                     sendTasks.Add(sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, bag.GetSequence()));
                                     sended++;
