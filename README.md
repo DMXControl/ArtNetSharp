@@ -8,7 +8,7 @@ It enables you to send and receive DMX data over Ethernet, making it ideal for l
 - Full Art-Net 4 protocol support
 - Send and receive DMX data
 - Discover and manage Art-Net nodes
-- Cross-platform: Windows, Linux, and macOS works on .NET 6, .NET 7, .NET 8, .NET 9 and in future upcomming versions
+- Cross-platform: Windows, Linux, and macOS on .NET 8, .NET 9, .NET 10, and .NET 11
 - Easy-to-use API
 - Actively maintained
 
@@ -41,11 +41,10 @@ Receive DMX data from Art-Net:
 
 ## Supported Platforms
 
-- [![.NET 6](https://img.shields.io/badge/.NET%206-5C2D91?logo=.net&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/6.0) (not recommended)
-- [![.NET 7](https://img.shields.io/badge/.NET%207-5C2D91?logo=.net&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/7.0) (not recommended)
 - [![.NET 8](https://img.shields.io/badge/.NET%208-5C2D91?logo=.net&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [![.NET 9](https://img.shields.io/badge/.NET%209-5C2D91?logo=.net&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [![.NET 10](https://img.shields.io/badge/.NET%2010-5C2D91?logo=.net&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [![.NET 11](https://img.shields.io/badge/.NET%2011-5C2D91?logo=.net&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/11.0)
 
 ## Contributing
 
