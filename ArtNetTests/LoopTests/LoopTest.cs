@@ -246,7 +246,7 @@
 //#pragma warning disable CS0618 // Typ oder Element ist veraltet
 //        [Timeout(20000)]
 //#pragma warning restore CS0618 // Typ oder Element ist veraltet
-//        [Test, Order(1)]
+//        [Test]
 //        public async Task TestLoopDetection()
 //        {
 //            TestContext.Out.WriteLine($"{nameof(TestLoopDetection)} [{testSubject.TestLabel}]");
@@ -280,7 +280,7 @@
 //#pragma warning disable CS0618 // Typ oder Element ist veraltet
 //        [Timeout(20000)]
 //#pragma warning restore CS0618 // Typ oder Element ist veraltet
-//        [Test, Order(2)]
+//        [Test]
 //        public async Task TestSendDMX()
 //        {
 //            TestContext.Out.WriteLine($"{nameof(TestSendDMX)} [{testSubject.TestLabel}]");
@@ -367,7 +367,7 @@
 //#pragma warning disable CS0618 // Typ oder Element ist veraltet
 //        [Timeout(20000)]
 //#pragma warning restore CS0618 // Typ oder Element ist veraltet
-//        [Test, Order(3)]
+//        [Test, DependsOnTest(nameof(Test_Default))]
 //        public async Task TestSendDMXTiming()
 //        {
 //            TestContext.Out.WriteLine($"{nameof(TestSendDMXTiming)} [{testSubject.TestLabel}]");
@@ -432,7 +432,7 @@
 //                instanceTX.WriteDMXValues(portAddress, data);
 //                swDMX.Restart();
 //                swSync.Restart();
-                
+
 //            }
 //            void check()
 //            {

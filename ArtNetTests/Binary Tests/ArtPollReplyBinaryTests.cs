@@ -4,8 +4,8 @@ using RDMSharp;
 
 namespace ArtNetTests.Binary_Tests;
 
-[Order(3)]
 [Category("Binary")]
+[DependsOnFixture(typeof(PackagesSerializeDeserialize))]
 [TestFixtureSource(typeof(AbstractArtPollReplyBinaryTestSubject), nameof(AbstractArtPollReplyBinaryTestSubject.TestSubjects))]
 public class ArtPollReplyBinaryTests
 {
@@ -74,11 +74,11 @@ public class ArtPollReplyBinaryTests
                 }
             }
         });
-
+        Assert.That(artPollReply, Is.Not.Null);
         if (testSubject.NodeReport.HasValue)
-            Assert.That(artPollReply.NodeReport, Is.EqualTo(testSubject.NodeReport.Value));
+            Assert.That(artPollReply!.NodeReport, Is.EqualTo(testSubject.NodeReport.Value));
 
         if (testSubject.DataLengthIsEqual)
-            Assert.That(artPollReply.GetPacket().Take(testSubject.Data.Length), Is.EqualTo(testSubject.Data));
+            Assert.That(artPollReply!.GetPacket().Take(testSubject.Data.Length), Is.EqualTo(testSubject.Data));
     }
 }

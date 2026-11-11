@@ -8,6 +8,7 @@
 
 //namespace ArtNetTests
 //{
+//    [DependsOnFixture(typeof(LoggingTests))]
 //    public class NetworkTest
 //    {
 //        ArtNet artNet;

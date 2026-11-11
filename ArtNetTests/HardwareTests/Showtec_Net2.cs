@@ -3,214 +3,214 @@ using ArtNetSharp.Communication;
 using ArtNetTests.Mocks;
 using System.Net.NetworkInformation;
 
-namespace ArtNetTests.HardwareTests
+namespace ArtNetTests.HardwareTests;
+
+public struct ShowtecNet2TestSubject
 {
-    public struct ShowtecNet2TestSubject
+    public static readonly object[] TestSubjects = new object[]
     {
-        public static readonly object[] TestSubjects = new object[]
+        //Patrick Grote, HomeLab: 04.04.2024
+        new ShowtecNet2TestSubject() { IP = new IPv4Address("2.1.1.1"), MAC = new MACAddress("42:4C:4B:64:3F:86"),LongName ="NetWork Node 2(42:4C:4B:64:3F:86)" },
+        /// For Additional Net-2s
+        //new ShowtecNet2TestSubject() { IP = new IPv4Address("2.1.1.2"), MAC = new MACAddress("42:4C:4B:64:3F:86"),LongName ="NetWork Node 2(42:4C:4B:64:3F:86)" }
+    };
+    public MACAddress MAC { get; private set; }
+    public IPv4Address IP { get; private set; }
+    public string LongName { get; private set; }
+    public override readonly string ToString()
+    {
+        return $"Showtec Net-2 ({MAC}) on IP: {IP}";
+    }
+}
+
+[Category("Hardware")]
+[DependsOnFixture(typeof(Luminex_Luminode1))]
+[TestFixtureSource(typeof(ShowtecNet2TestSubject), nameof(ShowtecNet2TestSubject.TestSubjects))]
+public class Showtec_Net2
+{
+    private bool? Pingable;
+    private ArtNet artNet;
+    private readonly ShowtecNet2TestSubject testSubject;
+    private RemoteClient? remoteClient;
+    private RemoteClientPort? remoteClientPort1;
+    private RemoteClientPort? remoteClientPort2;
+    private ControllerInstanceMock instance;
+    private static Tuple<IPv4Address, IPv4Address>[] IPs => Tools.GetIpAddresses();
+    public Showtec_Net2(ShowtecNet2TestSubject _showtecNet2TestSubject)
+    {
+        testSubject = _showtecNet2TestSubject;
+    }
+
+    [OneTimeSetUp]
+    public async Task SetUp()
+    {
+        if (!await IsPingable())
+            return;
+
+        artNet = new ArtNet();
+
+        instance = new ControllerInstanceMock(artNet, 0x1255)
         {
-            //Patrick Grote, HomeLab: 04.04.2024
-            new ShowtecNet2TestSubject() { IP = new IPv4Address("2.1.1.1"), MAC = new MACAddress("42:4C:4B:64:3F:86"),LongName ="NetWork Node 2(42:4C:4B:64:3F:86)" },
-            /// For Additional Net-2s
-            //new ShowtecNet2TestSubject() { IP = new IPv4Address("2.1.1.2"), MAC = new MACAddress("42:4C:4B:64:3F:86"),LongName ="NetWork Node 2(42:4C:4B:64:3F:86)" }
+            Name = $"Test: {nameof(Showtec_Net2)}"
         };
-        public MACAddress MAC { get; private set; }
-        public IPv4Address IP { get; private set; }
-        public string LongName { get; private set; }
-        public override readonly string ToString()
+        for (ushort i = 1; i <= 1; i++)
+            instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, isBeingOutputAsDMX: true) });
+        artNet.AddInstance(instance);
+
+        for (int i = 0; i < 1000; i++)
         {
-            return $"Showtec Net-2 ({MAC}) on IP: {IP}";
+            remoteClient ??= instance.RemoteClients?.FirstOrDefault(rc => testSubject.MAC.Equals(rc.MacAddress));
+            if (remoteClient != null)
+            {
+                remoteClientPort1 ??= remoteClient.Ports.FirstOrDefault(p => p.BindIndex == 1);
+                remoteClientPort2 ??= remoteClient.Ports.FirstOrDefault(p => p.BindIndex == 2);
+            }
+            if (remoteClient != null && remoteClientPort1 != null && remoteClientPort2 != null)
+                return;
+
+            await Task.Delay(10);
         }
     }
 
-    [Category("Hardware"), Order(1001)]
-    [TestFixtureSource(typeof(ShowtecNet2TestSubject), nameof(ShowtecNet2TestSubject.TestSubjects))]
-    public class Showtec_Net2
+    private async Task<bool> IsPingable()
     {
-        private bool? Pingable;
-        private ArtNet artNet;
-        private readonly ShowtecNet2TestSubject testSubject;
-        private RemoteClient? remoteClient;
-        private RemoteClientPort? remoteClientPort1;
-        private RemoteClientPort? remoteClientPort2;
-        private ControllerInstanceMock instance;
-        private static Tuple<IPv4Address, IPv4Address>[] IPs => Tools.GetIpAddresses();
-        public Showtec_Net2(ShowtecNet2TestSubject _showtecNet2TestSubject)
+        if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
+            Pingable = false;
+
+        if (!Pingable.HasValue)
         {
-            testSubject = _showtecNet2TestSubject;
-        }
-
-        [OneTimeSetUp]
-        public async Task SetUp()
-        {
-            if (!await IsPingable())
-                return;
-
-            artNet = new ArtNet();
-
-            instance = new ControllerInstanceMock(artNet, 0x1255)
+            if (!IPs.Any(nc => ArtNetSharp.Tools.IsInSubnet(nc.Item1, nc.Item2, testSubject.IP)))
             {
-                Name = $"Test: {nameof(Showtec_Net2)}"
-            };
-            for (ushort i = 1; i <= 1; i++)
-                instance.AddPortConfig(new PortConfig((byte)i, i, false, true) { PortNumber = (byte)i, Type = EPortType.InputToArtNet | EPortType.ArtNet, GoodOutput = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, isBeingOutputAsDMX: true) });
-            artNet.AddInstance(instance);
-
-            for (int i = 0; i < 1000; i++)
-            {
-                remoteClient ??= instance.RemoteClients?.FirstOrDefault(rc => testSubject.MAC.Equals(rc.MacAddress));
-                if (remoteClient != null)
-                {
-                    remoteClientPort1 ??= remoteClient.Ports.FirstOrDefault(p => p.BindIndex == 1);
-                    remoteClientPort2 ??= remoteClient.Ports.FirstOrDefault(p => p.BindIndex == 2);
-                }
-                if (remoteClient != null && remoteClientPort1 != null && remoteClientPort2 != null)
-                    return;
-
-                await Task.Delay(10);
+                Assert.Ignore($"TestSubject: {testSubject} no matching Network-Adapter found!");
+                return false;
             }
-        }
-
-        private async Task<bool> IsPingable()
-        {
-            if (ArtNetSharp.Tools.IsRunningOnGithubWorker())
-                Pingable = false;
-
-            if (!Pingable.HasValue)
+            var ping = new Ping();
+            for (int i = 0; i < 5; i++)
             {
-                if (!IPs.Any(nc => ArtNetSharp.Tools.IsInSubnet(nc.Item1, nc.Item2, testSubject.IP)))
+                var reply = await ping.SendPingAsync(testSubject.IP, 1000);
+                if (reply.Status == IPStatus.Success)
                 {
-                    Assert.Ignore($"TestSubject: {testSubject} no matching Network-Adapter found!");
-                    return false;
+                    Pingable = true;
+                    return true;
                 }
-                var ping = new Ping();
-                for (int i = 0; i < 5; i++)
-                {
-                    var reply = await ping.SendPingAsync(testSubject.IP, 1000);
-                    if (reply.Status == IPStatus.Success)
-                    {
-                        Pingable = true;
-                        return true;
-                    }
-                }
-                Pingable = false;
             }
-            if (Pingable != true)
-                Assert.Ignore($"TestSubject: {testSubject} IP not found!");
-            return false;
+            Pingable = false;
         }
+        if (Pingable != true)
+            Assert.Ignore($"TestSubject: {testSubject} IP not found!");
+        return false;
+    }
 
-        [OneTimeTearDown]
-        public void TearDown()
-        {
-            if (artNet != null)
-                ((IDisposable)artNet).Dispose();
+    [OneTimeTearDown]
+    public void TearDown()
+    {
+        if (artNet != null)
+            ((IDisposable)artNet).Dispose();
 
-            remoteClient = null;
-        }
+        remoteClient = null;
+    }
 
-        [Test, Order(1)]
-        public void Test_Default()
+    [Test]
+    public void Test_Default()
+    {
+        Assert.Multiple(() =>
         {
-            Assert.Multiple(() =>
-            {
-                Assert.That(remoteClient, Is.Not.Null);
-                Assert.That(remoteClient!.LongName, Is.EqualTo(testSubject.LongName));
-                Assert.That(remoteClient.IpAddress, Is.EqualTo(testSubject.IP));
-                Assert.That(remoteClient.Ports, Has.Count.EqualTo(2));
-                Assert.That(remoteClient.Root.Macro, Is.EqualTo(EMacroState.None));
-                Assert.That(remoteClient.Root.Style, Is.EqualTo(EStCodes.StNode));
-                Assert.That(remoteClient.IsSACNCapable, Is.True);
-                Assert.That(remoteClient.IsLLRPCapable, Is.False);
-                Assert.That(remoteClient.IsDHCPCapable, Is.True);
+            Assert.That(remoteClient, Is.Not.Null);
+            Assert.That(remoteClient!.LongName, Is.EqualTo(testSubject.LongName));
+            Assert.That(remoteClient.IpAddress, Is.EqualTo(testSubject.IP));
+            Assert.That(remoteClient.Ports, Has.Count.EqualTo(2));
+            Assert.That(remoteClient.Root.Macro, Is.EqualTo(EMacroState.None));
+            Assert.That(remoteClient.Root.Style, Is.EqualTo(EStCodes.StNode));
+            Assert.That(remoteClient.IsSACNCapable, Is.True);
+            Assert.That(remoteClient.IsLLRPCapable, Is.False);
+            Assert.That(remoteClient.IsDHCPCapable, Is.True);
 
-                Assert.That(remoteClientPort1, Is.Not.Null);
-                Assert.That(remoteClientPort2, Is.Not.Null);
-            });
-        }
-        [Order(2)]
-        [TestCase(1)]
-        [TestCase(2)]
-        public async Task Test_ArtAddressPort(byte port)
+            Assert.That(remoteClientPort1, Is.Not.Null);
+            Assert.That(remoteClientPort2, Is.Not.Null);
+        });
+    }
+    [DependsOnTest(nameof(Test_Default))]
+    [TestCase(1)]
+    [TestCase(2)]
+    public async Task Test_ArtAddressPort(byte port)
+    {
+        RemoteClientPort rcp = remoteClient!.Ports.FirstOrDefault(p => p.BindIndex == port)!;
+        ArtPollReply backup = rcp.ArtPollReply;
+        await Assert.MultipleAsync(async () => // Test Address Net;
         {
-            RemoteClientPort rcp = remoteClient!.Ports.FirstOrDefault(p => p.BindIndex == port)!;
-            ArtPollReply backup = rcp.ArtPollReply;
-            await Assert.MultipleAsync(async () => // Test Address Net;
+            var net = new Net(55);
+            await instance.SendArtAddress(ArtAddress.CreateSetNet(rcp!.BindIndex, net), remoteClient!.IpAddress);
+            for (int i = 0; i < 10; i++)
             {
-                var net = new Net(55);
-                await instance.SendArtAddress(ArtAddress.CreateSetNet(rcp!.BindIndex, net), remoteClient!.IpAddress);
-                for (int i = 0; i < 10; i++)
-                {
-                    if (rcp!.ArtPollReply.Net.Equals(net))
-                        break;
-                    await Task.Delay(30);
-                }
-                Assert.That(rcp!.ArtPollReply.Net, Is.EqualTo(net));
-                await instance.SendArtAddress(ArtAddress.CreateSetNet(rcp!.BindIndex, backup!.Net), remoteClient!.IpAddress);// reset to Backup
-            });
-            await Assert.MultipleAsync(async () => // Test Address SubNet;
-            {
-                var subnet = new Subnet(11);
-                await instance.SendArtAddress(ArtAddress.CreateSetSubnet(rcp!.BindIndex, subnet), remoteClient!.IpAddress);
-                for (int i = 0; i < 10; i++)
-                {
-                    if (rcp!.ArtPollReply.Subnet.Equals(subnet))
-                        break;
-                    await Task.Delay(30);
-                }
-                Assert.That(rcp!.ArtPollReply.Subnet, Is.EqualTo(subnet));
-                await instance.SendArtAddress(ArtAddress.CreateSetSubnet(rcp!.BindIndex, backup!.Subnet), remoteClient!.IpAddress);// reset to Backup
-            });
-            await Assert.MultipleAsync(async () => // Test Address output Universe;
-            {
-                var outUniverse = new Universe(11);
-                var command = new ArtAddressCommand(EArtAddressCommand.DirectionTx, 0);
-                await instance.SendArtAddress(ArtAddress.CreateSetOutputUniverse(rcp!.BindIndex, outUniverse, command), remoteClient!.IpAddress);
-                for (int i = 0; i < 10; i++)
-                {
-                    if (rcp!.ArtPollReply.OutputUniverses[0].Equals(outUniverse))
-                        break;
-                    await Task.Delay(30);
-                }
-                Assert.That(rcp!.ArtPollReply.OutputUniverses[0], Is.EqualTo(outUniverse));
-                Assert.That(rcp!.ArtPollReply.PortTypes[0].HasFlag(EPortType.OutputFromArtNet), Is.True);
-                command = new ArtAddressCommand(backup!.PortTypes[0].HasFlag(EPortType.OutputFromArtNet) ? EArtAddressCommand.DirectionTx : EArtAddressCommand.DirectionRx, 0);
-                await instance.SendArtAddress(ArtAddress.CreateSetOutputUniverse(rcp!.BindIndex, (Universe)backup?.OutputUniverses[0]!, command), remoteClient!.IpAddress);// reset to Backup
-            });
-            await Assert.MultipleAsync(async () => // Test Address input Universe;
-            {
-                var inUniverse = new Universe(7);
-                var command = new ArtAddressCommand(EArtAddressCommand.DirectionRx, 0);
-                await instance.SendArtAddress(ArtAddress.CreateSetInputUniverse(rcp!.BindIndex, inUniverse, command), remoteClient!.IpAddress);
-                for (int i = 0; i < 10; i++)
-                {
-                    if (rcp!.ArtPollReply.InputUniverses[0].Equals(inUniverse))
-                        break;
-                    await Task.Delay(30);
-                }
-                Assert.That(rcp!.ArtPollReply.InputUniverses[0], Is.EqualTo(inUniverse));
-                Assert.That(rcp!.ArtPollReply.PortTypes[0].HasFlag(EPortType.InputToArtNet), Is.True);
-                command = new ArtAddressCommand(backup!.PortTypes[0].HasFlag(EPortType.OutputFromArtNet) ? EArtAddressCommand.DirectionTx : EArtAddressCommand.DirectionRx, 0);
-                await instance.SendArtAddress(ArtAddress.CreateSetInputUniverse(rcp!.BindIndex, (Universe)backup?.InputUniverses[0]!, command), remoteClient!.IpAddress);// reset to Backup
-            });
-        }
-        [Test, Order(3)]
-        public async Task Test_ArtAddressIndicate()
+                if (rcp!.ArtPollReply.Net.Equals(net))
+                    break;
+                await Task.Delay(30);
+            }
+            Assert.That(rcp!.ArtPollReply.Net, Is.EqualTo(net));
+            await instance.SendArtAddress(ArtAddress.CreateSetNet(rcp!.BindIndex, backup!.Net), remoteClient!.IpAddress);// reset to Backup
+        });
+        await Assert.MultipleAsync(async () => // Test Address SubNet;
         {
-            var command = new ArtAddressCommand(EArtAddressCommand.LedLocate);
-            await Assert.MultipleAsync(async () => // Test Address Net;
+            var subnet = new Subnet(11);
+            await instance.SendArtAddress(ArtAddress.CreateSetSubnet(rcp!.BindIndex, subnet), remoteClient!.IpAddress);
+            for (int i = 0; i < 10; i++)
             {
-                await instance.SendArtAddress(ArtAddress.CreateSetCommand(1, command), remoteClient!.IpAddress);
-                for (int i = 0; i < 10; i++)
-                {
-                    if (remoteClient!.Root.Status.IndicatorState != NodeStatus.EIndicatorState.Normal)
-                        break;
-                    await Task.Delay(30);
-                }
-                command = new ArtAddressCommand(EArtAddressCommand.LedNormal);
-                Assert.That(remoteClient!.Root.Status.IndicatorState, Is.EqualTo(NodeStatus.EIndicatorState.Locate));
-                await instance.SendArtAddress(ArtAddress.CreateSetCommand(1, command), remoteClient!.IpAddress);// reset to Backup
-            });
-        }
+                if (rcp!.ArtPollReply.Subnet.Equals(subnet))
+                    break;
+                await Task.Delay(30);
+            }
+            Assert.That(rcp!.ArtPollReply.Subnet, Is.EqualTo(subnet));
+            await instance.SendArtAddress(ArtAddress.CreateSetSubnet(rcp!.BindIndex, backup!.Subnet), remoteClient!.IpAddress);// reset to Backup
+        });
+        await Assert.MultipleAsync(async () => // Test Address output Universe;
+        {
+            var outUniverse = new Universe(11);
+            var command = new ArtAddressCommand(EArtAddressCommand.DirectionTx, 0);
+            await instance.SendArtAddress(ArtAddress.CreateSetOutputUniverse(rcp!.BindIndex, outUniverse, command), remoteClient!.IpAddress);
+            for (int i = 0; i < 10; i++)
+            {
+                if (rcp!.ArtPollReply.OutputUniverses[0].Equals(outUniverse))
+                    break;
+                await Task.Delay(30);
+            }
+            Assert.That(rcp!.ArtPollReply.OutputUniverses[0], Is.EqualTo(outUniverse));
+            Assert.That(rcp!.ArtPollReply.PortTypes[0].HasFlag(EPortType.OutputFromArtNet), Is.True);
+            command = new ArtAddressCommand(backup!.PortTypes[0].HasFlag(EPortType.OutputFromArtNet) ? EArtAddressCommand.DirectionTx : EArtAddressCommand.DirectionRx, 0);
+            await instance.SendArtAddress(ArtAddress.CreateSetOutputUniverse(rcp!.BindIndex, (Universe)backup?.OutputUniverses[0]!, command), remoteClient!.IpAddress);// reset to Backup
+        });
+        await Assert.MultipleAsync(async () => // Test Address input Universe;
+        {
+            var inUniverse = new Universe(7);
+            var command = new ArtAddressCommand(EArtAddressCommand.DirectionRx, 0);
+            await instance.SendArtAddress(ArtAddress.CreateSetInputUniverse(rcp!.BindIndex, inUniverse, command), remoteClient!.IpAddress);
+            for (int i = 0; i < 10; i++)
+            {
+                if (rcp!.ArtPollReply.InputUniverses[0].Equals(inUniverse))
+                    break;
+                await Task.Delay(30);
+            }
+            Assert.That(rcp!.ArtPollReply.InputUniverses[0], Is.EqualTo(inUniverse));
+            Assert.That(rcp!.ArtPollReply.PortTypes[0].HasFlag(EPortType.InputToArtNet), Is.True);
+            command = new ArtAddressCommand(backup!.PortTypes[0].HasFlag(EPortType.OutputFromArtNet) ? EArtAddressCommand.DirectionTx : EArtAddressCommand.DirectionRx, 0);
+            await instance.SendArtAddress(ArtAddress.CreateSetInputUniverse(rcp!.BindIndex, (Universe)backup?.InputUniverses[0]!, command), remoteClient!.IpAddress);// reset to Backup
+        });
+    }
+    [Test, DependsOnTest(nameof(Test_ArtAddressPort))]
+    public async Task Test_ArtAddressIndicate()
+    {
+        var command = new ArtAddressCommand(EArtAddressCommand.LedLocate);
+        await Assert.MultipleAsync(async () => // Test Address Net;
+        {
+            await instance.SendArtAddress(ArtAddress.CreateSetCommand(1, command), remoteClient!.IpAddress);
+            for (int i = 0; i < 10; i++)
+            {
+                if (remoteClient!.Root.Status.IndicatorState != NodeStatus.EIndicatorState.Normal)
+                    break;
+                await Task.Delay(30);
+            }
+            command = new ArtAddressCommand(EArtAddressCommand.LedNormal);
+            Assert.That(remoteClient!.Root.Status.IndicatorState, Is.EqualTo(NodeStatus.EIndicatorState.Locate));
+            await instance.SendArtAddress(ArtAddress.CreateSetCommand(1, command), remoteClient!.IpAddress);// reset to Backup
+        });
     }
 }

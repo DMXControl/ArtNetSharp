@@ -6,7 +6,7 @@ using RDMSharp;
 
 namespace ArtNetTests;
 
-[Order(1)]
+[DependsOnFixture(typeof(LoggingTests))]
 public class ObjectTypesTests
 {
     [Test]
