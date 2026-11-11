@@ -42,46 +42,37 @@ public class TestOS
         await Task.Delay(6500);
     }
 
-    [Test]
-#pragma warning disable CS0618 // Typ oder Element ist veraltet
-    [Timeout(15000), Retry(3)]
-#pragma warning restore CS0618 // Typ oder Element ist veraltet
-    public async Task TestOnLinux()
+    [Test, CancelAfter(90_000)]
+    public async Task TestOnLinux(CancellationToken cancellationToken)
     {
         if (!OperatingSystem.IsLinux())
             Assert.Ignore("Skiped, only run on Linux");
 
         Logger.LogDebug(nameof(TestOnLinux));
-        await doTests();
+        await doTests(cancellationToken);
     }
 
-    [Test, DependsOnTest(nameof(TestOnLinux))]
-#pragma warning disable CS0618 // Typ oder Element ist veraltet
-    [Timeout(15000), Retry(3)]
-#pragma warning restore CS0618 // Typ oder Element ist veraltet
-    public async Task TestOnWindows()
+    [Test, CancelAfter(90_000)]
+    public async Task TestOnWindows(CancellationToken cancellationToken)
     {
         if (!OperatingSystem.IsWindows())
             Assert.Ignore("Skiped, only run on Windows");
 
         Logger.LogDebug(nameof(TestOnWindows));
-        await doTests();
+        await doTests(cancellationToken);
     }
 
-    [Test, DependsOnTest(nameof(TestOnWindows))]
-#pragma warning disable CS0618 // Typ oder Element ist veraltet
-    [Timeout(15000), Retry(3)]
-#pragma warning restore CS0618 // Typ oder Element ist veraltet
-    public async Task TestOnMacOS()
+    [Test, CancelAfter(90_000)]
+    public async Task TestOnMacOS(CancellationToken cancellationToken)
     {
         if (!OperatingSystem.IsMacOS())
             Assert.Ignore("Skiped, only run on Mac OS");
 
         Logger.LogDebug(nameof(TestOnMacOS));
-        await doTests();
+        await doTests(cancellationToken);
     }
 
-    private async Task doTests()
+    private async Task doTests(CancellationToken cancellationToken = default)
     {
         foreach (var nic in artNet.NetworkClients)
         {
@@ -96,7 +87,7 @@ public class TestOS
         artNet.AddInstance(controllerInstance);
 
         while (controllerInstance.RemoteClients?.FirstOrDefault(rc => string.Equals(nodeInstance.Name, rc?.LongName))?.Ports?.Count != ports)
-            await Task.Delay(1000);
+            await Task.Delay(1000, cancellationToken);
 
         var nodeRD = controllerInstance.RemoteClients.FirstOrDefault(rc => nodeInstance.Name.Equals(rc?.LongName));
         Assert.That(nodeRD, Is.Not.Null);

@@ -243,9 +243,6 @@
 //            Trace.Flush();
 //        }
 
-//#pragma warning disable CS0618 // Typ oder Element ist veraltet
-//        [Timeout(20000)]
-//#pragma warning restore CS0618 // Typ oder Element ist veraltet
 //        [Test]
 //        public async Task TestLoopDetection()
 //        {
@@ -277,9 +274,6 @@
 //            });
 //        }
 
-//#pragma warning disable CS0618 // Typ oder Element ist veraltet
-//        [Timeout(20000)]
-//#pragma warning restore CS0618 // Typ oder Element ist veraltet
 //        [Test]
 //        public async Task TestSendDMX()
 //        {
@@ -364,9 +358,6 @@
 //            }
 //        }
 
-//#pragma warning disable CS0618 // Typ oder Element ist veraltet
-//        [Timeout(20000)]
-//#pragma warning restore CS0618 // Typ oder Element ist veraltet
 //        [Test, DependsOnTest(nameof(Test_Default))]
 //        public async Task TestSendDMXTiming()
 //        {
