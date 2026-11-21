@@ -193,7 +193,7 @@ public class ArtNet : IDisposable
                         if (!Tools.IsInSubnet(LocalIpAddress, UnicastIPAddressInfo.IPv4Mask, received.RemoteEndPoint.Address))
                         {
                             Logger?.LogTrace($"Drop Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
-                            return;
+                            continue;
                         }
 
                     if (Enabled)
@@ -208,10 +208,10 @@ public class ArtNet : IDisposable
         private readonly List<IPAddress> matchingIpAdddresses = new List<IPAddress>();
         public async Task<bool> MatchIP(IPAddress ip)
         {
-            if (ip == IPAddress.Loopback)
-                return true;
             if (ip == null)
                 return false;
+            if (IPAddress.IsLoopback(ip))
+                return IPAddress.IsLoopback(LocalIpAddress);
             if (ip.ToString().Equals("0.0.0.0"))
                 return false;
 

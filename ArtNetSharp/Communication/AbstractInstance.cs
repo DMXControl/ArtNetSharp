@@ -445,7 +445,8 @@ public abstract class AbstractInstance : IInstance
                                                   new object[0],
                                                   OEMProductCode,
                                                   ESTAManufacturerCode,
-                                                  nodeReport: nodeReport);
+                                                  nodeReport: nodeReport,
+                                                  style: EstCodes);
                 await TrySendPacket(reply, destinationIp);
             });
             tasks.Add(taskRoot);

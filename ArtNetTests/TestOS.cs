@@ -79,7 +79,7 @@ public class TestOS
             var str = $"NIC: {nic.LocalIpAddress}";
             Console.WriteLine(str);
             Debug.WriteLine(str);
-            if (nic.BroadcastIpAddress != System.Net.IPAddress.Loopback)
+            if (!System.Net.IPAddress.IsLoopback(nic.LocalIpAddress))
                 nic.Enabled = false;
         }
 
@@ -89,8 +89,9 @@ public class TestOS
         while (controllerInstance.RemoteClients?.FirstOrDefault(rc => string.Equals(nodeInstance.Name, rc?.LongName))?.Ports?.Count != ports)
             await Task.Delay(1000, cancellationToken);
 
-        var nodeRD = controllerInstance.RemoteClients.FirstOrDefault(rc => nodeInstance.Name.Equals(rc?.LongName));
-        Assert.That(nodeRD, Is.Not.Null);
-        Assert.That(nodeRD.Ports, Has.Count.EqualTo(ports));
+        var nodeRDs = controllerInstance.RemoteClients.Where(rc => nodeInstance.Name.Equals(rc?.LongName)).ToList();
+        // A node must show up as exactly one RemoteClient (root and port replies must share the same Style/ID)
+        Assert.That(nodeRDs, Has.Count.EqualTo(1));
+        Assert.That(nodeRDs[0].Ports, Has.Count.EqualTo(ports));
     }
 }
