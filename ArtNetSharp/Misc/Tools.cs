@@ -167,6 +167,9 @@ namespace ArtNetSharp
                         case EOpCodes.OpDataReply:
                             packet = new ArtDataReply(data);
                             break;
+                        case EOpCodes.OpDiagData:
+                            packet = new ArtDiagData(data);
+                            break;
                     }
                 }
             }

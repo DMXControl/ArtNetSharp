@@ -40,15 +40,17 @@ namespace ArtNetSharp
             BindIndex = bindIndex;
             NumPortsHi = numPortsHi;
             NumPortsLo = numPortsLo;
-            Input = input;
+            // Input[4] is a fixed-size field in the packet; unused entries are "enabled" (0).
+            Input = new EArtInputCommand[maxNumPortsLo];
+            Array.Copy(input, Input, input.Length);
         }
         public ArtInput(in byte[] packet) : base(packet)
         {
             BindIndex = packet[13];
             NumPortsHi = packet[14];
             NumPortsLo = packet[15];
-            Input = new EArtInputCommand[packet.Length - 16];
-            for (int i = 0; i < Input.Length; i++)
+            Input = new EArtInputCommand[maxNumPortsLo];
+            for (int i = 0; i < Input.Length && 16 + i < packet.Length; i++)
                 Input[i] = (EArtInputCommand)packet[16 + i];
         }
         protected sealed override void fillPacket(ref byte[] p)
@@ -58,7 +60,7 @@ namespace ArtNetSharp
             p[14] = NumPortsHi; // NumPortsHi
             p[15] = NumPortsLo; // NumPortsLo
             for (int i = 0; i < Input.Length; i++)
-                p[16] = (byte)Input[i];
+                p[16 + i] = (byte)Input[i]; // was p[16] for every port: only the last value was sent, as port 0
         }
 
         public override bool Equals(object obj)
@@ -67,7 +69,8 @@ namespace ArtNetSharp
                 && obj is ArtInput data
                 && BindIndex == data.BindIndex
                 && NumPortsHi == data.NumPortsHi
-                && NumPortsLo == data.NumPortsLo;
+                && NumPortsLo == data.NumPortsLo
+                && System.Linq.Enumerable.SequenceEqual(Input, data.Input);
         }
     }
 }

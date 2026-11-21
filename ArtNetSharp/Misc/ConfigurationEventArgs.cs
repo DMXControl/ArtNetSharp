@@ -26,6 +26,38 @@ namespace ArtNetSharp.Misc
     }
 
     /// <summary>
+    /// An ArtInput was received: a controller enables or disables DMX inputs of this node (to save bandwidth).
+    /// Raised before the library applies it; set <see cref="Cancel"/> to reject it. When applied, disabled input
+    /// ports report GoodInput "Input disabled" and no ArtDmx is sent for them until they are enabled again.
+    /// </summary>
+    public class ArtInputReceivedEventArgs : EventArgs
+    {
+        public readonly ArtInput ArtInput;
+        public readonly IPv4Address Source;
+        /// <summary>Set to true to reject the change.</summary>
+        public bool Cancel { get; set; }
+
+        public ArtInputReceivedEventArgs(ArtInput artInput, IPv4Address source)
+        {
+            ArtInput = artInput;
+            Source = source;
+        }
+    }
+
+    /// <summary>Diagnostics text (ArtDiagData) received from a node or controller.</summary>
+    public class DiagnosticsReceivedEventArgs : EventArgs
+    {
+        public readonly ArtDiagData Diagnostics;
+        public readonly IPv4Address Source;
+
+        public DiagnosticsReceivedEventArgs(ArtDiagData diagnostics, IPv4Address source)
+        {
+            Diagnostics = diagnostics;
+            Source = source;
+        }
+    }
+
+    /// <summary>
     /// An ArtIpProg was received (remote reprogramming of the IP settings). The library cannot change the network
     /// configuration of the host. An application that can (e.g. an embedded device) applies the request and fills in
     /// the resulting settings; they are reported back in the ArtIpProgReply. Without a handler the current settings are

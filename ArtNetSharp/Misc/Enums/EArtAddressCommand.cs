@@ -35,27 +35,28 @@
         AnalysisOff = 0x07,
 
         //Failsafe configuration commands: These settings should be retained by the nodeduring power cycling.
+        // Values per Art-Net 4 (1.4dp): AcFailHold 0x08 ... AcFailRecord 0x0c (they were off by one before).
 
         /// <summary>
         /// Set the node to hold last state in the event of loss of network data.
         /// </summary>
-        FailHold = 0x09,
+        FailHold = 0x08,
         /// <summary>
         /// Set the node’s outputs to zero in the event of loss of network data.
         /// </summary>
-        FailZero = 0x0a,
+        FailZero = 0x09,
         /// <summary>
         /// Set the node’s outputs to full in the event of loss of network data.
         /// </summary>
-        FailFull = 0x0b,
+        FailFull = 0x0a,
         /// <summary>
         /// Set the node’s outputs to play the failsafescene in the event of loss of network data.
         /// </summary>
-        FailScene = 0x0c,
+        FailScene = 0x0b,
         /// <summary>
         /// Record the current output state as the failsafescene.
         /// </summary>
-        FailRecord = 0x0d,
+        FailRecord = 0x0c,
 
         //Node configuration commands: Note that Ltp / Htp and directionsettings should be retained by the node during power cycling.
 

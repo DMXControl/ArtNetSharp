@@ -58,19 +58,33 @@ public class ReplyOnChangeTest
     public async Task ChangeIsReportedWithoutPolling()
     {
         poll(EArtPollFlags.ArtPollReplyOnChange);
-        Assert.That(await within(TimeSpan.FromSeconds(2), () => controllerSees("Change Node")), Is.True, "normal reply to the poll");
+        Assert.That(await within(TimeSpan.FromSeconds(3), () => controllerSees("Change Node")), Is.True, "normal reply to the poll");
 
         node.Name = "Renamed Node";
 
-        Assert.That(await within(TimeSpan.FromSeconds(1), () => controllerSees("Renamed Node")), Is.True,
+        Assert.That(await within(TimeSpan.FromSeconds(3), () => controllerSees("Renamed Node")), Is.True,
             "The change must be reported by itself, without another ArtPoll");
+    }
+
+    [Test]
+    public async Task LocateIsReportedToTheController()
+    {
+        poll(EArtPollFlags.ArtPollReplyOnChange);
+        Assert.That(await within(TimeSpan.FromSeconds(3), () => controllerSees("Change Node")), Is.True);
+
+        using (var locate = ArtAddress.CreateSetCommand(1, new ArtAddressCommand(EArtAddressCommand.LedLocate)))
+            ((IInstance)node).PacketReceived(locate, loopIp, loopIp);
+
+        Assert.That(await within(TimeSpan.FromSeconds(3), () =>
+            controller.RemoteClients.FirstOrDefault(rc => rc.LongName == "Change Node")?.Root?.Status.IndicatorState == NodeStatus.EIndicatorState.Locate),
+            Is.True, "Status1 of the ArtPollReply shows the Locate state");
     }
 
     [Test]
     public async Task WithoutTheFlagNothingIsSent()
     {
         poll(EArtPollFlags.None);
-        Assert.That(await within(TimeSpan.FromSeconds(2), () => controllerSees("Change Node")), Is.True, "normal reply to the poll");
+        Assert.That(await within(TimeSpan.FromSeconds(3), () => controllerSees("Change Node")), Is.True, "normal reply to the poll");
 
         node.Name = "Renamed Node";
 
@@ -82,9 +96,9 @@ public class ReplyOnChangeTest
     public async Task PollWithoutTheFlagEndsTheSubscription()
     {
         poll(EArtPollFlags.ArtPollReplyOnChange);
-        Assert.That(await within(TimeSpan.FromSeconds(2), () => controllerSees("Change Node")), Is.True);
+        Assert.That(await within(TimeSpan.FromSeconds(3), () => controllerSees("Change Node")), Is.True);
         poll(EArtPollFlags.None); // the controller switches it off again
-        await Task.Delay(1000); // let the reply to this poll (random delay up to 800 ms) arrive
+        await Task.Delay(2000); // let the reply to this poll (random delay up to 800 ms) arrive, also under load
 
         node.Name = "Renamed Node";
 

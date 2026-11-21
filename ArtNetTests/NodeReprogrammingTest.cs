@@ -102,6 +102,39 @@ public class NodeReprogrammingTest
     }
 
     [Test]
+    public async Task LedCommandsSetTheIndicatorState()
+    {
+        Assert.That(node.IndicatorState, Is.EqualTo(NodeStatus.EIndicatorState.Unknown), "not set before");
+
+        receive(node, fromBytes(ArtAddress.CreateSetCommand(1, new ArtAddressCommand(EArtAddressCommand.LedLocate))));
+        await waitFor(() => node.IndicatorState == NodeStatus.EIndicatorState.Locate);
+        Assert.That(node.IndicatorState, Is.EqualTo(NodeStatus.EIndicatorState.Locate));
+
+        receive(node, fromBytes(ArtAddress.CreateSetCommand(1, new ArtAddressCommand(EArtAddressCommand.LedMute))));
+        await waitFor(() => node.IndicatorState == NodeStatus.EIndicatorState.Mute);
+        Assert.That(node.IndicatorState, Is.EqualTo(NodeStatus.EIndicatorState.Mute));
+
+        receive(node, fromBytes(ArtAddress.CreateSetCommand(1, new ArtAddressCommand(EArtAddressCommand.LedNormal))));
+        await waitFor(() => node.IndicatorState == NodeStatus.EIndicatorState.Normal);
+        Assert.That(node.IndicatorState, Is.EqualTo(NodeStatus.EIndicatorState.Normal));
+    }
+
+    [Test]
+    public void FailsafeCommandValuesMatchTheSpec()
+    {
+        // Art-Net 4 (1.4dp): AcFailHold 0x08, AcFailZero 0x09, AcFailFull 0x0a, AcFailScene 0x0b, AcFailRecord 0x0c
+        Assert.Multiple(() =>
+        {
+            Assert.That((byte)EArtAddressCommand.FailHold, Is.EqualTo(0x08));
+            Assert.That((byte)EArtAddressCommand.FailZero, Is.EqualTo(0x09));
+            Assert.That((byte)EArtAddressCommand.FailFull, Is.EqualTo(0x0a));
+            Assert.That((byte)EArtAddressCommand.FailScene, Is.EqualTo(0x0b));
+            Assert.That((byte)EArtAddressCommand.FailRecord, Is.EqualTo(0x0c));
+            Assert.That(new ArtAddressCommand((byte)0x08).Command, Is.EqualTo(EArtAddressCommand.FailHold), "parsed from the packet byte");
+        });
+    }
+
+    [Test]
     public async Task ApplicationCanVeto()
     {
         int called = 0;

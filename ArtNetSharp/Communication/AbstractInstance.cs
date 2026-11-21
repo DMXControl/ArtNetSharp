@@ -525,6 +525,14 @@ public abstract class AbstractInstance : IInstance
                     _ = processArtIpProg(artIpProg, localIp, sourceIp);
                     break;
 
+                case ArtInput artInput when AcceptArtAddress: // same receivers as ArtAddress: Nodes and Media Servers
+                    _ = processArtInput(artInput, localIp, sourceIp);
+                    break;
+
+                case ArtDiagData artDiagData:
+                    Events.Post(() => DiagnosticsReceived?.InvokeFailSafe(this, new DiagnosticsReceivedEventArgs(artDiagData, sourceIp)));
+                    break;
+
                 default:
                     OnPacketReceived(packet, localIp, sourceIp);
                     break;
@@ -558,7 +566,17 @@ public abstract class AbstractInstance : IInstance
         if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
-        using ArtPoll artPoll = new ArtPoll(OEMProductCode, ESTAManufacturerCode, targetPortTop: targetPortTop, targetPortBottom: targetPortBottom);
+        // Diagnostics request (ArtPoll Flags bit 2/3, DiagPriority), see RequestDiagnostics
+        var flags = EArtPollFlags.None;
+        var priority = EPriorityCode.None;
+        if (RequestDiagnostics)
+        {
+            flags |= EArtPollFlags.DiagnosticEnabled;
+            if (RequestDiagnosticsUnicast)
+                flags |= EArtPollFlags.DiagnosticUnicast;
+            priority = DiagnosticsMinimumPriority;
+        }
+        using ArtPoll artPoll = new ArtPoll(OEMProductCode, ESTAManufacturerCode, targetPortTop: targetPortTop, targetPortBottom: targetPortBottom, flags: flags, priority: priority);
         await TrySendBroadcastPacket(artPoll);
     }
     private async Task sendArtPollReply(IPv4Address ownIp, IPv4Address destinationIp, ArtPoll artPoll = null)
@@ -841,6 +859,8 @@ public abstract class AbstractInstance : IInstance
                                                         .FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, outputPortAddress));
                         if (config == null)
                             continue;
+                        if (config.GoodInput.InputDisabled)
+                            continue; // disabled (e.g. remotely via ArtInput): no ArtDmx for this input
 
                         byte sourcePort = config.PortNumber;
                         // One sequence number and one consistent snapshot per frame, shared by every receiver of this frame.
@@ -1314,6 +1334,16 @@ public abstract class AbstractInstance : IInstance
                 }
                 break;
 
+            case EArtAddressCommand.LedNormal:
+                indicatorState = NodeStatus.EIndicatorState.Normal;
+                break;
+            case EArtAddressCommand.LedMute:
+                indicatorState = NodeStatus.EIndicatorState.Mute;
+                break;
+            case EArtAddressCommand.LedLocate:
+                indicatorState = NodeStatus.EIndicatorState.Locate;
+                break;
+
             case EArtAddressCommand.CancelMerge:
                 // Spec: the next ArtDmx ends merge mode; afterwards only that source is accepted.
                 foreach (var port in portConfigs.Where(pc => pc.Output))
@@ -1345,6 +1375,11 @@ public abstract class AbstractInstance : IInstance
             replyOnChangeSubscribers[sourceIp] = (DateTime.UtcNow, localIp);
         else
             replyOnChangeSubscribers.TryRemove(sourceIp, out _); // the controller switched it off again
+
+        if (artPoll.Flags.HasFlag(EArtPollFlags.DiagnosticEnabled))
+            diagnosticsSubscribers[sourceIp] = (DateTime.UtcNow, localIp, artPoll.Flags.HasFlag(EArtPollFlags.DiagnosticUnicast), artPoll.Priority);
+        else
+            diagnosticsSubscribers.TryRemove(sourceIp, out _);
     }
 
     /// <summary>Everything a controller sees of this node in its ArtPollReply, condensed into one value.</summary>
@@ -1403,6 +1438,101 @@ public abstract class AbstractInstance : IInstance
             }
         }
         catch (Exception e) { Logger.LogError(e); }
+    }
+    #endregion
+
+    #region ArtDiagData
+    /// <summary>
+    /// Ask other devices for diagnostics in this instance's ArtPolls (Flags bit 2). Typically used by controllers /
+    /// monitoring tools; received messages arrive via <see cref="DiagnosticsReceived"/>.
+    /// </summary>
+    public bool RequestDiagnostics { get; set; }
+    /// <summary>Request diagnostics to be unicast to this instance instead of broadcast (ArtPoll Flags bit 3).</summary>
+    public bool RequestDiagnosticsUnicast { get; set; }
+    /// <summary>Lowest priority of diagnostics to request (ArtPoll DiagPriority).</summary>
+    public EPriorityCode DiagnosticsMinimumPriority { get; set; } = EPriorityCode.DpLow;
+
+    /// <summary>Raised for every ArtDiagData received.</summary>
+    public event EventHandler<DiagnosticsReceivedEventArgs> DiagnosticsReceived;
+
+    /// <summary>Controllers that requested diagnostics in their last ArtPoll.</summary>
+    private readonly ConcurrentDictionary<IPv4Address, (DateTime LastPoll, IPv4Address LocalIp, bool Unicast, EPriorityCode MinimumPriority)> diagnosticsSubscribers = new();
+
+    /// <summary>
+    /// Sends a diagnostics message (ArtDiagData) to the controllers that requested diagnostics via ArtPoll.
+    /// Spec: if several controllers request diagnostics it is broadcast and the lowest requested minimum priority
+    /// applies; a single controller gets it unicast if it asked for that.
+    /// </summary>
+    /// <returns>true if the message was sent; false if no controller requested diagnostics or its priority is too low.</returns>
+    public async Task<bool> SendDiagnostics(string text, EPriorityCode priority = EPriorityCode.DpLow, byte logicalPort = 0)
+    {
+        if (IsDisposing || IsDisposed || IsDeactivated)
+            return false;
+
+        var utcNow = DateTime.UtcNow;
+        foreach (var expired in diagnosticsSubscribers.Where(s => utcNow - s.Value.LastPoll > ReplyOnChangeSubscriptionTimeout).ToList())
+            diagnosticsSubscribers.TryRemove(expired.Key, out _);
+        var subscribers = diagnosticsSubscribers.ToList();
+        if (subscribers.Count == 0)
+            return false;
+
+        // EPriorityCode.None (0) in a poll means "everything"
+        byte minimumPriority = subscribers.Min(s => (byte)s.Value.MinimumPriority);
+        if ((byte)priority < minimumPriority)
+            return false;
+
+        using var diagData = new ArtDiagData(text, priority, logicalPort);
+        if (subscribers.Count == 1 && subscribers[0].Value.Unicast)
+            await TrySendPacket(diagData, subscribers[0].Key);
+        else
+            await TrySendBroadcastPacket(diagData);
+        return true;
+    }
+    #endregion
+
+    #region ArtInput
+    /// <summary>Raised before an ArtInput is applied; set <see cref="ArtInputReceivedEventArgs.Cancel"/> to reject it.</summary>
+    public event EventHandler<ArtInputReceivedEventArgs> ArtInputReceived;
+
+    private static readonly GoodInput INPUT_DISABLED = new GoodInput(inputDisabled: true);
+
+    private async Task processArtInput(ArtInput artInput, IPv4Address localIp, IPv4Address source)
+    {
+        if (IsDisposing || IsDisposed || IsDeactivated)
+            return;
+        try
+        {
+            var args = new ArtInputReceivedEventArgs(artInput, source);
+            // Veto and apply in one step on the event queue (ordered, not on the receive loop), as for ArtAddress.
+            await Events.InvokeAsync(() =>
+            {
+                ArtInputReceived?.InvokeFailSafe(this, args);
+                if (!args.Cancel)
+                    applyArtInput(artInput);
+                return args;
+            });
+
+            // Spec: the node replies with ArtPollReply.
+            await sendArtPollReply(localIp, source);
+        }
+        catch (Exception ex) { Logger.LogError(ex); }
+    }
+
+    private void applyArtInput(ArtInput artInput)
+    {
+        // Input[i] belongs to the i-th port of the addressed BindIndex (0 and 1 = root), in port order.
+        byte bindIndex = Math.Max((byte)1, artInput.BindIndex);
+        var ports = portConfigs.Where(pc => pc.BindIndex == bindIndex).OrderBy(pc => pc.PortNumber).ToList();
+        for (int i = 0; i < ports.Count && i < artInput.Input.Length; i++)
+        {
+            var port = ports[i];
+            if (!port.Input)
+                continue;
+            bool disable = artInput.Input[i].HasFlag(EArtInputCommand.DisableInput);
+            var withoutFlag = port.GoodInput & ~INPUT_DISABLED;
+            port.GoodInput = disable ? withoutFlag | INPUT_DISABLED : withoutFlag;
+            Logger.LogInformation($"ArtInput: Port #{port.BindIndex}/{port.PortNumber} input {(disable ? "disabled" : "enabled")}");
+        }
     }
     #endregion
 
@@ -1808,8 +1938,22 @@ public abstract class AbstractInstance : IInstance
         if (SupportRDM)
             nodeStatus |= NodeStatus.RDMSupported;
 
+        // Status1 bits 7-6: indicator state set remotely via ArtAddress (AcLedNormal/Mute/Locate)
+        if (indicatorState is NodeStatus.EIndicatorState state)
+            nodeStatus = (nodeStatus & ~INDICATOR_BITS) | new NodeStatus((byte)state, 0, 0);
+
         return nodeStatus;
     }
+    private static readonly NodeStatus INDICATOR_BITS = new NodeStatus(0b11000000, 0, 0);
+    private volatile object indicatorState; // boxed NodeStatus.EIndicatorState, null = not set via ArtAddress
+
+    /// <summary>
+    /// Indicator state reported in the ArtPollReply (Status1). Set remotely via ArtAddress AcLedNormal/AcLedMute/AcLedLocate;
+    /// until then the state from <see cref="GetOwnNodeStatus"/> is used. An application with a real indicator (LED)
+    /// follows it via <see cref="ArtAddressReceived"/>.
+    /// </summary>
+    public NodeStatus.EIndicatorState IndicatorState
+        => indicatorState is NodeStatus.EIndicatorState state ? state : GetOwnNodeStatus().IndicatorState;
     private void clearRdmUIDs(PortAddress portAddress, byte bindIndex)
     {
         bool removed = false;
