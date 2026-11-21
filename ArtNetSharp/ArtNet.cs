@@ -569,6 +569,35 @@ public class ArtNet : IDisposable
 
         return false;
     }
+    /// <summary>Subnet mask, default gateway and DHCP state of the interface that owns <paramref name="localIp"/> (for ArtIpProgReply).</summary>
+    internal static (IPv4Address SubnetMask, IPv4Address DefaultGateway, bool DhcpEnabled) GetInterfaceSettings(IPv4Address localIp)
+    {
+        IPAddress ip = localIp;
+        IPv4Address mask = new IPv4Address(0, 0, 0, 0);
+        IPv4Address gateway = new IPv4Address(0, 0, 0, 0);
+        bool dhcp = false;
+        try
+        {
+            foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                var properties = ni.GetIPProperties();
+                var unicast = properties.UnicastAddresses.FirstOrDefault(u => u.Address.Equals(ip));
+                if (unicast == null)
+                    continue;
+
+                mask = unicast.IPv4Mask;
+                var gw = properties.GatewayAddresses.FirstOrDefault(g => g.Address.AddressFamily == AddressFamily.InterNetwork);
+                if (gw != null)
+                    gateway = gw.Address;
+                try { dhcp = properties.GetIPv4Properties()?.IsDhcpEnabled ?? false; }
+                catch (PlatformNotSupportedException) { } // not available on every platform
+                break;
+            }
+        }
+        catch (Exception e) { Logger.LogDebug(e); }
+        return (mask, gateway, dhcp);
+    }
+
     public MACAddress GetMacAdress(IPv4Address ip)
     {
         try

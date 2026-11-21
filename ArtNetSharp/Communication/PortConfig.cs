@@ -52,6 +52,12 @@ public class PortConfig
     /// <summary>Event queue of the instance this config is added to (set by AddPortConfig, null when standalone).</summary>
     internal EventDispatcher Events { get; set; }
 
+    /// <summary>
+    /// The Port-Address the application configured, remembered before an ArtAddress reprograms it the first time.
+    /// ArtAddress "reset" values (0x00) restore the respective part (the spec's "physical switch setting").
+    /// </summary>
+    internal PortAddress? ConfiguredPortAddress { get; set; }
+
     public PortConfig(in byte bindIndex, in Net net, in Subnet subnet, in Universe universe, in bool output, in bool input)
         : this(bindIndex, new PortAddress(net, subnet, universe), output, input)
     {

@@ -203,13 +203,15 @@ public sealed class RemoteClient : INotifyPropertyChanged
         }
     }
     private readonly ConcurrentDictionary<int, RemoteClientPort> ports = new ConcurrentDictionary<int, RemoteClientPort>();
-    public IReadOnlyCollection<RemoteClientPort> Ports { get; private set; }
+    /// <summary>Never null: empty until the first ArtPollReply with ports arrived (was null before, breaking enumeration).</summary>
+    public IReadOnlyCollection<RemoteClientPort> Ports { get; private set; } = Array.Empty<RemoteClientPort>();
     public event EventHandler<RemoteClientPort> PortDiscovered;
     public event EventHandler<RemoteClientPort> PortTimedOut;
 
     private readonly ConcurrentDictionary<UID, RDMUID_ReceivedBag> knownRDMUIDs = new ConcurrentDictionary<UID, RDMUID_ReceivedBag>();
     private readonly ConcurrentDictionary<EDataRequest, object> artDataCache = new ConcurrentDictionary<EDataRequest, object>();
-    public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs;
+    /// <summary>Never null (GetReceivedRDMUIDs threw a NullReferenceException before the first RDM device was seen).</summary>
+    public IReadOnlyCollection<RDMUID_ReceivedBag> KnownRDMUIDs = Array.Empty<RDMUID_ReceivedBag>();
     public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
 
     public event PropertyChangedEventHandler PropertyChanged;

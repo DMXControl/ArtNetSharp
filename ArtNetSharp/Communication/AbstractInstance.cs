@@ -274,6 +274,8 @@ public abstract class AbstractInstance : IInstance
         public readonly PortAddress PortAddress;
         public DateTime LastUpdated { get; private set; }
         public DateTime LastSended { get; internal set; }
+        /// <summary>Last time ArtDmx for this port actually went out (to at least one receiver, keep-alives included).</summary>
+        public DateTime LastTransmitted { get; internal set; } = DateTime.MinValue;
 
         // Writes (WriteDMXValues) and the send loop's snapshot use the same lock:
         // writes are applied in call order and a frame is never sent half-written.
@@ -351,6 +353,12 @@ public abstract class AbstractInstance : IInstance
     /// queue therefore cannot grow with the packet rate; the handler reads the latest data via GetReceivedDMX.
     /// </summary>
     private readonly ConcurrentDictionary<PortAddress, byte> dmxReceivedPending = new ConcurrentDictionary<PortAddress, byte>();
+    /// <summary>Longer than the ArtDmx keep-alive interval (800-1000 ms), so a running data flow never drops out.</summary>
+    internal static TimeSpan TransmittingTimeout { get; set; } = TimeSpan.FromSeconds(2.5); // settable for tests only
+    private bool isTransmitting(PortAddress portAddress)
+        => sendDMXBuffer.TryGetValue(portAddress, out DMXSendBag bag)
+           && DateTime.UtcNow - bag.LastTransmitted < TransmittingTimeout;
+
     private void raiseDMXReceived(PortAddress portAddress)
     {
         if (!dmxReceivedPending.TryAdd(portAddress, 0))
@@ -470,6 +478,7 @@ public abstract class AbstractInstance : IInstance
             switch (packet)
             {
                 case ArtPoll artPoll:
+                    registerReplyOnChange(artPoll, localIp, sourceIp);
                     _ = sendArtPollReply(localIp, sourceIp, artPoll);
                     break;
                 case ArtPollReply artPollReply:
@@ -506,6 +515,14 @@ public abstract class AbstractInstance : IInstance
                     break;
                 case ArtTimeSync artTimeSync:
                     Events.Post(() => TimeSyncReceived?.InvokeFailSafe(this, artTimeSync));
+                    break;
+
+                case ArtAddress artAddress when AcceptArtAddress:
+                    _ = processArtAddress(artAddress, localIp, sourceIp);
+                    break;
+
+                case ArtIpProg artIpProg when AcceptArtAddress: // same receivers as ArtAddress: Nodes and Media Servers
+                    _ = processArtIpProg(artIpProg, localIp, sourceIp);
                     break;
 
                 default:
@@ -551,7 +568,10 @@ public abstract class AbstractInstance : IInstance
 
         try
         {
-            await Task.Delay((int)(800 * _random.NextDouble())); //Art-Net 4 Protocol Release V1.4 Document Revision 1.4dh 19/7/2023 - 23 -
+            // Spec: the random delay (up to 1 s) applies to replies to an ArtPoll. Replies without a poll
+            // (to an ArtAddress, or because node conditions changed) are sent right away.
+            if (artPoll != null)
+                await Task.Delay((int)(800 * _random.NextDouble())); //Art-Net 4 Protocol Release V1.4 Document Revision 1.4dh 19/7/2023 - 23 -
 
             if (IsDisposing || IsDisposed || IsDeactivated || ArtNetInstance == null)
                 return;
@@ -563,7 +583,7 @@ public abstract class AbstractInstance : IInstance
             Subnet subnet = 0;
             List<Task> tasks = new List<Task>();
             var ports = portConfigs.OrderBy(pc => pc.PortAddress).ToList();
-            if (artPoll.Flags.HasFlag(EArtPollFlags.EnableTargetedMode))
+            if (artPoll?.Flags.HasFlag(EArtPollFlags.EnableTargetedMode) ?? false)
                 ports = ports.Where(pc => pc.PortAddress >= artPoll.TargetPortBottom && pc.PortAddress <= artPoll.TargetPortTop).ToList();
 
             Task taskRoot = Task.Run(async () =>
@@ -602,9 +622,12 @@ public abstract class AbstractInstance : IInstance
                     Task task = Task.Run(async () =>
                     {
                         var goodInput = portConfig.GoodInput;
-                        if (portConfig.Input)
-                            if (sendDMXBuffer.ContainsKey(portConfig.PortAddress))
-                                goodInput = new GoodInput((byte)(goodInput.Byte1 | 0b10000000));
+                        // GoodInput bit 7 "Data received": only while ArtDmx for this input port is actually being sent.
+                        // Keep-alives go out every 800-1000 ms, so a longer gap means the data flow stopped
+                        // (no subscribers any more, instance deactivated, ...). Previously the bit stayed set forever
+                        // once anything had been written for the port.
+                        if (portConfig.Input && isTransmitting(portConfig.PortAddress))
+                            goodInput = new GoodInput((byte)(goodInput.Byte1 | 0b10000000));
                         ArtPollReply reply = new ArtPollReply(ownIp,
                                                  ownIp,
                                                  ownMacAddress,
@@ -778,6 +801,7 @@ public abstract class AbstractInstance : IInstance
                 await Task.Delay(300);
                 continue;
             }
+            checkNodeConditionsChanged(); // cheap no-op unless a controller asked for "ArtPollReply on change"
             // Cheap exit for instances that never send DMX (e.g. pure output nodes).
             if (sendDMXBuffer.IsEmpty)
                 continue;
@@ -822,6 +846,7 @@ public abstract class AbstractInstance : IInstance
                         // One sequence number and one consistent snapshot per frame, shared by every receiver of this frame.
                         var sequence = bag.GetSequence();
                         byte[] frame = bag.Snapshot();
+                        int sendedBefore = sended;
 #pragma warning disable CS0618 // ForceBroadcast is obsolete for users, but still has to be honoured here
                         bool forceBroadcast = config.ForceBroadcast;
 #pragma warning restore CS0618
@@ -851,6 +876,9 @@ public abstract class AbstractInstance : IInstance
                             sendTasks.Add(sendArtDMX(ip, config.PortAddress, sourcePort, frame, sequence));
                             sended++;
                         }
+
+                        if (sended != sendedBefore)
+                            bag.LastTransmitted = utcNow; // feeds GoodInput "Data received" in the ArtPollReply
                     }
                     catch (Exception e)
                     {
@@ -1081,6 +1109,28 @@ public abstract class AbstractInstance : IInstance
 
         bool success = false;
         var key = (port.PortAddress, sourceIp, artDMX.Physical);
+
+        if (!cancelMergePending.IsEmpty || !exclusiveSource.IsEmpty) // AcCancelMerge, see applyArtAddress
+        {
+            if (cancelMergePending.TryRemove(port.PortAddress, out _))
+            {
+                // Spec: this ArtDmx ends merge mode; only its source is accepted from now on.
+                exclusiveSource[port.PortAddress] = (sourceIp, artDMX.Physical);
+                lock (receivedDMXBuffer)
+                    foreach (var other in receivedDMXBuffer.Where(kv => kv.Key.Port == port.PortAddress && kv.Key != key).ToList())
+                        if (receivedDMXBuffer.TryRemove(other.Key, out var removed))
+                            removed.Dispose();
+            }
+            else if (exclusiveSource.TryGetValue(port.PortAddress, out var exclusive) && exclusive != (sourceIp, artDMX.Physical))
+            {
+                bool exclusiveAlive = receivedDMXBuffer.TryGetValue((port.PortAddress, exclusive.Ip, exclusive.Physical), out var exclusiveBag)
+                                      && DateTime.UtcNow - exclusiveBag.LastUpdate < MergeSourceTimeout;
+                if (exclusiveAlive)
+                    return; // discard other sources while the remaining one is alive
+                exclusiveSource.TryRemove(port.PortAddress, out _); // it failed: normal operation again
+            }
+        }
+
         if (receivedDMXBuffer.TryGetValue(key, out DMXReceiveBag bag))
             success = bag.Update(artDMX, sourceIp);
         else
@@ -1161,6 +1211,226 @@ public abstract class AbstractInstance : IInstance
         }
         catch (Exception ex) { Logger.LogError(ex); }
     }
+
+    #region ArtAddress
+    /// <summary>
+    /// Whether this instance can be reprogrammed remotely via ArtAddress. Spec: Nodes and Media Servers act on it,
+    /// Controllers take no action. Override and return false to ignore ArtAddress completely;
+    /// to decide per packet, handle <see cref="ArtAddressReceived"/> and set Cancel.
+    /// </summary>
+    protected virtual bool AcceptArtAddress => EstCodes == EStCodes.StNode || EstCodes == EStCodes.StMedia;
+
+    /// <summary>Raised before an ArtAddress is applied; set <see cref="ArtAddressReceivedEventArgs.Cancel"/> to reject it.</summary>
+    public event EventHandler<ArtAddressReceivedEventArgs> ArtAddressReceived;
+
+    /// <summary>Ports in merge mode for which the next ArtDmx ends merging (AcCancelMerge).</summary>
+    private readonly ConcurrentDictionary<PortAddress, byte> cancelMergePending = new ConcurrentDictionary<PortAddress, byte>();
+    /// <summary>After AcCancelMerge: the only source accepted for a port, until it fails (MergeSourceTimeout).</summary>
+    private readonly ConcurrentDictionary<PortAddress, (IPv4Address Ip, byte Physical)> exclusiveSource = new ConcurrentDictionary<PortAddress, (IPv4Address Ip, byte Physical)>();
+
+    private async Task processArtAddress(ArtAddress artAddress, IPv4Address localIp, IPv4Address source)
+    {
+        if (IsDisposing || IsDisposed || IsDeactivated)
+            return;
+        try
+        {
+            var args = new ArtAddressReceivedEventArgs(artAddress, source);
+            // Veto and apply in one step on the event queue (not on the receive loop): this keeps several
+            // ArtAddress packets strictly ordered - applying after the await let a later packet overtake an earlier one.
+            await Events.InvokeAsync(() =>
+            {
+                ArtAddressReceived?.InvokeFailSafe(this, args);
+                if (!args.Cancel)
+                    applyArtAddress(artAddress);
+                return args;
+            });
+
+            // Spec: the node replies to an ArtAddress by unicasting ArtPollReply (also when nothing was changed).
+            await sendArtPollReply(localIp, source);
+        }
+        catch (Exception ex) { Logger.LogError(ex); }
+    }
+
+    private void applyArtAddress(ArtAddress artAddress)
+    {
+        // Names: the spec says null strings are ignored.
+        if (!string.IsNullOrEmpty(artAddress.ShortName))
+            ShortName = artAddress.ShortName.Length > 17 ? artAddress.ShortName.Substring(0, 17) : artAddress.ShortName;
+        if (!string.IsNullOrEmpty(artAddress.LongName))
+            Name = artAddress.LongName.Length > 63 ? artAddress.LongName.Substring(0, 63) : artAddress.LongName;
+
+        // Ports of the addressed bound device (BindIndex 0 and 1 both mean the root device),
+        // in port order; the index into SwIn/SwOut is the position within that BindIndex.
+        byte bindIndex = Math.Max((byte)1, artAddress.BindIndex);
+        var ports = portConfigs.Where(pc => pc.BindIndex == bindIndex).OrderBy(pc => pc.PortNumber).ToList();
+        for (int i = 0; i < ports.Count && i < 4; i++)
+        {
+            PortConfig port = ports[i];
+            PortAddress current = port.PortAddress;
+            PortAddress configured = port.ConfiguredPortAddress ?? current;
+
+            Net net = artAddress.Net ?? (artAddress.NetReset ? configured.Net : current.Net);
+            Subnet subnet = artAddress.Subnet ?? (artAddress.SubnetReset ? configured.Subnet : current.Subnet);
+
+            // An output port takes SwOut, an input port SwIn; a port with both directions takes whichever is given.
+            Universe? programmed = null;
+            bool reset = false;
+            if (port.Output)
+            {
+                programmed = artAddress.OutputUniverses[i];
+                reset = artAddress.OutputUniverseReset[i];
+            }
+            if (port.Input && !programmed.HasValue && !reset)
+            {
+                programmed = artAddress.InputUniverses[i];
+                reset = artAddress.InputUniverseReset[i];
+            }
+            Universe universe = programmed ?? (reset ? configured.Universe : current.Universe);
+
+            var newAddress = new PortAddress(net, subnet, universe);
+            if (newAddress != current)
+            {
+                port.ConfiguredPortAddress ??= current;
+                port.PortAddress = newAddress;
+                Logger.LogInformation($"ArtAddress: Port #{port.BindIndex}/{port.PortNumber} Port-Address {current} -> {newAddress}");
+            }
+        }
+
+        ArtAddressCommand command = artAddress.Command;
+        switch (command.Command)
+        {
+            case EArtAddressCommand.MergeLtp:
+            case EArtAddressCommand.MergeHtp:
+                // x = port index within this BindIndex
+                if (command.Port is byte x && x < ports.Count)
+                {
+                    var port = ports[x];
+                    var withoutLtp = port.GoodOutput & ~MERGE_LTP;
+                    port.GoodOutput = command.Command == EArtAddressCommand.MergeLtp ? withoutLtp | MERGE_LTP : withoutLtp;
+                }
+                break;
+
+            case EArtAddressCommand.CancelMerge:
+                // Spec: the next ArtDmx ends merge mode; afterwards only that source is accepted.
+                foreach (var port in portConfigs.Where(pc => pc.Output))
+                    if (getMergeSources(port.PortAddress, DateTime.UtcNow).Count > 1)
+                        cancelMergePending[port.PortAddress] = 0;
+                break;
+        }
+    }
+
+    private static readonly GoodOutput MERGE_LTP = new GoodOutput(mergeMode: EMergeMode.LTP);
+    #endregion
+
+    #region ArtPollReply on change
+    /// <summary>
+    /// Controllers that set ArtPoll Flags bit 1 ("Send ArtPollReply whenever Node conditions change"), with the time of
+    /// their last ArtPoll and the local address they reached us on. They get an unsolicited ArtPollReply on every change.
+    /// </summary>
+    private readonly ConcurrentDictionary<IPv4Address, (DateTime LastPoll, IPv4Address LocalIp)> replyOnChangeSubscribers = new();
+    /// <summary>A controller that stops polling (2.5-3 s per spec) is no longer notified after this time.</summary>
+    internal static TimeSpan ReplyOnChangeSubscriptionTimeout { get; set; } = TimeSpan.FromSeconds(10);
+    /// <summary>Conditions are compared at most this often (so a burst of changes leads to one reply).</summary>
+    internal static TimeSpan NodeConditionsCheckInterval { get; set; } = TimeSpan.FromMilliseconds(250);
+    private DateTime lastNodeConditionsCheck = DateTime.MinValue;
+    private int? lastNodeConditions;
+
+    private void registerReplyOnChange(ArtPoll artPoll, IPv4Address localIp, IPv4Address sourceIp)
+    {
+        if (artPoll.Flags.HasFlag(EArtPollFlags.ArtPollReplyOnChange))
+            replyOnChangeSubscribers[sourceIp] = (DateTime.UtcNow, localIp);
+        else
+            replyOnChangeSubscribers.TryRemove(sourceIp, out _); // the controller switched it off again
+    }
+
+    /// <summary>Everything a controller sees of this node in its ArtPollReply, condensed into one value.</summary>
+    private int computeNodeConditions()
+    {
+        var hash = new HashCode();
+        hash.Add(Name);
+        hash.Add(ShortName);
+        var status = getOwnNodeStatus();
+        hash.Add(status.StatusByte1);
+        hash.Add(status.StatusByte2);
+        hash.Add(status.StatusByte3);
+        foreach (var port in portConfigs.OrderBy(p => p.BindIndex).ThenBy(p => p.PortNumber))
+        {
+            hash.Add(port.BindIndex);
+            hash.Add(port.PortNumber);
+            hash.Add(port.PortAddress.Combined);
+            hash.Add(port.Type);
+            hash.Add(port.GoodInput.Byte1);
+            hash.Add(port.Input && isTransmitting(port.PortAddress)); // GoodInput "Data received" as reported
+            hash.Add(port.GoodOutput.Byte1);
+            hash.Add(port.GoodOutput.Byte2);
+        }
+        return hash.ToHashCode();
+    }
+
+    private void checkNodeConditionsChanged()
+    {
+        if (replyOnChangeSubscribers.IsEmpty)
+        {
+            lastNodeConditions = null; // start with a fresh baseline when a controller subscribes again
+            return;
+        }
+        var utcNow = DateTime.UtcNow;
+        if (utcNow - lastNodeConditionsCheck < NodeConditionsCheckInterval)
+            return;
+        lastNodeConditionsCheck = utcNow;
+
+        try
+        {
+            int conditions = computeNodeConditions();
+            bool changed = lastNodeConditions.HasValue && lastNodeConditions.Value != conditions;
+            lastNodeConditions = conditions;
+            if (!changed)
+                return;
+
+            foreach (var subscriber in replyOnChangeSubscribers)
+            {
+                if (utcNow - subscriber.Value.LastPoll > ReplyOnChangeSubscriptionTimeout)
+                {
+                    replyOnChangeSubscribers.TryRemove(subscriber.Key, out _);
+                    continue;
+                }
+                // Unsolicited reply, unicast, without the random ArtPoll delay
+                _ = sendArtPollReply(subscriber.Value.LocalIp, subscriber.Key);
+            }
+        }
+        catch (Exception e) { Logger.LogError(e); }
+    }
+    #endregion
+
+    #region ArtIpProg
+    /// <summary>
+    /// Raised when an ArtIpProg (IP reprogramming) is received. The library cannot change the host's network settings;
+    /// an application that can, applies the request and sets the resulting values in the event args.
+    /// </summary>
+    public event EventHandler<ArtIpProgReceivedEventArgs> ArtIpProgReceived;
+
+    private async Task processArtIpProg(ArtIpProg artIpProg, IPv4Address localIp, IPv4Address source)
+    {
+        if (IsDisposing || IsDisposed || IsDeactivated)
+            return;
+        try
+        {
+            var current = ArtNet.GetInterfaceSettings(localIp);
+            var args = new ArtIpProgReceivedEventArgs(artIpProg, source, localIp, current.SubnetMask, current.DefaultGateway, current.DhcpEnabled);
+            await Events.InvokeAsync(() =>
+            {
+                ArtIpProgReceived?.InvokeFailSafe(this, args);
+                return args;
+            });
+
+            // Spec: the node replies with ArtIpProgReply (unicast) - with the settings now in effect.
+            using var reply = new ArtIpProgReply(args.Ip, args.SubnetMask, args.DefaultGateway,
+                                                 args.DhcpEnabled ? EArtIpProgReplyStatusFlags.EnableDHCP : EArtIpProgReplyStatusFlags.None);
+            await TrySendPacket(reply, source);
+        }
+        catch (Exception ex) { Logger.LogError(ex); }
+    }
+    #endregion
 
     protected virtual ArtDataReply buildArtDataReply(ArtData artData) => new ArtDataReply(OEMProductCode, ESTAManufacturerCode, artData.Request, data: null);
 
@@ -1425,6 +1695,16 @@ public abstract class AbstractInstance : IInstance
             bag.Update(data, destinationIndex, count);
         }
         catch (Exception e) { Logger.LogError(e); }
+    }
+
+    /// <summary>
+    /// Received DMX of <paramref name="portAddress"/>, merged with the merge mode configured for that output port
+    /// (GoodOutput, changeable by the application or remotely via ArtAddress AcMergeLtp/AcMergeHtp; default HTP).
+    /// </summary>
+    public byte[] GetReceivedDMX(PortAddress portAddress)
+    {
+        var port = portConfigs.FirstOrDefault(p => p.Output && p.PortAddress == portAddress);
+        return GetReceivedDMX(portAddress, port?.GoodOutput.MergeMode ?? EMergeMode.HTP);
     }
 
     public byte[] GetReceivedDMX(PortAddress portAddress, EMergeMode mergeMode = EMergeMode.HTP)

@@ -12,15 +12,36 @@ namespace ArtNetSharp
         public override sealed EOpCodes OpCode => EOpCodes.OpAddress;
         protected override sealed ushort PacketMinLength => 107;
 
+        private const int PortCount = 4;
+
+        /// <summary>Net to program (7 bit), null = no change.</summary>
         public readonly Net? Net;
+        /// <summary>Sub-Net to program, null = no change.</summary>
         public readonly Subnet? Subnet;
         public readonly ArtAddressCommand Command;
         public readonly byte BindIndex;
         public readonly string ShortName;
         public readonly string LongName;
+        /// <summary>SwOut per port index 0-3 (always 4 entries), null = no change for that port.</summary>
         public readonly Universe?[] OutputUniverses;
+        /// <summary>SwIn per port index 0-3 (always 4 entries), null = no change for that port.</summary>
         public readonly Universe?[] InputUniverses;
         public readonly byte? AcnPriority;
+
+        /// <summary>Spec: the value 0x00 resets the field to the "physical switch setting" (for this library: the value the application configured).</summary>
+        public readonly bool NetReset;
+        public readonly bool SubnetReset;
+        /// <summary>Reset flags per port index 0-3 (always 4 entries).</summary>
+        public readonly bool[] OutputUniverseReset;
+        public readonly bool[] InputUniverseReset;
+
+        private static Universe?[] toPortArray(Universe?[] universes)
+        {
+            var result = new Universe?[PortCount];
+            if (universes != null)
+                Array.Copy(universes, result, Math.Min(universes.Length, PortCount));
+            return result;
+        }
 
         public ArtAddress(in byte bindIndex,
                       in Net? net,
@@ -40,8 +61,11 @@ namespace ArtNetSharp
             Subnet = subnet;
             ShortName = shortName;
             LongName = longName;
-            OutputUniverses = outputUniverses ?? new Universe?[0];
-            InputUniverses = inputUniverses ?? new Universe?[0];
+            // Fixed 4 entries, so the index always is the port index (as in the packet).
+            OutputUniverses = toPortArray(outputUniverses);
+            InputUniverses = toPortArray(inputUniverses);
+            OutputUniverseReset = new bool[PortCount];
+            InputUniverseReset = new bool[PortCount];
             Command = command ?? ArtAddressCommand.Default;
 
             if (acnPriority.HasValue && acnPriority.Value > 200)
@@ -58,8 +82,10 @@ namespace ArtNetSharp
         }
         public ArtAddress(in byte[] packet) : base(packet)
         {
+            // 5 NetSwitch: 7 bit Net, only programmed when bit 7 is set; 0x00 = reset (was masked to 4 bit before)
             if ((packet[12] & 0x80) == 0x80)
-                Net = (byte)(packet[12] & 0x0f);
+                Net = (byte)(packet[12] & 0x7f);
+            NetReset = packet[12] == 0x00;
 
             BindIndex = packet[13];
 
@@ -72,22 +98,26 @@ namespace ArtNetSharp
 
 
 
-            // 9 SwIn [4] Input Universe
-            List<Universe?> swIn = new List<Universe?>();
-            for (int i = 0; i < 4; i++)
+            // 9 SwIn [4] / 10 SwOut [4]: one entry per port index; entries without bit 7 stay null (no change)
+            // instead of being skipped (which shifted e.g. a change for port 2 onto port 1).
+            InputUniverses = new Universe?[PortCount];
+            OutputUniverses = new Universe?[PortCount];
+            InputUniverseReset = new bool[PortCount];
+            OutputUniverseReset = new bool[PortCount];
+            for (int i = 0; i < PortCount; i++)
+            {
                 if ((packet[96 + i] & 0x80) == 0x80)
-                    swIn.Add((Universe?)(byte)(packet[96 + i] & 0x0f));
-            InputUniverses = swIn.ToArray();
+                    InputUniverses[i] = (Universe)(byte)(packet[96 + i] & 0x0f);
+                InputUniverseReset[i] = packet[96 + i] == 0x00;
 
-            // 10 SwIn [4] Output Universe
-            List<Universe?> swOut = new List<Universe?>();
-            for (int i = 0; i < 4; i++)
                 if ((packet[100 + i] & 0x80) == 0x80)
-                    swOut.Add((Universe?)(byte)(packet[100 + i] & 0x0f));
-            OutputUniverses = swOut.ToArray();
+                    OutputUniverses[i] = (Universe)(byte)(packet[100 + i] & 0x0f);
+                OutputUniverseReset[i] = packet[100 + i] == 0x00;
+            }
 
             if ((packet[104] & 0x80) == 0x80)
                 Subnet = (byte)(packet[104] & 0x0f);
+            SubnetReset = packet[104] == 0x00;
 
             AcnPriority = null;
             if (packet[105] <= 200)
@@ -164,7 +194,7 @@ namespace ArtNetSharp
             if (Net.HasValue)
                 p[12] = (byte)(Net.Value | 0x80); // 5 Net (done by Abstract part)
             else
-                p[12] = 0x7f;
+                p[12] = NetReset ? (byte)0x00 : (byte)0x7f;
 
             p[13] = (byte)BindIndex; // 6 BindIndex (0 and 1 are equal)
 
@@ -173,27 +203,17 @@ namespace ArtNetSharp
             if (!string.IsNullOrWhiteSpace(LongName))
                 Encoding.ASCII.GetBytes(LongName).CopyTo(p, 32);        // 8 LongName  [64]
 
-            for (int i = 96; i <= 103; i++)
-                p[i] = 0x7f;
-
-            // 9 SwIn [4] Input Universe
-            //p[96] = ReceiveUniverse;
-            if (InputUniverses != null)
-                for (int i = 0; i < InputUniverses.Length; i++)
-                    if (InputUniverses[i].HasValue)
-                        p[96 + i] = (byte)(InputUniverses[i].Value | 0x80);
-
-            // 10 SwIn [4] Input Universe
-            //p[100] = SendUniverse;
-            if (OutputUniverses != null)
-                for (int i = 0; i < OutputUniverses.Length; i++)
-                    if (OutputUniverses[i].HasValue)
-                        p[100 + i] = (byte)(OutputUniverses[i].Value | 0x80);
+            // 9 SwIn [4] / 10 SwOut [4]: value | 0x80 = program, 0x00 = reset, 0x7f = no change
+            for (int i = 0; i < PortCount; i++)
+            {
+                p[96 + i] = InputUniverses[i].HasValue ? (byte)(InputUniverses[i].Value | 0x80) : InputUniverseReset[i] ? (byte)0x00 : (byte)0x7f;
+                p[100 + i] = OutputUniverses[i].HasValue ? (byte)(OutputUniverses[i].Value | 0x80) : OutputUniverseReset[i] ? (byte)0x00 : (byte)0x7f;
+            }
 
             if (Subnet.HasValue)
                 p[104] = (byte)(Subnet.Value | 0x80); // 11 Subnet (done by Abstract part)
             else
-                p[104] = 0x7f;
+                p[104] = SubnetReset ? (byte)0x00 : (byte)0x7f;
 
             p[105] = byte.MaxValue;
             if (AcnPriority.HasValue)
@@ -207,6 +227,12 @@ namespace ArtNetSharp
             return base.Equals(obj)
                 && obj is ArtAddress other
                 && BindIndex == other.BindIndex
+                && Net == other.Net
+                && Subnet == other.Subnet
+                && NetReset == other.NetReset
+                && SubnetReset == other.SubnetReset
+                && OutputUniverseReset.SequenceEqual(other.OutputUniverseReset)
+                && InputUniverseReset.SequenceEqual(other.InputUniverseReset)
                 && ShortName == other.ShortName
                 && LongName == other.LongName
                 && OutputUniverses.SequenceEqual(other.OutputUniverses)
