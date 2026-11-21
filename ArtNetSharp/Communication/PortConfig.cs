@@ -28,6 +28,15 @@ public class PortConfig
     public virtual GoodInput GoodInput { get; set; }
     public virtual GoodOutput GoodOutput { get; set; }
 
+    /// <summary>
+    /// Sends ArtDmx for this port as directed broadcast instead of unicast to the subscribers.
+    /// <para>
+    /// Not Art-Net 4 conform: the specification (Unicast Subscription) requires ArtDmx to be
+    /// unicast to subscribers and allows broadcast under no conditions. Only use this for legacy
+    /// devices that cannot subscribe (do not list the universe in their ArtPollReply).
+    /// </para>
+    /// </summary>
+    [Obsolete("Not Art-Net 4 conform: ArtDmx must be unicast to subscribers. Only use for legacy devices that cannot subscribe.")]
     public virtual bool ForceBroadcast { get; set; }
 
     private readonly List<IPv4Address> additionalIPEndpoints;

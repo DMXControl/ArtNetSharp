@@ -116,33 +116,50 @@ public abstract class AbstractInstance : IInstance
             if (Source != source)
                 return false;
 
-            bool? check = checkSequence(Sequence, artDMX.Sequence);
-            if (check.HasValue && !check.Value)
-                return false;
+            var utcNow = DateTime.UtcNow;
+            // After a pause the old sequence number says nothing about the new packets (e.g. the source restarted).
+            bool? check = (utcNow - LastUpdate) >= SequenceResetTime ? null : checkSequence(Sequence, artDMX.Sequence);
+            if (check == false)
+            {
+                // A real re-ordering on the network affects single packets. If "old" packets keep coming,
+                // the source restarted or jumped (e.g. a console reboot within SequenceResetTime): resync to it.
+                if (++rejectedInARow < MaxRejectedInARow)
+                    return false;
+            }
+            rejectedInARow = 0;
 
             Sequence = artDMX.Sequence;
 
             Array.Copy(artDMX.Data, 0, Data, 0, Math.Min(artDMX.Data.Length, Data.Length));
 
-            LastUpdate = DateTime.UtcNow;
+            LastUpdate = utcNow;
             return true;
         }
+
+        internal static readonly TimeSpan SequenceResetTime = TimeSpan.FromSeconds(1);
+        internal const int MaxRejectedInARow = 4;
+        private int rejectedInARow;
 
         private bool? checkSequence(byte _old, byte _new)
         {
             if (IsDisposed || IsDisposing)
                 return null;
+            return IsNewerSequence(_old, _new);
+        }
 
-            if (_new == 0)
-                return null; //SpezialCase
+        /// <summary>
+        /// Spec (ArtDmx, Sequence): 0x01..0xff lets the receiver re-sequence packets, 0x00 disables it.
+        /// Uses serial number arithmetic: a packet counts as newer if it is up to 127 steps ahead
+        /// (incl. the wrap 0xff -> 0x01), and as old (out of order / duplicate) if it is up to 128 steps behind.
+        /// </summary>
+        /// <returns>null if sequencing is disabled for this comparison, otherwise whether <paramref name="_new"/> is newer.</returns>
+        internal static bool? IsNewerSequence(byte _old, byte _new)
+        {
+            if (_new == 0 || _old == 0)
+                return null; // sequencing disabled (by this packet, or no reference yet)
 
-            if (_old < _new)
-                return true;
-
-            if (_old > _new && (byte.MaxValue - _old < _new))
-                return true;
-
-            return false;
+            int ahead = (_new - _old + 256) % 256;
+            return ahead != 0 && ahead < 128;
         }
 
         public void Dispose()
@@ -205,7 +222,8 @@ public abstract class AbstractInstance : IInstance
 
         internal byte GetSequence()
         {
-            Sequence++;
+            // Spec (ArtDmx, Sequence): incremented in the range 0x01 to 0xff; 0x00 means "sequencing disabled".
+            Sequence = Sequence == byte.MaxValue ? (byte)1 : (byte)(Sequence + 1);
             return Sequence;
         }
 
@@ -585,6 +603,14 @@ public abstract class AbstractInstance : IInstance
         else
             await TrySendPacket(artDMX, remoteClientPort.IpAddress);
     }
+    private async Task sendArtDMXBroadcast(PortAddress portAddress, byte sourcePort, byte[] data, byte sequence)
+    {
+        if (IsDisposing || IsDisposed || IsDeactivated)
+            return;
+
+        using ArtDMX artDMX = new ArtDMX(sequence, sourcePort, portAddress.Net, portAddress.Address, data);
+        await TrySendBroadcastPacket(artDMX);
+    }
     public async Task sendArtDMX(IPv4Address ipAddress, PortAddress portAddress, byte sourcePort, byte[] data, byte sequence)
     {
         if (IsDisposing || IsDisposed || IsDeactivated)
@@ -673,19 +699,35 @@ public abstract class AbstractInstance : IInstance
                             continue;
 
                         byte sourcePort = config.PortNumber;
+                        // One sequence number per frame, shared by every receiver of this frame.
                         var sequence = bag.GetSequence();
-                        sentToIps.Clear();
-                        foreach (var port in portsByAddress[outputPortAddress])
+#pragma warning disable CS0618 // ForceBroadcast is obsolete for users, but still has to be honoured here
+                        bool forceBroadcast = config.ForceBroadcast;
+#pragma warning restore CS0618
+                        if (forceBroadcast)
                         {
-                            if (port.Timouted() || !sentToIps.Add(port.IpAddress))
-                                continue; // one packet per IP, even if it has several matching ports
-                            sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, sequence, config.ForceBroadcast));
-                            sended++;
+                            // One broadcast reaches all subscribers, so send it once per frame, not once per subscriber.
+                            if (portsByAddress[outputPortAddress].Any(port => !port.Timouted()))
+                            {
+                                sendTasks.Add(sendArtDMXBroadcast(outputPortAddress, sourcePort, bag.Data, sequence));
+                                sended++;
+                            }
+                        }
+                        else
+                        {
+                            sentToIps.Clear();
+                            foreach (var port in portsByAddress[outputPortAddress])
+                            {
+                                if (port.Timouted() || !sentToIps.Add(port.IpAddress))
+                                    continue; // one packet per IP, even if it has several matching ports
+                                sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, sequence));
+                                sended++;
+                            }
                         }
 
                         foreach (IPv4Address ip in config.AdditionalIPEndpoints.ToList())
                         {
-                            sendTasks.Add(sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, bag.GetSequence()));
+                            sendTasks.Add(sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, sequence));
                             sended++;
                         }
                     }

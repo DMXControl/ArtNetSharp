@@ -38,6 +38,12 @@ namespace ArtNetSharp
         {
             Sequence = sequence;
             Physical = physical;
+            if (data is null)
+            {
+                // data defaults to null, which used to throw a NullReferenceException.
+                Data = Array.Empty<byte>();
+                return;
+            }
             if (data.Length > 512)
             {
                 Data = data.Take(512).ToArray();
