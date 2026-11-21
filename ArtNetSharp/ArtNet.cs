@@ -78,6 +78,12 @@ public class ArtNet : IDisposable
         public IPAddress IPv4Mask => UnicastIPAddressInfo.IPv4Mask;
 
         private UdpClient _client = null;
+        /// <summary>
+        /// Receive-only socket bound to the directed broadcast address of this interface.
+        /// Needed on Linux and macOS: a socket bound to the interface's unicast IP does not
+        /// receive broadcasts there (Windows delivers them anyway). See GitHub issue #11.
+        /// </summary>
+        private UdpClient _broadcastClient = null;
         private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
         public bool ClientAlive { get; private set; } = false;
@@ -123,6 +129,9 @@ public class ArtNet : IDisposable
                 ClientAlive = false;
                 _client?.Close();
                 (_client as IDisposable)?.Dispose();
+                _broadcastClient?.Close();
+                (_broadcastClient as IDisposable)?.Dispose();
+                _broadcastClient = null;
                 notMatchingIpAdddresses.Clear();
                 matchingIpAdddresses.Clear();
                 Logger?.LogTrace($"Client ({LocalIpAddress}) Cleared");
@@ -159,11 +168,45 @@ public class ArtNet : IDisposable
                 IPEndPoint localEp = new IPEndPoint(endpointIp, Constants.ARTNET_PORT);
                 _client.Client.Bind(localEp);
                 ClientAlive = true;
-                _ = StartListening();
+                _ = StartListening(_client, reopenOnError: true);
+                openBroadcastClient();
                 Logger?.LogTrace($"Client ({LocalIpAddress}): initialized!");
             }
             catch (Exception e) { Logger?.LogError(e, $"Client ({LocalIpAddress}): Error on initialize"); }
             finally { semaphoreSlim?.Release(); }
+        }
+
+        internal bool NeedsBroadcastClient =>
+            !Tools.IsWindows()
+            && LocalIpAddress.AddressFamily == AddressFamily.InterNetwork
+            && !IPAddress.IsLoopback(LocalIpAddress)
+            && !BroadcastIpAddress.Equals(LocalIpAddress) // e.g. /32 interfaces, there is no separate broadcast address
+            && !BroadcastIpAddress.Equals(IPAddress.Broadcast);
+
+        internal bool BroadcastClientAlive => _broadcastClient?.Client != null;
+
+        private void openBroadcastClient()
+        {
+            if (!NeedsBroadcastClient)
+                return;
+
+            try
+            {
+                _broadcastClient = new UdpClient();
+                _broadcastClient.ExclusiveAddressUse = false;
+                _broadcastClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                _broadcastClient.EnableBroadcast = true;
+                _broadcastClient.Client.Bind(new IPEndPoint(BroadcastIpAddress, Constants.ARTNET_PORT));
+                _ = StartListening(_broadcastClient, reopenOnError: false);
+                Logger?.LogTrace($"Client ({LocalIpAddress}): broadcast receiver bound to {BroadcastIpAddress}");
+            }
+            catch (Exception e)
+            {
+                // Unicast still works without it, so this is not fatal for the client.
+                Logger?.LogWarning(e, $"Client ({LocalIpAddress}): Could not bind broadcast receiver to {BroadcastIpAddress}, broadcasts will not be received on this interface");
+                (_broadcastClient as IDisposable)?.Dispose();
+                _broadcastClient = null;
+            }
         }
         private IPAddress getEndointIP()
         {
@@ -178,7 +221,7 @@ public class ArtNet : IDisposable
             return endpointIp;
         }
 
-        private async Task StartListening()
+        private async Task StartListening(UdpClient client, bool reopenOnError)
         {
             try
             {
@@ -187,7 +230,7 @@ public class ArtNet : IDisposable
                     if (IsDisposed || IsDisposing)
                         return;
 
-                    UdpReceiveResult received = await _client.ReceiveAsync();
+                    UdpReceiveResult received = await client.ReceiveAsync();
 
                     if (!Tools.IsWindows())
                         if (!Tools.IsInSubnet(LocalIpAddress, UnicastIPAddressInfo.IPv4Mask, received.RemoteEndPoint.Address))
@@ -201,7 +244,13 @@ public class ArtNet : IDisposable
                 }
             }
             catch (SocketException) { }
-            catch (Exception e) { Logger.LogError(e); _ = openClient(); }
+            catch (ObjectDisposedException) when (!reopenOnError || IsDisposed || IsDisposing) { }
+            catch (Exception e)
+            {
+                Logger.LogError(e);
+                if (reopenOnError)
+                    _ = openClient();
+            }
         }
 
         private readonly List<IPAddress> notMatchingIpAdddresses = new List<IPAddress>();
