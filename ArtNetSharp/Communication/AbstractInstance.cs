@@ -108,7 +108,7 @@ public abstract class AbstractInstance : IInstance
         bags.RemoveAll(b => reference - b.LastUpdate >= MergeSourceTimeout);
         return bags;
     }
-    private readonly ConcurrentDictionary<RDM_TransactionID, RDMMessage> artRDMdeBumbReceive = new();
+    private readonly ConcurrentDictionary<RDM_TransactionID, DateTime> artRDMdeBumbReceive = new();
 
     private readonly ConcurrentDictionary<IPv4Address, GatewayRDMFiFoQueue> artRDMgatewayQueues = new();
 
@@ -1284,9 +1284,20 @@ public abstract class AbstractInstance : IInstance
         }
         catch (Exception ex) { Logger.LogError(ex); }
 
+        // Duplicate detection: the same transaction within RdmDedupeWindow is processed only once.
+        // A timestamp per entry replaces the former Task.Run + Task.Delay(2000) per message;
+        // expired entries are removed in the poll cycle (removeExpiredRdmDedupeEntries).
         var ti = new RDM_TransactionID(artRDM.RDMMessage.TransactionCounter, artRDM.Source, artRDM.Destination);
-        if (!artRDMdeBumbReceive.TryAdd(ti, artRDM.RDMMessage))
-            return;
+        var utcNow = DateTime.UtcNow;
+        while (!artRDMdeBumbReceive.TryAdd(ti, utcNow))
+        {
+            if (!artRDMdeBumbReceive.TryGetValue(ti, out DateTime seen))
+                continue; // removed in between, try to add again
+            if (utcNow - seen < RdmDedupeWindow)
+                return; // duplicate
+            if (artRDMdeBumbReceive.TryUpdate(ti, utcNow, seen))
+                break; // expired entry: same transaction number reused later, process it
+        }
         try
         {
             if (!artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE))
@@ -1304,12 +1315,15 @@ public abstract class AbstractInstance : IInstance
             }
         }
         catch (Exception ex) { Logger.LogError(ex); }
+    }
 
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(2000);
-            artRDMdeBumbReceive.TryRemove(ti, out _);
-        });
+    private static readonly TimeSpan RdmDedupeWindow = TimeSpan.FromSeconds(2);
+    private void removeExpiredRdmDedupeEntries()
+    {
+        var utcNow = DateTime.UtcNow;
+        foreach (var entry in artRDMdeBumbReceive)
+            if (utcNow - entry.Value >= RdmDedupeWindow)
+                artRDMdeBumbReceive.TryRemove(entry.Key, out _);
     }
     #endregion
 
@@ -1557,6 +1571,7 @@ public abstract class AbstractInstance : IInstance
         if (IsDeactivated)
             return;
 
+        removeExpiredRdmDedupeEntries();
         await triggerSendArtPoll();
         await Task.Delay(4000);
         await pollReplyProcessSemaphoreSlim.WaitAsync();
