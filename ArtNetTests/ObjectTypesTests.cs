@@ -578,13 +578,13 @@ public class ObjectTypesTests
         await Task.Delay(500);
         portConfig.AddDiscoveredRdmUIDs(portAddress, bindIndex, new UID(0x12345678));
         Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(1));
-        await Task.Delay(500);
+        await Task.Delay(2500); // wide gap between the two UIDs, so timer jitter cannot flip the 30 s timeout checks below
         portConfig.AddDiscoveredRdmUIDs(portAddress, bindIndex, new UID(0xff345678));
         Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(2));
         await Task.Delay(500);
         portConfig.AddDiscoveredRdmUIDs(portAddress, bindIndex, new UID(0xff345678));
         Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(2));
-        await Task.Delay(29600);
+        await Task.Delay(27500); // UID 1 last seen 30.5 s ago (timed out), UID 2 27.5 s ago (2.5 s margin)
         Assert.Multiple(() =>
         {
             Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(1));
@@ -593,7 +593,7 @@ public class ObjectTypesTests
         portConfig.RemoveOutdatedRdmUIDs();
         Assert.That(portConfig.DiscoveredRDMUIDs, Has.Count.EqualTo(1));
 
-        await Task.Delay(1000);
+        await Task.Delay(3000); // now UID 2 is 30.5 s old as well
         Assert.Multiple(() =>
         {
             Assert.That(portConfig.GetReceivedRDMUIDs(), Has.Length.EqualTo(0));

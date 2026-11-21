@@ -19,7 +19,13 @@ namespace ArtNetSharp.Communication;
 
 public abstract class AbstractInstance : IInstance
 {
-    protected static ILogger Logger { get; private set; } = null;
+    /// <summary>
+    /// Logger of this instance, categorised by its concrete type. It used to be static and was overwritten
+    /// by every new instance, so all instances logged under the type of the last one created.
+    /// </summary>
+    protected ILogger Logger { get; }
+    /// <summary>For the static/nested parts (e.g. the shared poll thread) that have no instance.</summary>
+    private static readonly ILogger StaticLogger = Logging.CreateLogger<AbstractInstance>();
     protected bool IsDisposed { get; private set; }
     protected bool IsDisposing { get; private set; }
     bool IDisposableExtended.IsDisposed => IsDisposed;
@@ -378,7 +384,7 @@ public abstract class AbstractInstance : IInstance
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError(ex);
+                        StaticLogger.LogError(ex);
                     }
 
                     lastSendPollTime = DateTime.UtcNow;

@@ -57,6 +57,39 @@ public class InstanceManagementTest
     }
 
     [Test]
+    public void EachInstanceLogsUnderItsOwnType()
+    {
+        var capture = new CategoryCapture();
+        ArtNet.AddLoggProvider(capture);
+
+        var node = new NodeMock(artNet) { Name = "Logging Node" };
+        _ = new ArtNetTests.Mocks.ControllerInstanceMock(artNet) { Name = "Created later" }; // used to overwrite the static logger
+        ((IDisposable)node).Dispose();
+
+        Assert.That(capture.CategoryOf("Disposing Logging Node"), Does.EndWith(nameof(NodeMock)));
+    }
+
+    private sealed class CategoryCapture : Microsoft.Extensions.Logging.ILoggerProvider
+    {
+        private readonly System.Collections.Concurrent.ConcurrentQueue<(string Category, string Message)> entries = new();
+        public string? CategoryOf(string message) => entries.LastOrDefault(e => e.Message == message).Category;
+        public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => new Capturing(categoryName, entries);
+        public void Dispose() { }
+
+        private sealed class Capturing(string category, System.Collections.Concurrent.ConcurrentQueue<(string, string)> entries) : Microsoft.Extensions.Logging.ILogger
+        {
+            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+            // The provider stays registered for the rest of the run, so keep it cheap.
+            public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => logLevel >= Microsoft.Extensions.Logging.LogLevel.Information;
+            public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            {
+                if (IsEnabled(logLevel))
+                    entries.Enqueue((category, formatter(state, exception)));
+            }
+        }
+    }
+
+    [Test]
     public void ManyInstancesAreAllAdded()
     {
         var nodes = Enumerable.Range(0, 200).Select(i => new NodeMock(artNet) { Name = $"N{i}" }).ToArray();
