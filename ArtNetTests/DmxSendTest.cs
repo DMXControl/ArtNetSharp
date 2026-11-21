@@ -19,6 +19,8 @@ public class DmxSendTest
     private NodeMock node;
     private ControllerInstanceMock controller;
     private static readonly PortAddress[] portAddresses = Enumerable.Range(1, universes).Select(u => new PortAddress(0, 0, (byte)u)).ToArray();
+    /// <summary>Own universe for <see cref="FirstWriteHonoursDestinationIndexAndCount"/>, so it is written there for the first time.</summary>
+    private static readonly PortAddress partialPortAddress = new PortAddress(0, 0, universes + 1);
 
     [OneTimeSetUp]
     public async Task OneTimeSetUp()
@@ -37,11 +39,13 @@ public class DmxSendTest
             node.AddPortConfig(new PortConfig(bindIndex, portAddresses[i], true, false) { PortNumber = 1, Type = EPortType.OutputFromArtNet, GoodOutput = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, isBeingOutputAsDMX: true) });
             controller.AddPortConfig(new PortConfig(bindIndex, portAddresses[i], false, true) { PortNumber = 1, Type = EPortType.InputToArtNet | EPortType.ArtNet });
         }
+        node.AddPortConfig(new PortConfig(universes + 1, partialPortAddress, true, false) { PortNumber = 1, Type = EPortType.OutputFromArtNet, GoodOutput = new GoodOutput(outputStyle: GoodOutput.EOutputStyle.Continuous, isBeingOutputAsDMX: true) });
+        controller.AddPortConfig(new PortConfig(universes + 1, partialPortAddress, false, true) { PortNumber = 1, Type = EPortType.InputToArtNet | EPortType.ArtNet });
         artNet.AddInstance(node, controller);
 
         for (int i = 0; i < 300; i++)
         {
-            if (portAddresses.All(pa => controller.RemoteClientsPorts?.Any(p => p.OutputPortAddress == pa) == true))
+            if (portAddresses.Append(partialPortAddress).All(pa => controller.RemoteClientsPorts?.Any(p => p.OutputPortAddress == pa) == true))
                 return;
             await Task.Delay(100);
         }
@@ -50,6 +54,34 @@ public class DmxSendTest
 
     [OneTimeTearDown]
     public void OneTimeTearDown() => ((IDisposable)artNet)?.Dispose();
+
+    [Test, CancelAfter(20_000)]
+    public async Task FirstWriteHonoursDestinationIndexAndCount(CancellationToken cancellationToken)
+    {
+        // Very first write to this universe: 10 values to channels 101..110 (index 100).
+        byte[] values = Enumerable.Range(1, 10).Select(v => (byte)v).ToArray();
+        controller.WriteDMXValues(partialPortAddress, values, destinationIndex: 100, count: 10);
+        // count without destinationIndex: only the first 3 of 20 values go to channels 1..3.
+        byte[] twenty = Enumerable.Repeat((byte)0xAA, 20).ToArray();
+        controller.WriteDMXValues(partialPortAddress, twenty, count: 3);
+
+        byte[]? received;
+        while (true)
+        {
+            received = node.GetReceivedDMX(partialPortAddress);
+            if (received != null && received[100] == 1 && received[0] == 0xAA)
+                break;
+            await Task.Delay(20, cancellationToken); // throws (= fails) on CancelAfter if the data never arrives
+        }
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(received.Skip(100).Take(10), Is.EqualTo(values), "Channels 101..110");
+            Assert.That(received.Take(3), Is.All.EqualTo(0xAA), "Channels 1..3");
+            Assert.That(received.Skip(3).Take(97), Is.All.EqualTo(0), "Channels 4..100 must stay untouched");
+            Assert.That(received.Skip(110), Is.All.EqualTo(0), "Channels 111..512 must stay untouched");
+        });
+    }
 
     [Test, CancelAfter(20_000)]
     public async Task DataArrivesAndArtSyncIsRateLimited(CancellationToken cancellationToken)

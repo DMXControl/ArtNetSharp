@@ -191,9 +191,9 @@ public abstract class AbstractInstance : IInstance
         public bool IsDisposed;
         public bool IsDisposing;
 
-        public DMXSendBag(byte[] data, PortAddress portAddress)
+        /// <summary>Creates an empty (all zero) buffer; data is written via <see cref="Update"/>.</summary>
+        public DMXSendBag(PortAddress portAddress)
         {
-            Update(data);
             PortAddress = portAddress;
         }
 
@@ -205,10 +205,11 @@ public abstract class AbstractInstance : IInstance
             await SemaphoreSlim?.WaitAsync();
             try
             {
-                if (destinationIndex + count <= Data.Length)
-                    Array.Copy(data, 0, Data, destinationIndex.Value, count.Value);
-                else
-                    Array.Copy(data, 0, Data, 0, Math.Min(data.Length, Data.Length));
+                // Copy data[0..count) to Data[destinationIndex..), clipped to the 512 channels.
+                int start = destinationIndex ?? 0;
+                int length = Math.Min(Math.Min(count ?? data.Length, data.Length), Data.Length - start);
+                if (length > 0)
+                    Array.Copy(data, 0, Data, start, length);
 
                 LastUpdated = DateTime.UtcNow;
             }
@@ -1239,13 +1240,10 @@ public abstract class AbstractInstance : IInstance
 
         try
         {
-            if (sendDMXBuffer.TryGetValue(portAddress, out DMXSendBag bag))
-                bag.Update(data, destinationIndex, count);
-            else
-            {
-                var newBag = new DMXSendBag(data, portAddress);
-                sendDMXBuffer.TryAdd(portAddress, newBag);
-            }
+            // GetOrAdd: the first write for a Port-Address goes through Update as well (so destinationIndex/count
+            // are honoured), and two concurrent first writes end up in the same buffer instead of one getting lost.
+            DMXSendBag bag = sendDMXBuffer.GetOrAdd(portAddress, pa => new DMXSendBag(pa));
+            bag.Update(data, destinationIndex, count);
         }
         catch (Exception e) { Logger.LogError(e); }
     }
