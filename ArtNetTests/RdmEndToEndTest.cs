@@ -127,6 +127,50 @@ public class RdmEndToEndTest
     }
 
     [Test]
+    public async Task RequestWaitsWhileTheGatewayQueueIsFull()
+    {
+        await controller.PerformRDMDiscovery(universe);
+        await waitFor(() => nodePortSeenByController()!.KnownResponderRDMUIDs.Count == 2);
+
+        var original = AbstractInstance.GatewayRDMFiFoQueue.MaxWait;
+        AbstractInstance.GatewayRDMFiFoQueue.MaxWait = TimeSpan.FromMilliseconds(600);
+        try
+        {
+            // The gateway (node, loop address) reports a full queue: 0 of 1 entries free.
+            var gatewayIp = nodePortSeenByController()!.IpAddress;
+            using (var full = new ArtRDM(universe, new RDMMessage
+            {
+                Command = ERDM_Command.GET_COMMAND_RESPONSE,
+                Parameter = ERDM_Parameter.DEVICE_INFO,
+                SourceUID = responder2,
+                DestUID = controller.UID,
+                TransactionCounter = 200,
+            }, fifoAvailable: 0, fifoMax: 1))
+                ((IInstance)controller).PacketReceived(full, gatewayIp, gatewayIp);
+            Assert.That(controller.GetGatewayRdmQueue(gatewayIp)!.Implemented, Is.True);
+
+            var sw = Stopwatch.StartNew();
+            long receivedAfter = -1;
+            node.RequestRDMMessageReceived += (_, _) => Interlocked.CompareExchange(ref receivedAfter, sw.ElapsedMilliseconds, -1);
+            await controller.SendArtRDM(new RDMMessage
+            {
+                Command = ERDM_Command.GET_COMMAND,
+                Parameter = ERDM_Parameter.DEVICE_INFO,
+                DestUID = responder1,
+                TransactionCounter = 9,
+            });
+            await waitFor(() => Interlocked.Read(ref receivedAfter) >= 0);
+
+            Assert.That(Interlocked.Read(ref receivedAfter), Is.GreaterThanOrEqualTo(500),
+                "The request waited for a free entry (none came, so it went out after MaxWait)");
+        }
+        finally
+        {
+            AbstractInstance.GatewayRDMFiFoQueue.MaxWait = original;
+        }
+    }
+
+    [Test]
     public async Task RequestToUnknownUidIsNotSent()
     {
         int requests = 0;
