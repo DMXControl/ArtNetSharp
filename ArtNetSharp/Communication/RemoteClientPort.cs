@@ -150,18 +150,20 @@ public sealed class RemoteClientPort : INotifyPropertyChanged
     }
     private void onPropertyChanged(PropertyChangedEventArgs eventArgs)
     {
-        try
-        {
-            PropertyChanged?.InvokeFailSafe(this, eventArgs);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e);
-        }
+        EventDispatcher.Raise(events, () => PropertyChanged?.InvokeFailSafe(this, eventArgs));
     }
 
-    public RemoteClientPort(in ArtPollReply artPollReply, byte portIndex = 0)
+    /// <summary>Event queue of the owning instance (null if this port was created standalone).</summary>
+    private readonly EventDispatcher events;
+    /// <summary>Internal, synchronous notification for the owning RemoteClient (keeps library state independent of the event queue).</summary>
+    internal Action<RDMUID_ReceivedBag> RdmUidAdded;
+
+    public RemoteClientPort(in ArtPollReply artPollReply, byte portIndex = 0) : this(artPollReply, portIndex, null)
     {
+    }
+    internal RemoteClientPort(in ArtPollReply artPollReply, byte portIndex, EventDispatcher events)
+    {
+        this.events = events; // first: processArtPollReply below already raises PropertyChanged
         seen();
         ID = getIDOf(artPollReply, portIndex);
         IpAddress = artPollReply.OwnIp;
@@ -224,7 +226,7 @@ public sealed class RemoteClientPort : INotifyPropertyChanged
             bag.Seen(portAddress, bindIndex);
         else
         {
-            bag = new RDMUID_ReceivedBag(portAddress, bindIndex, rdmuid);
+            bag = new RDMUID_ReceivedBag(portAddress, bindIndex, rdmuid) { Events = events };
             if (knownControllerRDMUIDs.TryAdd(rdmuid, bag))
                 Logger.LogTrace($"{IpAddress}#{BindIndex} Cached Controller UID: {bag.Uid}");
         }
@@ -241,10 +243,11 @@ public sealed class RemoteClientPort : INotifyPropertyChanged
                 bag.Seen(portAddress, bindIndex);
             else
             {
-                bag = new RDMUID_ReceivedBag(portAddress, bindIndex, rdmuid);
+                bag = new RDMUID_ReceivedBag(portAddress, bindIndex, rdmuid) { Events = events };
                 if (knownResponderRDMUIDs.TryAdd(rdmuid, bag))
                 {
-                    RDMUIDReceived?.InvokeFailSafe(this, bag);
+                    RdmUidAdded?.Invoke(bag);
+                    EventDispatcher.Raise(events, () => RDMUIDReceived?.InvokeFailSafe(this, bag));
                     Logger.LogTrace($"{IpAddress}#{BindIndex} Cached Responder UID: {bag.Uid}");
                 }
             }

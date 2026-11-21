@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -18,12 +19,16 @@ namespace ArtNetSharp.Communication
 
         protected override async void OnPacketReceived(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
         {
-            switch (packet)
+            try // async void: an escaping exception would terminate the host application
             {
-                case ArtDataReply artDataReply:
-                    await processArtDataReply(artDataReply, sourceIp);
-                    break;
+                switch (packet)
+                {
+                    case ArtDataReply artDataReply:
+                        await processArtDataReply(artDataReply, sourceIp);
+                        break;
+                }
             }
+            catch (Exception ex) { Logger.LogError(ex); }
         }
 
         private async Task processArtDataReply(ArtDataReply artDataReply, IPv4Address sourceIp)

@@ -1,4 +1,5 @@
 ﻿using org.dmxc.wkdt.Light.RDM;
+using RDMSharp;
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -24,7 +25,7 @@ public sealed class RDMUID_ReceivedBag : INotifyPropertyChanged
             if (value == portAddress)
                 return;
             portAddress = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PortAddress)));
+            onPropertyChanged(nameof(PortAddress));
         }
     }
     public byte BindIndex
@@ -35,8 +36,17 @@ public sealed class RDMUID_ReceivedBag : INotifyPropertyChanged
             if (value == bindIndex)
                 return;
             bindIndex = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PortAddress)));
+            onPropertyChanged(nameof(BindIndex)); // was reported as PortAddress
         }
+    }
+
+    /// <summary>Event queue of the owning instance (null if created standalone).</summary>
+    internal EventDispatcher Events { get; set; }
+    private void onPropertyChanged(string propertyName)
+    {
+        var args = new PropertyChangedEventArgs(propertyName);
+        // Was a plain Invoke: an exception in an application handler propagated into the receive path.
+        EventDispatcher.Raise(Events, () => PropertyChanged?.InvokeFailSafe(this, args));
     }
 
     public byte TransactionNumber { get; private set; } = byte.MaxValue;

@@ -49,6 +49,9 @@ public class PortConfig
     public event EventHandler<RDMUID_ReceivedBag> RDMUIDReceived;
     //public event EventHandler<RDMMessage> RDMMessageReceived;
 
+    /// <summary>Event queue of the instance this config is added to (set by AddPortConfig, null when standalone).</summary>
+    internal EventDispatcher Events { get; set; }
+
     public PortConfig(in byte bindIndex, in Net net, in Subnet subnet, in Universe universe, in bool output, in bool input)
         : this(bindIndex, new PortAddress(net, subnet, universe), output, input)
     {
@@ -115,10 +118,11 @@ public class PortConfig
                 bag.Seen(portAddress, bindIndex);
             else
             {
-                bag = new RDMUID_ReceivedBag(portAddress, bindIndex, rdmuid);
+                var events = Events;
+                bag = new RDMUID_ReceivedBag(portAddress, bindIndex, rdmuid) { Events = events };
                 if (discoveredRDMUIDs.TryAdd(rdmuid, bag))
                 {
-                    RDMUIDReceived?.InvokeFailSafe(this, bag);
+                    EventDispatcher.Raise(events, () => RDMUIDReceived?.InvokeFailSafe(this, bag));
                     Logger.LogTrace($"#{BindIndex} PortAddress: {PortAddress.Combined:x4} Cached UID: {bag.Uid}");
                 }
             }

@@ -73,14 +73,19 @@ public class ArtNet : IDisposable
 
     private async void LoopNetwork_DataReceived(object sender, EventArgs e)
     {
-        NetworkLoopAdapter adapter = (NetworkLoopAdapter)sender;
-        var bag = await adapter.Receive();
-        Tools.TryDeserializePacket(bag.Data, out var packet);
-        if (Logger.IsEnabled(LogLevel.Trace))
-            Logger.LogTrace($"Received Loop Package {packet}");
-        // The loop adapter delivers synchronously from inside Send(), so dispatch asynchronously
-        // here to avoid re-entrant send->receive->send chains.
-        processPacket(packet, new IPv4Address("3.3.3.3"), new IPv4Address("3.3.3.3"), dispatchAsync: true);
+        try // async void: an escaping exception would terminate the host application
+        {
+            NetworkLoopAdapter adapter = (NetworkLoopAdapter)sender;
+            var bag = await adapter.Receive();
+            if (!Tools.TryDeserializePacket(bag.Data, out var packet))
+                return;
+            if (Logger.IsEnabled(LogLevel.Trace))
+                Logger.LogTrace($"Received Loop Package {packet}");
+            // The loop adapter delivers synchronously from inside Send(), so dispatch asynchronously
+            // here to avoid re-entrant send->receive->send chains.
+            processPacket(packet, new IPv4Address("3.3.3.3"), new IPv4Address("3.3.3.3"), dispatchAsync: true);
+        }
+        catch (Exception ex) { Logger.LogError(ex); }
     }
 
     public class NetworkClientBag : IDisposable
@@ -438,7 +443,7 @@ public class ArtNet : IDisposable
         public void Send(byte[] _data)
         {
             bag.Enqueue(new LoopDataBag(_data));
-            DataReceived.InvokeFailSafe(this, EventArgs.Empty);
+            DataReceived?.InvokeFailSafe(this, EventArgs.Empty);
         }
 
         public async Task<LoopDataBag> Receive()

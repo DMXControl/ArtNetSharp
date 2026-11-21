@@ -219,15 +219,11 @@ public sealed class RemoteClient : INotifyPropertyChanged
     }
     private void onPropertyChanged(PropertyChangedEventArgs eventArgs)
     {
-        try
-        {
-            PropertyChanged?.InvokeFailSafe(this, eventArgs);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e);
-        }
+        EventDispatcher.Raise(events, () => PropertyChanged?.InvokeFailSafe(this, eventArgs));
     }
+
+    /// <summary>Event queue of the owning instance (null if this client was created standalone).</summary>
+    private readonly EventDispatcher events;
 
     public IReadOnlyDictionary<EDataRequest, object> ArtDataCache
     {
@@ -256,8 +252,12 @@ public sealed class RemoteClient : INotifyPropertyChanged
         }
     }
 
-    public RemoteClient(in ArtPollReply artPollReply)
+    public RemoteClient(in ArtPollReply artPollReply) : this(artPollReply, null)
     {
+    }
+    internal RemoteClient(in ArtPollReply artPollReply, EventDispatcher events)
+    {
+        this.events = events; // first: processArtPollReply below already raises events
         // Port timeouts are checked by the owning instance (AbstractInstance -> RemoveTimedOutPorts),
         // not via a subscription to the static poll event (that kept every RemoteClient alive forever).
         seen();
@@ -288,7 +288,7 @@ public sealed class RemoteClient : INotifyPropertyChanged
             portsTimedOut[entry.Key] = port;
             removed = true;
             Logger.LogInformation($"Port timeout: {port.ID}");
-            _ = Task.Run(() => PortTimedOut?.InvokeFailSafe(this, port));
+            EventDispatcher.Raise(events, () => PortTimedOut?.InvokeFailSafe(this, port));
         }
         if (removed)
             Ports = ports.Select(p => p.Value).ToList().AsReadOnly();
@@ -316,7 +316,6 @@ public sealed class RemoteClient : INotifyPropertyChanged
         if (artPollReply.Ports == 0)
             return;
 
-        List<Task> tasks = new List<Task>();
         try
         {
             for (byte portIndex = 0; portIndex < artPollReply.Ports; portIndex++)
@@ -329,15 +328,17 @@ public sealed class RemoteClient : INotifyPropertyChanged
                     // Revive the same object (keeps its RDM responders and bindings).
                     port.processArtPollReply(artPollReply);
                     if (ports.TryAdd(physicalPort, port))
-                        tasks.Add(Task.Run(() => PortDiscovered?.InvokeFailSafe(this, port)));
+                        EventDispatcher.Raise(events, () => PortDiscovered?.InvokeFailSafe(this, port));
                 }
                 else
                 {
-                    port = new RemoteClientPort(artPollReply, portIndex);
+                    port = new RemoteClientPort(artPollReply, portIndex, events);
                     if (ports.TryAdd(physicalPort, port))
                     {
-                        tasks.Add(Task.Run(() => PortDiscovered?.InvokeFailSafe(this, port)));
-                        port.RDMUIDReceived += Port_RDMUIDReceived;
+                        // Internal, synchronous hook (not the public event): the library's own state must not
+                        // depend on the event queue, which an application handler may delay.
+                        port.RdmUidAdded = Port_RDMUIDReceived;
+                        EventDispatcher.Raise(events, () => PortDiscovered?.InvokeFailSafe(this, port));
                     }
                 }
             }
@@ -382,10 +383,10 @@ public sealed class RemoteClient : INotifyPropertyChanged
         }
     }
 
-    private void Port_RDMUIDReceived(object sender, RDMUID_ReceivedBag bag)
+    private void Port_RDMUIDReceived(RDMUID_ReceivedBag bag)
     {
         knownRDMUIDs.AddOrUpdate(bag.Uid, bag, (x, y) => bag);
-        RDMUIDReceived?.InvokeFailSafe(this, bag);
+        EventDispatcher.Raise(events, () => RDMUIDReceived?.InvokeFailSafe(this, bag));
     }
     public void RemoveOutdatedRdmUIDs()
     {

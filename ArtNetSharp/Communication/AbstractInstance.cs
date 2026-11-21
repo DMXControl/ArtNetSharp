@@ -339,6 +339,28 @@ public abstract class AbstractInstance : IInstance
         }
     }
     private readonly ConcurrentDictionary<PortAddress, DMXSendBag> sendDMXBuffer = new ConcurrentDictionary<PortAddress, DMXSendBag>();
+
+    /// <summary>
+    /// Raises the events of this instance (and of its RemoteClients, ports and port configs) ordered and
+    /// fail-safe outside the receive loops, so application handlers can neither block nor break the library.
+    /// </summary>
+    internal EventDispatcher Events { get; }
+
+    /// <summary>
+    /// DMXReceived is coalesced per Port-Address: at most one event per port is pending. With a slow handler the
+    /// queue therefore cannot grow with the packet rate; the handler reads the latest data via GetReceivedDMX.
+    /// </summary>
+    private readonly ConcurrentDictionary<PortAddress, byte> dmxReceivedPending = new ConcurrentDictionary<PortAddress, byte>();
+    private void raiseDMXReceived(PortAddress portAddress)
+    {
+        if (!dmxReceivedPending.TryAdd(portAddress, 0))
+            return; // an event for this port is already queued and will see the new data
+        Events.Post(() =>
+        {
+            dmxReceivedPending.TryRemove(portAddress, out _); // before the handler: data arriving meanwhile queues a new event
+            DMXReceived?.InvokeFailSafe(this, portAddress);
+        });
+    }
     private readonly SemaphoreSlim semaphoreSlimAddRemoteClient = new SemaphoreSlim(1, 1);
 
     private readonly ConcurrentDictionary<string, RemoteClient> remoteClients = new ConcurrentDictionary<string, RemoteClient>();
@@ -403,6 +425,7 @@ public abstract class AbstractInstance : IInstance
         _random = new Random();
         ArtNetInstance = _artnet;
         Logger = Logging.CreateLogger(GetType());
+        Events = new EventDispatcher(GetType().Name, Logger);
 
         ArtNetInstance.OnInstanceAdded += ArtNet_OnInstanceAdded;
         ArtNetInstance.OnInstanceRemoved += ArtNet_OnInstanceRemoved;
@@ -424,7 +447,11 @@ public abstract class AbstractInstance : IInstance
         if (e != this)
             return;
 
-        await triggerSendArtPoll();
+        try // async void: an escaping exception would terminate the host application
+        {
+            await triggerSendArtPoll();
+        }
+        catch (Exception ex) { Logger.LogError(ex); }
     }
 
     private void ArtNet_OnInstanceRemoved(object sender, AbstractInstance e)
@@ -456,7 +483,7 @@ public abstract class AbstractInstance : IInstance
                     processArtDMX(artDMX, sourceIp);
                     break;
                 case ArtSync artSync:
-                    SyncReceived?.InvokeFailSafe(this, new EventArgs());
+                    Events.Post(() => SyncReceived?.InvokeFailSafe(this, EventArgs.Empty));
                     break;
 
                 case ArtTodRequest artTodRequest:
@@ -475,10 +502,10 @@ public abstract class AbstractInstance : IInstance
                     break;
 
                 case ArtTimeCode artTimeCode:
-                    TimeCodeReceived?.InvokeFailSafe(this, artTimeCode);
+                    Events.Post(() => TimeCodeReceived?.InvokeFailSafe(this, artTimeCode));
                     break;
                 case ArtTimeSync artTimeSync:
-                    TimeSyncReceived?.InvokeFailSafe(this, artTimeSync);
+                    Events.Post(() => TimeSyncReceived?.InvokeFailSafe(this, artTimeSync));
                     break;
 
                 default:
@@ -1020,7 +1047,7 @@ public abstract class AbstractInstance : IInstance
             }
             else
             {
-                remoteClient = new RemoteClient(artPollReply) { Instance = this };
+                remoteClient = new RemoteClient(artPollReply, Events) { Instance = this };
                 add(remoteClient);
             }
 
@@ -1030,7 +1057,7 @@ public abstract class AbstractInstance : IInstance
                 if (res == rc)
                 {
                     Logger.LogInformation($"Discovered: {rc.ID}");
-                    Task.Run(() => RemoteClientDiscovered?.InvokeFailSafe(this, rc));
+                    Events.Post(() => RemoteClientDiscovered?.InvokeFailSafe(this, rc));
                     return;
                 }
 
@@ -1086,7 +1113,7 @@ public abstract class AbstractInstance : IInstance
             bool merging = getMergeSources(port.PortAddress, DateTime.UtcNow).Count > 1;
             var goodOutput = port.GoodOutput | GoodOutput.DATA_TRANSMITTED;
             port.GoodOutput = merging ? goodOutput | MERGING : goodOutput & ~MERGING;
-            DMXReceived?.InvokeFailSafe(this, port.PortAddress);
+            raiseDMXReceived(port.PortAddress);
         }
     }
     protected async Task processArtData(ArtData artData, IPv4Address source)
@@ -1309,15 +1336,19 @@ public abstract class AbstractInstance : IInstance
             if (!artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE))
             {
                 var eventArgs = new RequestRDMMessageReceivedEventArgs(artRDM.RDMMessage, artRDM.PortAddress);
-                RequestRDMMessageReceived?.InvokeFailSafe(this, eventArgs);
+                // The handler produces the response, so it is awaited - but on the event queue, not on the receive loop.
+                await Events.InvokeAsync(() =>
+                {
+                    RequestRDMMessageReceived?.InvokeFailSafe(this, eventArgs);
+                    return eventArgs;
+                });
                 if (eventArgs.Handled)
                     await sendArtRDM(eventArgs.Response, artRDM.PortAddress, source);
             }
             else
             {
                 var eventArgs = new ResponseRDMMessageReceivedEventArgs(artRDM.RDMMessage, artRDM.PortAddress);
-
-                ResponseRDMMessageReceived?.InvokeFailSafe(this, eventArgs);
+                Events.Post(() => ResponseRDMMessageReceived?.InvokeFailSafe(this, eventArgs));
             }
         }
         catch (Exception ex) { Logger.LogError(ex); }
@@ -1344,6 +1375,7 @@ public abstract class AbstractInstance : IInstance
             foreach (var portConfig in portConfigs)
             {
                 list.Add(portConfig);
+                portConfig.Events = Events; // its RDMUIDReceived is raised on this instance's event queue
                 Logger?.LogDebug($"Added PortConfig {portConfig}");
             }
             this.portConfigs = list.ToArray(); // copy-on-write: readers keep their consistent snapshot
@@ -1359,7 +1391,8 @@ public abstract class AbstractInstance : IInstance
             var list = new List<PortConfig>(this.portConfigs);
             foreach (var portConfig in portConfigs)
             {
-                list.Remove(portConfig);
+                if (list.Remove(portConfig) && ReferenceEquals(portConfig.Events, Events))
+                    portConfig.Events = null;
                 Logger?.LogDebug($"Removed PortConfig {portConfig}");
             }
             this.portConfigs = list.ToArray(); // copy-on-write: readers keep their consistent snapshot
@@ -1508,9 +1541,9 @@ public abstract class AbstractInstance : IInstance
                 bag.Seen(portAddress, bindIndex);
             else
             {
-                bag = new RDMUID_ReceivedBag(portAddress, bindIndex, rdmuid);
+                bag = new RDMUID_ReceivedBag(portAddress, bindIndex, rdmuid) { Events = Events };
                 if (knownRDMUIDs.TryAdd(rdmuid, bag))
-                    RDMUIDReceived?.InvokeFailSafe(this, bag);
+                    Events.Post(() => RDMUIDReceived?.InvokeFailSafe(this, bag));
             }
         }
 
@@ -1570,10 +1603,20 @@ public abstract class AbstractInstance : IInstance
         if (IsDeactivated)
             return;
 
-        removeExpiredRdmDedupeEntries();
-        await triggerSendArtPoll();
-        await Task.Delay(4000);
-        await pollReplyProcessSemaphoreSlim.WaitAsync();
+        try // async void: an escaping exception would terminate the host application
+        {
+            removeExpiredRdmDedupeEntries();
+            await triggerSendArtPoll();
+            await Task.Delay(4000);
+            if (IsDisposing || IsDisposed)
+                return;
+            await pollReplyProcessSemaphoreSlim.WaitAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex);
+            return;
+        }
         try
         {
             var timoutedClients = remoteClients.Where(p => p.Value.Timouted()).ToList().AsReadOnly();
@@ -1590,7 +1633,7 @@ public abstract class AbstractInstance : IInstance
                     if (removed != null)
                     {
                         Logger.LogInformation($"Timeout: {removed.ID} ({(DateTime.UtcNow - rc.Value.LastSeen).TotalMilliseconds}ms)");
-                        _ = Task.Run(() => RemoteClientTimedOut?.InvokeFailSafe(this, removed));
+                        Events.Post(() => RemoteClientTimedOut?.InvokeFailSafe(this, removed));
                     }
                 }
             }
@@ -1626,6 +1669,7 @@ public abstract class AbstractInstance : IInstance
             ArtNetInstance.OnInstanceRemoved -= ArtNet_OnInstanceRemoved;
             // The poll event is static: without this the disposed instance would stay referenced forever.
             sendPollThreadBag.SendArtPollEvent -= TimerSendPoll_Elapsed;
+            Events.Dispose(); // queued events of a disposed instance are dropped
 
             foreach (var rBuffer in receivedDMXBuffer.Values)
                 rBuffer.Dispose();
