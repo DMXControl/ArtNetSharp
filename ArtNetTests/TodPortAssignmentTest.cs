@@ -95,6 +95,51 @@ public class TodPortAssignmentTest
         Assert.That(ports.Single(p => p.OutputPortAddress == output1).KnownResponderRDMUIDs, Has.Count.EqualTo(3));
     }
 
+    private RemoteClientPort output1Port => ports.Single(p => p.OutputPortAddress == output1);
+
+    private async Task<bool> respondersKnown() => await within(() => output1Port.KnownResponderRDMUIDs.Count == 3);
+
+    [Test]
+    public async Task EmptyTodAfterOwnFlushKeepsTheResponders()
+    {
+        receiveTod(output1, 1, 1, responders);
+        Assert.That(await respondersKnown(), Is.True);
+
+        // AtcFlush: the node empties its ToD and reports it empty until its new discovery is done
+        await controller.PerformRDMDiscovery(output1, flush: true);
+        receiveTod(output1, 1, 1);
+        await Task.Delay(200);
+        Assert.That(output1Port.KnownResponderRDMUIDs, Has.Count.EqualTo(3), "No remove / re-add while the node discovers again");
+
+        receiveTod(output1, 1, 1, responders); // discovery done: ends the hold
+        receiveTod(output1, 1, 1);             // now an empty ToD means: all responders gone
+        Assert.That(await within(() => output1Port.KnownResponderRDMUIDs.Count == 0), Is.True);
+    }
+
+    [Test]
+    public async Task HoldAfterFlushEnds()
+    {
+        controller.TodFlushHoldTime = TimeSpan.FromMilliseconds(200);
+        receiveTod(output1, 1, 1, responders);
+        Assert.That(await respondersKnown(), Is.True);
+
+        await controller.PerformRDMDiscovery(output1, flush: true);
+        await Task.Delay(400);
+        receiveTod(output1, 1, 1);
+        Assert.That(await within(() => output1Port.KnownResponderRDMUIDs.Count == 0), Is.True, "Hold expired: empty ToD removes the responders");
+    }
+
+    [Test]
+    public async Task EmptyTodWithoutFlushRemovesTheResponders()
+    {
+        receiveTod(output1, 1, 1, responders);
+        Assert.That(await respondersKnown(), Is.True);
+
+        await controller.PerformRDMDiscovery(output1); // ArtTodRequest only, no flush
+        receiveTod(output1, 1, 1);
+        Assert.That(await within(() => output1Port.KnownResponderRDMUIDs.Count == 0), Is.True);
+    }
+
     [Test]
     public async Task ArtRdmIsSentOnce()
     {

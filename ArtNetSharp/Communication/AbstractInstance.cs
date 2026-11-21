@@ -1644,6 +1644,28 @@ public abstract class AbstractInstance : IInstance
         return fromSource.Where(p => p.BindIndex == artTodData.Port).ToList();
     }
 
+    /// <summary>
+    /// How long after our own AtcFlush an empty ToD (TodFull with UidTotal 0) of that Port-Address is ignored.
+    /// Nodes report an empty ToD while the discovery started by the flush runs; the first ToD with responders
+    /// ends the hold earlier. After it, an empty ToD removes the responders as usual.
+    /// </summary>
+    public TimeSpan TodFlushHoldTime { get; set; } = TimeSpan.FromSeconds(10);
+    private readonly ConcurrentDictionary<PortAddress, DateTime> todFlushHold = new ConcurrentDictionary<PortAddress, DateTime>();
+    private void holdTodAfterFlush(PortAddress portAddress)
+    {
+        if (TodFlushHoldTime > TimeSpan.Zero)
+            todFlushHold[portAddress] = DateTime.UtcNow + TodFlushHoldTime;
+    }
+    private bool isTodFlushHeld(PortAddress portAddress)
+    {
+        if (!todFlushHold.TryGetValue(portAddress, out DateTime until))
+            return false;
+        if (DateTime.UtcNow < until)
+            return true;
+        todFlushHold.TryRemove(portAddress, out _);
+        return false;
+    }
+
     protected void processArtTodData(ArtTodData artTodData, IPv4Address source)
     {
         if (IsDisposing || IsDisposed || IsDeactivated)
@@ -1657,6 +1679,16 @@ public abstract class AbstractInstance : IInstance
         bool emptyTod = artTodData.UidTotalCount == 0;
         if (!emptyTod && artTodData.Uids.Length == 0)
             return;
+
+        if (emptyTod && isTodFlushHeld(artTodData.PortAddress))
+        {
+            // After our own AtcFlush the node reports an empty ToD until its new discovery is done:
+            // keep the responders instead of removing and re-adding them.
+            Logger?.LogTrace($"Empty ToD for {artTodData.PortAddress} from {source} ignored: discovery after AtcFlush still running");
+            return;
+        }
+        if (!emptyTod)
+            todFlushHold.TryRemove(artTodData.PortAddress, out _);
 
         byte bindIndex = artTodData.BindIndex;
         byte port = artTodData.Port;
@@ -1921,6 +1953,9 @@ public abstract class AbstractInstance : IInstance
         {
             if (!port.IsRDMCapable)
                 continue;
+
+            if (flush)
+                holdTodAfterFlush(port.OutputPortAddress.Value); // before sending: the empty ToD may arrive at once
 
             tasks.Add(Task.Run(async () =>
             {
