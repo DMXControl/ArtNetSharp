@@ -1384,13 +1384,6 @@ public abstract class AbstractInstance : IInstance
         if (destinationIndex + count > 512)
             throw new ArgumentOutOfRangeException($"{nameof(destinationIndex)} + {nameof(count)} has to be less then 512");
 
-        int _startIndex = 0;
-        int _count = length;
-        if (destinationIndex.HasValue)
-            _startIndex = destinationIndex.Value;
-        if (count.HasValue)
-            _count = Math.Min(_count, count.Value);
-
         try
         {
             // GetOrAdd: the first write for a Port-Address goes through Update as well (so destinationIndex/count
@@ -1601,6 +1594,10 @@ public abstract class AbstractInstance : IInstance
                     }
                 }
             }
+
+            // Ports of clients that are still alive can time out on their own (e.g. a port was disabled on the node).
+            foreach (var rc in remoteClients.Values)
+                rc.RemoveTimedOutPorts();
         }
         catch (Exception ex)
         {

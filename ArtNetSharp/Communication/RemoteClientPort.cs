@@ -37,10 +37,11 @@ public sealed class RemoteClientPort : INotifyPropertyChanged
     {
         LastSeen = DateTime.UtcNow;
     }
-    internal bool Timouted()// Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 500 ms)
+    /// <summary>Spec 1.4dd page 12, doubled to allow one lost reply. Settable for tests only.</summary>
+    internal static TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(6);
+    internal bool Timouted()
     {
-        var now = DateTime.UtcNow.AddSeconds(-6);
-        return LastSeen <= now;
+        return LastSeen <= DateTime.UtcNow - Timeout;
     }
     public ArtPollReply ArtPollReply { get; private set; }
     private PortAddress? outputPortAddress;

@@ -258,9 +258,8 @@ public sealed class RemoteClient : INotifyPropertyChanged
 
     public RemoteClient(in ArtPollReply artPollReply)
     {
-        // Not subscribed to AbstractInstance.sendPollThreadBag.SendArtPollEvent any more: the handler
-        // (OnSendArtPoll) is disabled, and the static subscription kept every RemoteClient alive forever
-        // plus started a 4s delay per client on every poll.
+        // Port timeouts are checked by the owning instance (AbstractInstance -> RemoveTimedOutPorts),
+        // not via a subscription to the static poll event (that kept every RemoteClient alive forever).
         seen();
         ID = getIDOf(artPollReply);
         MacAddress = artPollReply.MAC;
@@ -269,21 +268,30 @@ public sealed class RemoteClient : INotifyPropertyChanged
         processArtPollReply(artPollReply);
         seen();
     }
-    private async void OnSendArtPoll(object sender, EventArgs e)
+    /// <summary>
+    /// Timed-out ports are parked here instead of being deleted (same approach as timed-out RemoteClients in
+    /// AbstractInstance). When the port reports again, the same object is revived, so its state (known RDM
+    /// responders, PropertyChanged bindings, references held by the application) survives a short outage.
+    /// Deleting them was the reason the former timeout had been disabled ("causes problems in debug"): a breakpoint
+    /// longer than the timeout made all ports time out at once and come back as new, empty objects.
+    /// </summary>
+    private readonly ConcurrentDictionary<int, RemoteClientPort> portsTimedOut = new ConcurrentDictionary<int, RemoteClientPort>();
+
+    /// <summary>Moves timed-out ports out of <see cref="Ports"/> and raises <see cref="PortTimedOut"/> once per port.</summary>
+    internal void RemoveTimedOutPorts()
     {
-        await Task.Delay(4000);
-        return; // Disabled because causes problems in debug
-        var timoutedPorts = ports.Where(p => p.Value.Timouted()).ToList();
-        if (timoutedPorts.Count() != 0)
+        bool removed = false;
+        foreach (var entry in ports.Where(p => p.Value.Timouted()).ToList())
         {
-            foreach (var port in timoutedPorts)
-            {
-                if (!ports.TryRemove(port.Key, out _))
-                    Logger.LogWarning($"Can't remove RemoteClientPort ({port.Key}) from ConcurrentDictionary");
-                _ = Task.Run(() => PortTimedOut?.InvokeFailSafe(this, port));
-            }
+            if (!ports.TryRemove(entry.Key, out RemoteClientPort port))
+                continue;
+            portsTimedOut[entry.Key] = port;
+            removed = true;
+            Logger.LogInformation($"Port timeout: {port.ID}");
+            _ = Task.Run(() => PortTimedOut?.InvokeFailSafe(this, port));
         }
-        Ports = ports.Select(p => p.Value).ToList().AsReadOnly();
+        if (removed)
+            Ports = ports.Select(p => p.Value).ToList().AsReadOnly();
     }
     private void seen()
     {
@@ -316,6 +324,13 @@ public sealed class RemoteClient : INotifyPropertyChanged
                 int physicalPort = (Math.Max(0, artPollReply.BindIndex - 1) * artPollReply.Ports) + portIndex;
                 if (ports.TryGetValue(physicalPort, out RemoteClientPort port))
                     port.processArtPollReply(artPollReply);
+                else if (portsTimedOut.TryRemove(physicalPort, out port))
+                {
+                    // Revive the same object (keeps its RDM responders and bindings).
+                    port.processArtPollReply(artPollReply);
+                    if (ports.TryAdd(physicalPort, port))
+                        tasks.Add(Task.Run(() => PortDiscovered?.InvokeFailSafe(this, port)));
+                }
                 else
                 {
                     port = new RemoteClientPort(artPollReply, portIndex);
