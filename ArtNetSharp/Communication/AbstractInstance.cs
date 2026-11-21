@@ -77,7 +77,37 @@ public abstract class AbstractInstance : IInstance
     private readonly object portConfigsWriteLock = new object();
     public ReadOnlyCollection<PortConfig> PortConfigs => Array.AsReadOnly(portConfigs);
 
-    private readonly ConcurrentDictionary<Tuple<PortAddress, IPv4Address>, DMXReceiveBag> receivedDMXBuffer = new ConcurrentDictionary<Tuple<PortAddress, IPv4Address>, DMXReceiveBag>();
+    /// <summary>Received DMX per source. Spec (Data Merging): a source is the IP address plus the Physical port.</summary>
+    private readonly ConcurrentDictionary<(PortAddress Port, IPv4Address Ip, byte Physical), DMXReceiveBag> receivedDMXBuffer = new ConcurrentDictionary<(PortAddress, IPv4Address, byte), DMXReceiveBag>();
+
+    /// <summary>Spec (Data Merging): a failed source is held in the merge for 10 seconds.</summary>
+    internal static TimeSpan MergeSourceTimeout { get; set; } = TimeSpan.FromSeconds(10); // settable for tests only
+    /// <summary>Spec (Data Merging): merging is limited to two sources, any additional sources are ignored.</summary>
+    internal const int MaxMergeSources = 2;
+    private static readonly GoodOutput MERGING = new GoodOutput(mergingArtNetData: true);
+
+    /// <summary>
+    /// The sources of <paramref name="portAddress"/> that take part in the merge:
+    /// those that sent within <see cref="MergeSourceTimeout"/>. If all of them failed, the output holds
+    /// the last merge result, i.e. the sources that were active when the last packet arrived.
+    /// </summary>
+    private List<DMXReceiveBag> getMergeSources(PortAddress portAddress, DateTime utcNow)
+    {
+        var bags = new List<DMXReceiveBag>(MaxMergeSources);
+        DateTime newest = DateTime.MinValue;
+        foreach (var kv in receivedDMXBuffer) // enumerating the dictionary itself avoids the snapshot list of .Values
+            if (kv.Key.Port == portAddress)
+            {
+                var bag = kv.Value;
+                bags.Add(bag);
+                if (bag.LastUpdate > newest)
+                    newest = bag.LastUpdate;
+            }
+
+        DateTime reference = utcNow - newest < MergeSourceTimeout ? utcNow : newest;
+        bags.RemoveAll(b => reference - b.LastUpdate >= MergeSourceTimeout);
+        return bags;
+    }
     private readonly ConcurrentDictionary<RDM_TransactionID, RDMMessage> artRDMdeBumbReceive = new();
 
     private readonly ConcurrentDictionary<IPv4Address, GatewayRDMFiFoQueue> artRDMgatewayQueues = new();
@@ -115,6 +145,8 @@ public abstract class AbstractInstance : IInstance
         public byte Sequence { get; private set; } = byte.MaxValue;
         public readonly PortAddress PortAddress;
         public readonly IPv4Address Source;
+        /// <summary>Spec (Data Merging): a source is identified by IP address and Physical port.</summary>
+        public readonly byte Physical;
         public DateTime LastUpdate { get; private set; }
 
         public bool IsDisposed;
@@ -123,6 +155,7 @@ public abstract class AbstractInstance : IInstance
         {
             PortAddress = new PortAddress(artDMX.Net, artDMX.Address);
             Source = source;
+            Physical = artDMX.Physical;
             Update(artDMX, source);
         }
         internal bool Update(ArtDMX artDMX, IPv4Address source)
@@ -130,7 +163,7 @@ public abstract class AbstractInstance : IInstance
             if (IsDisposed || IsDisposing)
                 return false;
 
-            if (Source != source)
+            if (Source != source || Physical != artDMX.Physical)
                 return false;
 
             var utcNow = DateTime.UtcNow;
@@ -980,19 +1013,40 @@ public abstract class AbstractInstance : IInstance
             return;
 
         bool success = false;
-        var key = new Tuple<PortAddress, IPv4Address>(port.PortAddress, sourceIp);
-        if (!receivedDMXBuffer.TryGetValue(key, out DMXReceiveBag bag))
-        {
-            bag = new DMXReceiveBag(artDMX, sourceIp);
-            success = receivedDMXBuffer.TryAdd(key, bag);
-        }
-        else
+        var key = (port.PortAddress, sourceIp, artDMX.Physical);
+        if (receivedDMXBuffer.TryGetValue(key, out DMXReceiveBag bag))
             success = bag.Update(artDMX, sourceIp);
+        else
+            lock (receivedDMXBuffer) // rare path (new source); several NIC receive loops may get here at once
+            {
+                var utcNow = DateTime.UtcNow;
+                var sources = receivedDMXBuffer.Where(kv => kv.Key.Port == port.PortAddress).ToList();
+                // Spec: a failed source is held for 10 s, after that it leaves the merge (and makes room for a new source).
+                if (sources.Any(kv => utcNow - kv.Value.LastUpdate < MergeSourceTimeout))
+                    foreach (var failed in sources.Where(kv => utcNow - kv.Value.LastUpdate >= MergeSourceTimeout))
+                        if (receivedDMXBuffer.TryRemove(failed.Key, out var removed))
+                            removed.Dispose();
+
+                // Spec: merging is limited to two sources, any additional sources are ignored.
+                if (getMergeSources(port.PortAddress, utcNow).Count >= MaxMergeSources)
+                    return;
+
+                if (receivedDMXBuffer.TryGetValue(key, out bag))
+                    success = bag.Update(artDMX, sourceIp);
+                else
+                {
+                    bag = new DMXReceiveBag(artDMX, sourceIp);
+                    success = receivedDMXBuffer.TryAdd(key, bag);
+                }
+            }
 
         if (success)
         {
+            // Spec: GoodOutput bit 3 is set while this output is merging.
+            bool merging = getMergeSources(port.PortAddress, DateTime.UtcNow).Count > 1;
+            var goodOutput = port.GoodOutput | GoodOutput.DATA_TRANSMITTED;
+            port.GoodOutput = merging ? goodOutput | MERGING : goodOutput & ~MERGING;
             DMXReceived?.InvokeFailSafe(this, port.PortAddress);
-            port.GoodOutput |= GoodOutput.DATA_TRANSMITTED;
         }
     }
     protected async Task processArtData(ArtData artData, IPv4Address source)
@@ -1280,7 +1334,8 @@ public abstract class AbstractInstance : IInstance
         if (IsDisposing || IsDisposed || receivedDMXBuffer.IsEmpty)
             return null;
 
-        var bags = receivedDMXBuffer.Values.Where(v => v.PortAddress == portAddress).ToList();
+        // Spec (Data Merging): only sources that did not fail (10 s) are merged; if all failed, the last merge result is held.
+        var bags = getMergeSources(portAddress, DateTime.UtcNow);
 
         if (bags.Count == 0)
             return null;
