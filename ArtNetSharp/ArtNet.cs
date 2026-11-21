@@ -43,6 +43,11 @@ public class ArtNet : IDisposable
     private readonly ConcurrentDictionary<IPv4Address, NetworkClientBag> unicastRoutes = new ConcurrentDictionary<IPv4Address, NetworkClientBag>();
 
     private readonly ConcurrentDictionary<uint, AbstractInstance> instances = new ConcurrentDictionary<uint, AbstractInstance>();
+
+    // Unique dictionary keys for instances and network clients (random keys could collide,
+    // and a failed TryAdd silently dropped the instance/client).
+    private static int keyCounter;
+    private static uint nextKey() => unchecked((uint)Interlocked.Increment(ref keyCounter));
     public ReadOnlyCollection<AbstractInstance> Instances => instances.Values.ToList().AsReadOnly();
 
     private readonly ConcurrentDictionary<uint, NetworkClientBag> networkClients = new ConcurrentDictionary<uint, NetworkClientBag>();
@@ -659,7 +664,7 @@ public class ArtNet : IDisposable
                     if (ncb.ClientAlive)
                     {
                         ncb.ReceivedData += ReceivedData;
-                        networkClients.TryAdd((uint)_random.Next(), ncb);
+                        networkClients.TryAdd(nextKey(), ncb);
                         unicastRoutes.Clear();
                         Logger?.LogDebug($"Added NetworkClient {ncb.LocalIpAddress}");
                     }
@@ -686,9 +691,9 @@ public class ArtNet : IDisposable
     {
         foreach (var instance in instances)
         {
-            if (this.instances.Any(i => i.Value == instance))
-                return;
-            if (this.instances.TryAdd((uint)new Random().Next(), instance))
+            if (instance == null || this.instances.Any(i => i.Value == instance))
+                continue; // already added: skip only this one, not the remaining instances
+            if (this.instances.TryAdd(nextKey(), instance))
             {
                 Logger?.LogDebug($"Added instance {instance.GetType().Name}: {instance.Name} ({instance.ShortName})");
                 OnInstanceAdded?.InvokeFailSafe(this, instance);
@@ -699,9 +704,11 @@ public class ArtNet : IDisposable
     {
         foreach (var instance in instances)
         {
+            if (instance == null)
+                continue;
             var toRemove = this.instances.FirstOrDefault(i => i.Value == instance);
             if (toRemove.Value == null)
-                return;
+                continue; // not registered: skip only this one, not the remaining instances
             if (this.instances.TryRemove(toRemove.Key, out _))
             {
                 Logger?.LogDebug($"Removed instance {instance.Name} ({instance.ShortName})");
