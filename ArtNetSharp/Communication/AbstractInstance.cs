@@ -151,6 +151,33 @@ public abstract class AbstractInstance : IInstance
 
         public bool IsDisposed;
         public bool IsDisposing;
+        private readonly object syncRoot = new object();
+
+        /// <summary>Copies the current frame into <paramref name="target"/> (consistent snapshot).</summary>
+        internal void CopyTo(byte[] target)
+        {
+            lock (syncRoot)
+            {
+                var data = Data;
+                if (data != null)
+                    Array.Copy(data, 0, target, 0, Math.Min(data.Length, target.Length));
+            }
+        }
+        /// <summary>HTP: target[i] = max(target[i], frame[i]) (consistent snapshot).</summary>
+        internal void MergeHtpInto(byte[] target)
+        {
+            lock (syncRoot)
+            {
+                var data = Data;
+                if (data == null)
+                    return;
+                int length = Math.Min(data.Length, target.Length);
+                for (int i = 0; i < length; i++)
+                    if (data[i] > target[i])
+                        target[i] = data[i];
+            }
+        }
+
         public DMXReceiveBag(ArtDMX artDMX, IPv4Address source)
         {
             PortAddress = new PortAddress(artDMX.Net, artDMX.Address);
@@ -180,7 +207,13 @@ public abstract class AbstractInstance : IInstance
 
             Sequence = artDMX.Sequence;
 
-            Array.Copy(artDMX.Data, 0, Data, 0, Math.Min(artDMX.Data.Length, Data.Length));
+            lock (syncRoot) // readers copy under the same lock, so they never see half a frame
+            {
+                var data = Data;
+                if (data == null)
+                    return false;
+                Array.Copy(artDMX.Data, 0, data, 0, Math.Min(artDMX.Data.Length, data.Length));
+            }
 
             LastUpdate = utcNow;
             return true;
@@ -236,7 +269,9 @@ public abstract class AbstractInstance : IInstance
         public DateTime LastUpdated { get; private set; }
         public DateTime LastSended { get; internal set; }
 
-        private SemaphoreSlim SemaphoreSlim = new SemaphoreSlim(1);
+        // Writes (WriteDMXValues) and the send loop's snapshot use the same lock:
+        // writes are applied in call order and a frame is never sent half-written.
+        private readonly object syncRoot = new object();
 
         public bool IsDisposed;
         public bool IsDisposing;
@@ -247,28 +282,31 @@ public abstract class AbstractInstance : IInstance
             PortAddress = portAddress;
         }
 
-        internal async void Update(byte[] data, ushort? destinationIndex = null, ushort? count = null)
+        internal void Update(byte[] data, ushort? destinationIndex = null, ushort? count = null)
         {
             if (IsDisposed || IsDisposing)
                 return;
 
-            await SemaphoreSlim?.WaitAsync();
-            try
+            lock (syncRoot)
             {
+                var buffer = Data;
+                if (buffer == null)
+                    return;
                 // Copy data[0..count) to Data[destinationIndex..), clipped to the 512 channels.
                 int start = destinationIndex ?? 0;
-                int length = Math.Min(Math.Min(count ?? data.Length, data.Length), Data.Length - start);
+                int length = Math.Min(Math.Min(count ?? data.Length, data.Length), buffer.Length - start);
                 if (length > 0)
-                    Array.Copy(data, 0, Data, start, length);
+                    Array.Copy(data, 0, buffer, start, length);
 
                 LastUpdated = DateTime.UtcNow;
             }
-            catch (Exception e)
-            {
-                Logger.LogError(e);
-            }
+        }
 
-            SemaphoreSlim?.Release();
+        /// <summary>A consistent copy of the current frame for sending.</summary>
+        internal byte[] Snapshot()
+        {
+            lock (syncRoot)
+                return (byte[])Data?.Clone() ?? Array.Empty<byte>();
         }
 
         internal byte GetSequence()
@@ -284,13 +322,11 @@ public abstract class AbstractInstance : IInstance
                 return;
 
             IsDisposing = true;
-            GC.SuppressFinalize(Data);
-            Data = null;
+            lock (syncRoot)
+                Data = null;
             Sequence = 0;
             LastUpdated = DateTime.MaxValue;
             LastSended = DateTime.MaxValue;
-            SemaphoreSlim?.Dispose();
-            SemaphoreSlim = null;
             IsDisposed = true;
             IsDisposing = false;
             GC.SuppressFinalize(this);
@@ -750,8 +786,9 @@ public abstract class AbstractInstance : IInstance
                             continue;
 
                         byte sourcePort = config.PortNumber;
-                        // One sequence number per frame, shared by every receiver of this frame.
+                        // One sequence number and one consistent snapshot per frame, shared by every receiver of this frame.
                         var sequence = bag.GetSequence();
+                        byte[] frame = bag.Snapshot();
 #pragma warning disable CS0618 // ForceBroadcast is obsolete for users, but still has to be honoured here
                         bool forceBroadcast = config.ForceBroadcast;
 #pragma warning restore CS0618
@@ -760,7 +797,7 @@ public abstract class AbstractInstance : IInstance
                             // One broadcast reaches all subscribers, so send it once per frame, not once per subscriber.
                             if (portsByAddress[outputPortAddress].Any(port => !port.Timouted()))
                             {
-                                sendTasks.Add(sendArtDMXBroadcast(outputPortAddress, sourcePort, bag.Data, sequence));
+                                sendTasks.Add(sendArtDMXBroadcast(outputPortAddress, sourcePort, frame, sequence));
                                 sended++;
                             }
                         }
@@ -771,14 +808,14 @@ public abstract class AbstractInstance : IInstance
                             {
                                 if (port.Timouted() || !sentToIps.Add(port.IpAddress))
                                     continue; // one packet per IP, even if it has several matching ports
-                                sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, sequence));
+                                sendTasks.Add(sendArtDMX(port, sourcePort, frame, sequence));
                                 sended++;
                             }
                         }
 
                         foreach (IPv4Address ip in config.AdditionalIPEndpoints.ToList())
                         {
-                            sendTasks.Add(sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, sequence));
+                            sendTasks.Add(sendArtDMX(ip, config.PortAddress, sourcePort, frame, sequence));
                             sended++;
                         }
                     }
@@ -1355,25 +1392,27 @@ public abstract class AbstractInstance : IInstance
         if (bags.Count == 0)
             return null;
 
+        // Always a copy: the receive buffers keep changing while the caller uses the result.
+        byte[] result = new byte[512];
         if (bags.Count == 1)
-            return bags[0].Data;
+        {
+            bags[0].CopyTo(result);
+            return result;
+        }
 
         switch (mergeMode)
         {
             case EMergeMode.HTP:
-                int length = bags.Select(b => b.Data.Length).OrderBy(b => b).Last();
-                byte[] dataResult = new byte[length];
-                for (ushort i = 0; i < dataResult.Length; i++)
-                {
-                    byte val = 0;
-                    bags.ForEach(b => { if (i < b.Data.Length) val = Math.Max(val, b.Data[i]); });
-                    dataResult[i] = val;
-                }
-
-                return dataResult;
+                foreach (var bag in bags)
+                    bag.MergeHtpInto(result);
+                return result;
             case EMergeMode.LTP:
-                var bag = bags.OrderBy(b => b.LastUpdate.Ticks).LastOrDefault();
-                return bag?.Data;
+                DMXReceiveBag latest = bags[0];
+                foreach (var bag in bags)
+                    if (bag.LastUpdate > latest.LastUpdate)
+                        latest = bag;
+                latest.CopyTo(result);
+                return result;
         }
 
         return null;

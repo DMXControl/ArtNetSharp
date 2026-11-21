@@ -139,6 +139,17 @@ public class DmxMergeTest
     }
 
     [Test]
+    public void ResultIsACopy()
+    {
+        send(ipA, 10, 20);
+        var first = node.GetReceivedDMX(portAddress)!;
+        first[0] = 99; // caller modifies its result
+        Assert.That(node.GetReceivedDMX(portAddress)![0], Is.EqualTo(10), "The internal receive buffer must not be handed out");
+        send(ipA, 30, 40);
+        Assert.That(first[1], Is.EqualTo(20), "A returned frame must not change when new data arrives");
+    }
+
+    [Test]
     public void LtpTakesTheLatestSource()
     {
         send(ipA, 200, 200);
