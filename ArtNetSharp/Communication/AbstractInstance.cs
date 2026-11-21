@@ -69,8 +69,13 @@ public abstract class AbstractInstance : IInstance
     private readonly ConcurrentDictionary<UID, ControllerRDMUID_Bag> knownControllerRDMUIDs = new ConcurrentDictionary<UID, ControllerRDMUID_Bag>();
     public virtual UID UID { get; } = UID.Empty;
 
-    private readonly List<PortConfig> portConfigs = new List<PortConfig>();
-    public ReadOnlyCollection<PortConfig> PortConfigs => portConfigs.AsReadOnly();
+    /// <summary>
+    /// Copy-on-write: the array is never modified, Add/RemovePortConfig replace it under <see cref="portConfigsWriteLock"/>.
+    /// The receive and DMX send loops read it lock-free and can no longer hit "Collection was modified".
+    /// </summary>
+    private volatile PortConfig[] portConfigs = Array.Empty<PortConfig>();
+    private readonly object portConfigsWriteLock = new object();
+    public ReadOnlyCollection<PortConfig> PortConfigs => Array.AsReadOnly(portConfigs);
 
     private readonly ConcurrentDictionary<Tuple<PortAddress, IPv4Address>, DMXReceiveBag> receivedDMXBuffer = new ConcurrentDictionary<Tuple<PortAddress, IPv4Address>, DMXReceiveBag>();
     private readonly ConcurrentDictionary<RDM_TransactionID, RDMMessage> artRDMdeBumbReceive = new();
@@ -1207,10 +1212,15 @@ public abstract class AbstractInstance : IInstance
         if (IsDisposing || IsDisposed)
             return;
 
-        foreach (var portConfig in portConfigs)
+        lock (portConfigsWriteLock)
         {
-            this.portConfigs.Add(portConfig);
-            Logger?.LogDebug($"Added PortConfig {portConfig}");
+            var list = new List<PortConfig>(this.portConfigs);
+            foreach (var portConfig in portConfigs)
+            {
+                list.Add(portConfig);
+                Logger?.LogDebug($"Added PortConfig {portConfig}");
+            }
+            this.portConfigs = list.ToArray(); // copy-on-write: readers keep their consistent snapshot
         }
     }
     public void RemovePortConfig(params PortConfig[] portConfigs)
@@ -1218,10 +1228,15 @@ public abstract class AbstractInstance : IInstance
         if (IsDisposing || IsDisposed)
             return;
 
-        foreach (var portConfig in portConfigs)
+        lock (portConfigsWriteLock)
         {
-            this.portConfigs.Remove(portConfig);
-            Logger?.LogDebug($"Removed instance {portConfig}");
+            var list = new List<PortConfig>(this.portConfigs);
+            foreach (var portConfig in portConfigs)
+            {
+                list.Remove(portConfig);
+                Logger?.LogDebug($"Removed PortConfig {portConfig}");
+            }
+            this.portConfigs = list.ToArray(); // copy-on-write: readers keep their consistent snapshot
         }
     }
 
@@ -1487,7 +1502,7 @@ public abstract class AbstractInstance : IInstance
 
             RemovePortConfig(portConfigs.ToArray());
 
-            portConfigs.Clear();
+            portConfigs = Array.Empty<PortConfig>();
             remoteClients.Clear();
             knownControllerRDMUIDs.Clear();
             knownRDMUIDs.Clear();

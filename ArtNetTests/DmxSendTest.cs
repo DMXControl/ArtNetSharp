@@ -56,6 +56,57 @@ public class DmxSendTest
     public void OneTimeTearDown() => ((IDisposable)artNet)?.Dispose();
 
     [Test, CancelAfter(20_000)]
+    public async Task PortConfigChangesWhileSendingDoNotThrow(CancellationToken cancellationToken)
+    {
+        // B6: AddPortConfig/RemovePortConfig at runtime must not break the DMX send loop
+        // ("Collection was modified" -> the universe's frame was dropped).
+        var errors = new ErrorCollector();
+        ArtNet.AddLoggProvider(errors);
+
+        using var stop = new CancellationTokenSource();
+        var writer = Task.Run(() =>
+        {
+            int u = 0;
+            while (!stop.IsCancellationRequested)
+            {
+                var extra = new PortConfig(100, new PortAddress(0, 2, (byte)(u++ % 16)), false, true) { PortNumber = 2, Type = EPortType.InputToArtNet };
+                controller.AddPortConfig(extra);
+                controller.RemovePortConfig(extra);
+            }
+        });
+
+        byte[] data = new byte[512];
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < 1500)
+        {
+            data[0]++;
+            foreach (var pa in portAddresses)
+                controller.WriteDMXValues(pa, data);
+            await Task.Delay(2, cancellationToken);
+        }
+        stop.Cancel();
+        await writer;
+
+        Assert.That(errors.InvalidOperations, Is.EqualTo(0), "The send loop threw while port configs changed");
+    }
+
+    /// <summary>Counts logged InvalidOperationExceptions ("Collection was modified").</summary>
+    private sealed class ErrorCollector : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ILogger
+    {
+        private int invalidOperations;
+        public int InvalidOperations => Volatile.Read(ref invalidOperations);
+        public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => this;
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => logLevel >= Microsoft.Extensions.Logging.LogLevel.Error;
+        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (exception is InvalidOperationException)
+                Interlocked.Increment(ref invalidOperations);
+        }
+        public void Dispose() { }
+    }
+
+    [Test, CancelAfter(20_000)]
     public async Task FirstWriteHonoursDestinationIndexAndCount(CancellationToken cancellationToken)
     {
         // Very first write to this universe: 10 values to channels 101..110 (index 100).
