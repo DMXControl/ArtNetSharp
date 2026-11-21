@@ -258,7 +258,9 @@ public sealed class RemoteClient : INotifyPropertyChanged
 
     public RemoteClient(in ArtPollReply artPollReply)
     {
-        AbstractInstance.sendPollThreadBag.SendArtPollEvent += OnSendArtPoll;
+        // Not subscribed to AbstractInstance.sendPollThreadBag.SendArtPollEvent any more: the handler
+        // (OnSendArtPoll) is disabled, and the static subscription kept every RemoteClient alive forever
+        // plus started a 4s delay per client on every poll.
         seen();
         ID = getIDOf(artPollReply);
         MacAddress = artPollReply.MAC;

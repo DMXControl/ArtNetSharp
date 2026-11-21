@@ -33,7 +33,14 @@ public class ArtNet : IDisposable
     public event EventHandler<AbstractInstance> OnInstanceAdded;
     public event EventHandler<AbstractInstance> OnInstanceRemoved;
 
-    private readonly Dictionary<IPv4Address, MACAddress> ipTomacAddressCache = new Dictionary<IPv4Address, MACAddress>();
+    private readonly ConcurrentDictionary<IPv4Address, MACAddress> ipTomacAddressCache = new ConcurrentDictionary<IPv4Address, MACAddress>();
+
+    /// <summary>
+    /// Unicast destination -> the one NetworkClientBag whose interface the OS routes it through.
+    /// Avoids fanning every unicast packet out to all NICs. Cleared whenever the NIC set changes.
+    /// A null value caches "no matching NIC".
+    /// </summary>
+    private readonly ConcurrentDictionary<IPv4Address, NetworkClientBag> unicastRoutes = new ConcurrentDictionary<IPv4Address, NetworkClientBag>();
 
     private readonly ConcurrentDictionary<uint, AbstractInstance> instances = new ConcurrentDictionary<uint, AbstractInstance>();
     public ReadOnlyCollection<AbstractInstance> Instances => instances.Values.ToList().AsReadOnly();
@@ -64,8 +71,11 @@ public class ArtNet : IDisposable
         NetworkLoopAdapter adapter = (NetworkLoopAdapter)sender;
         var bag = await adapter.Receive();
         Tools.TryDeserializePacket(bag.Data, out var packet);
-        Logger.LogTrace($"Received Loop Package {packet}");
-        processPacket(packet, new IPv4Address("3.3.3.3"), new IPv4Address("3.3.3.3"));
+        if (Logger.IsEnabled(LogLevel.Trace))
+            Logger.LogTrace($"Received Loop Package {packet}");
+        // The loop adapter delivers synchronously from inside Send(), so dispatch asynchronously
+        // here to avoid re-entrant send->receive->send chains.
+        processPacket(packet, new IPv4Address("3.3.3.3"), new IPv4Address("3.3.3.3"), dispatchAsync: true);
     }
 
     public class NetworkClientBag : IDisposable
@@ -132,8 +142,7 @@ public class ArtNet : IDisposable
                 _broadcastClient?.Close();
                 (_broadcastClient as IDisposable)?.Dispose();
                 _broadcastClient = null;
-                notMatchingIpAdddresses.Clear();
-                matchingIpAdddresses.Clear();
+                matchIpCache.Clear();
                 Logger?.LogTrace($"Client ({LocalIpAddress}) Cleared");
             }
             catch (Exception e) { Logger.LogDebug(e); }
@@ -153,9 +162,11 @@ public class ArtNet : IDisposable
             try
             {
                 Logger?.LogTrace($"Client ({LocalIpAddress}): Test Socket");
-                Socket testSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                testSocket.EnableBroadcast = true;
-                await testSocket.ConnectAsync(BroadcastIpAddress, Constants.ARTNET_PORT);
+                using (Socket testSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+                {
+                    testSocket.EnableBroadcast = true;
+                    await testSocket.ConnectAsync(BroadcastIpAddress, Constants.ARTNET_PORT);
+                }
                 Logger?.LogTrace($"Client ({LocalIpAddress}): Socket is active");
 
                 Logger?.LogTrace($"Client ({LocalIpAddress}): initialize");
@@ -235,7 +246,8 @@ public class ArtNet : IDisposable
                     if (!Tools.IsWindows())
                         if (!Tools.IsInSubnet(LocalIpAddress, UnicastIPAddressInfo.IPv4Mask, received.RemoteEndPoint.Address))
                         {
-                            Logger?.LogTrace($"Drop Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
+                            if (Logger?.IsEnabled(LogLevel.Trace) == true)
+                                Logger.LogTrace($"Drop Packet Local:{LocalIpAddress}, Mask: {UnicastIPAddressInfo.IPv4Mask}, Remote: {received.RemoteEndPoint.Address}");
                             continue;
                         }
 
@@ -253,41 +265,39 @@ public class ArtNet : IDisposable
             }
         }
 
-        private readonly List<IPAddress> notMatchingIpAdddresses = new List<IPAddress>();
-        private readonly List<IPAddress> matchingIpAdddresses = new List<IPAddress>();
+        // Thread-safe: MatchIP is called concurrently from many send tasks.
+        private readonly ConcurrentDictionary<IPAddress, bool> matchIpCache = new ConcurrentDictionary<IPAddress, bool>();
         public async Task<bool> MatchIP(IPAddress ip)
         {
             if (ip == null)
                 return false;
             if (IPAddress.IsLoopback(ip))
                 return IPAddress.IsLoopback(LocalIpAddress);
-            if (ip.ToString().Equals("0.0.0.0"))
+            if (ip.Equals(IPAddress.Any))
                 return false;
 
-            if (notMatchingIpAdddresses.Contains(ip))
-                return false;
-            if (matchingIpAdddresses.Contains(ip))
-                return true;
+            if (matchIpCache.TryGetValue(ip, out bool cached))
+                return cached;
 
             var _ip = await GetLocalIP(ip);
-            if (IPAddress.Equals(LocalIpAddress, _ip))
-            {
-                matchingIpAdddresses.Add(ip);
-                return true;
-            }
-
-            notMatchingIpAdddresses.Add(ip);
-            return false;
+            bool match = IPAddress.Equals(LocalIpAddress, _ip);
+            matchIpCache[ip] = match;
+            return match;
         }
-        public async Task<IPAddress> GetLocalIP(IPAddress ip)
+        public Task<IPAddress> GetLocalIP(IPAddress ip) => GetRoutedLocalIP(ip);
+
+        /// <summary>
+        /// Asks the OS which local address it would use to reach <paramref name="ip"/>
+        /// (connecting a UDP socket sends nothing, it only resolves the route).
+        /// </summary>
+        internal static async Task<IPAddress> GetRoutedLocalIP(IPAddress ip)
         {
             try
             {
-                Socket testSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                using Socket testSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 testSocket.EnableBroadcast = true;
                 await testSocket.ConnectAsync(ip, Constants.ARTNET_PORT);
-                IPAddress localIpAddress = ((IPEndPoint)testSocket.LocalEndPoint).Address;
-                return localIpAddress;
+                return ((IPEndPoint)testSocket.LocalEndPoint).Address;
             }
             catch (Exception e)
             {
@@ -386,6 +396,12 @@ public class ArtNet : IDisposable
         _updateNetworkClientsTimer.Interval = 1000;
         _updateNetworkClientsTimer.Enabled = true;
         _updateNetworkClientsTimer.Elapsed += UpdateNetworkClientsTimer_Elapsed;
+        try
+        {
+            NetworkChange.NetworkAddressChanged += NetworkChange_NetworkAddressChanged;
+            NetworkChange.NetworkAvailabilityChanged += NetworkChange_NetworkAvailabilityChanged;
+        }
+        catch (Exception e) { Logger?.LogDebug(e); } // not supported on every platform, the periodic scan still covers it
         updateNetworkClients();
         Logger?.LogTrace($"Initialized!");
     }
@@ -470,22 +486,35 @@ public class ArtNet : IDisposable
         catch (SocketException se) { Logger.LogTrace(se); }
         catch (Exception ex) { Logger.LogError(ex); }
     }
-    private void processPacket(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp)
+    private void processPacket(AbstractArtPacketCore packet, IPv4Address localIp, IPv4Address sourceIp, bool dispatchAsync = false)
     {
-        Logger.LogTrace($"Received Packet from {sourceIp} -> {packet}");
+        // Guarded: the interpolated string (incl. packet.ToString()) would otherwise be built for every packet.
+        if (Logger.IsEnabled(LogLevel.Trace))
+            Logger.LogTrace($"Received Packet from {sourceIp} -> {packet}");
 
+        // Dispatch synchronously on the receive loop: keeps ArtDmx in arrival order (so the
+        // Sequence check does not discard re-ordered frames) and avoids a thread-pool hop per packet.
+        // The instance handlers start their slow work (replies, RDM, ...) as separate tasks themselves.
         foreach (var inst in instances)
-            Task.Run(() =>
+        {
+            var instance = (IInstance)inst.Value;
+            if (dispatchAsync)
+                Task.Run(() => dispatch(instance));
+            else
+                dispatch(instance);
+        }
+
+        void dispatch(IInstance instance)
+        {
+            try
             {
-                try
-                {
-                    ((IInstance)inst.Value).PacketReceived(packet, localIp, sourceIp);
-                }
-                catch (Exception e)
-                {
-                    Logger.LogError(e);
-                }
-            });
+                instance.PacketReceived(packet, localIp, sourceIp);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e);
+            }
+        }
     }
 
     public static bool IsNetworkAvailable(long? minimumSpeed = null)
@@ -534,8 +563,8 @@ public class ArtNet : IDisposable
     {
         try
         {
-            if (ipTomacAddressCache.ContainsKey(ip))
-                return ipTomacAddressCache[ip];
+            if (ipTomacAddressCache.TryGetValue(ip, out MACAddress cached))
+                return cached;
             MACAddress mac;
             NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
 
@@ -558,6 +587,24 @@ public class ArtNet : IDisposable
         return new MACAddress();
     }
     private readonly SemaphoreSlim updateNetworkSenaphoreSlim = new SemaphoreSlim(1);
+
+    /// <summary>
+    /// Enumerating all interfaces is expensive, so it is done on OS address-change notifications
+    /// and otherwise only every <see cref="FullNicScanInterval"/> as a fallback. The 1s timer only
+    /// does the cheap removal of dead clients.
+    /// </summary>
+    private static readonly TimeSpan FullNicScanInterval = TimeSpan.FromSeconds(10);
+    private DateTime lastFullNicScan = DateTime.MinValue;
+    private volatile bool nicScanRequested = true;
+
+    private void NetworkChange_NetworkAddressChanged(object sender, EventArgs e) => requestNicScan();
+    private void NetworkChange_NetworkAvailabilityChanged(object sender, NetworkAvailabilityEventArgs e) => requestNicScan();
+    private void requestNicScan()
+    {
+        nicScanRequested = true;
+        updateNetworkClients();
+    }
+
     private async void updateNetworkClients()
     {
         if (LoopNetwork != null)
@@ -566,17 +613,28 @@ public class ArtNet : IDisposable
         if (IsDisposed || IsDisposing || updateNetworkSenaphoreSlim == null)
             return;
 
-        if (networkClients.Where(nc => !nc.Value.ClientAlive).Select(nc => nc.Key) is List<uint> networkClientBagsToDestroyKeys)
-            foreach (var ncb_key in networkClientBagsToDestroyKeys)
-                if (networkClients.TryRemove(ncb_key, out NetworkClientBag ncb))
-                    ncb.Dispose();
+        // Remove clients whose socket died (e.g. after a send error), so they get recreated below.
+        foreach (var dead in networkClients.Where(nc => !nc.Value.ClientAlive).ToList())
+            if (networkClients.TryRemove(dead.Key, out NetworkClientBag ncb))
+            {
+                ncb.ReceivedData -= ReceivedData;
+                ncb.Dispose();
+                unicastRoutes.Clear();
+                nicScanRequested = true;
+                Logger?.LogDebug($"Removed dead NetworkClient {ncb.LocalIpAddress}");
+            }
+
+        if (!nicScanRequested && DateTime.UtcNow - lastFullNicScan < FullNicScanInterval)
+            return;
 
         if (updateNetworkSenaphoreSlim.CurrentCount == 0)
-            return;
+            return; // a scan is running; nicScanRequested stays set, so the next tick picks it up
 
         await updateNetworkSenaphoreSlim?.WaitAsync();
         try
         {
+            nicScanRequested = false;
+            lastFullNicScan = DateTime.UtcNow;
             NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
             foreach (NetworkInterface @interface in interfaces)
             {
@@ -600,9 +658,10 @@ public class ArtNet : IDisposable
                     var ncb = await NetworkClientBag.CreateInstance(new IPAddress(bytes), ipInfo);
                     if (ncb.ClientAlive)
                     {
-                        networkClients.TryAdd((uint)_random.Next(), ncb);
-                        Logger?.LogDebug($"Added NetworkClient {ncb.LocalIpAddress}");
                         ncb.ReceivedData += ReceivedData;
+                        networkClients.TryAdd((uint)_random.Next(), ncb);
+                        unicastRoutes.Clear();
+                        Logger?.LogDebug($"Added NetworkClient {ncb.LocalIpAddress}");
                     }
                     else
                     {
@@ -657,15 +716,34 @@ public class ArtNet : IDisposable
             return;
         if (LoopNetwork == null)
         {
-            List<Task> tasks = new List<Task>();
-            foreach (var ncb in networkClients.Values)
-                tasks.Add(Task.Run(async () => await ncb.TrySendPacket(packet, destinationIp)));
-            await Task.WhenAll(tasks);
+            // A unicast destination is reached through exactly one interface, so send through
+            // that one only instead of starting a task per NIC for every packet.
+            NetworkClientBag ncb = await resolveUnicastRoute(destinationIp);
+            if (ncb != null)
+                await ncb.TrySendPacket(packet, destinationIp);
         }
         else
         {
             LoopNetwork.Send(packet);
         }
+    }
+
+    private async Task<NetworkClientBag> resolveUnicastRoute(IPv4Address destinationIp)
+    {
+        if (unicastRoutes.TryGetValue(destinationIp, out NetworkClientBag cached) && !(cached?.IsDisposed ?? false))
+            return cached;
+
+        IPAddress destination = destinationIp;
+        NetworkClientBag found = null;
+        if (!destination.Equals(IPAddress.Any))
+        {
+            IPAddress local = IPAddress.IsLoopback(destination) ? IPAddress.Loopback : await NetworkClientBag.GetRoutedLocalIP(destination);
+            if (local != null)
+                found = networkClients.Values.FirstOrDefault(nc => !nc.IsDisposed && nc.LocalIpAddress.Equals(local));
+        }
+
+        unicastRoutes[destinationIp] = found;
+        return found;
     }
     internal async Task TrySendBroadcastPacket(AbstractArtPacketCore packet)
     {
@@ -699,6 +777,12 @@ public class ArtNet : IDisposable
             _updateNetworkClientsTimer.Elapsed -= UpdateNetworkClientsTimer_Elapsed;
             _updateNetworkClientsTimer = null;
         }
+        try
+        {
+            NetworkChange.NetworkAddressChanged -= NetworkChange_NetworkAddressChanged;
+            NetworkChange.NetworkAvailabilityChanged -= NetworkChange_NetworkAvailabilityChanged;
+        }
+        catch (Exception e) { Logger?.LogDebug(e); }
 
         foreach (var instance in instances)
             ((IDisposable)instance.Value).Dispose();
@@ -710,6 +794,7 @@ public class ArtNet : IDisposable
         }
 
         networkClients?.Clear();
+        unicastRoutes.Clear();
         loggerProviders?.Clear();
 
         updateNetworkSenaphoreSlim.Release();

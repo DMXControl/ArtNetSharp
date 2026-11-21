@@ -590,15 +590,36 @@ public abstract class AbstractInstance : IInstance
         if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
-        ArtDMX artDMX = new ArtDMX(sequence, sourcePort, portAddress.Net, portAddress.Address, data, sequence);
+        using ArtDMX artDMX = new ArtDMX(sequence, sourcePort, portAddress.Net, portAddress.Address, data);
         await TrySendPacket(artDMX, ipAddress);
     }
+
+    /// <summary>Set whenever remote clients/ports may have changed; the send loop then rebuilds its port lookup.</summary>
+    private volatile bool outputPortsDirty = true;
+    private ILookup<PortAddress, RemoteClientPort> outputPortsByAddress;
+    private ILookup<PortAddress, RemoteClientPort> getOutputPortsByAddress()
+    {
+        if (outputPortsDirty || outputPortsByAddress == null)
+        {
+            outputPortsDirty = false;
+            outputPortsByAddress = (RemoteClientsPorts ?? (IReadOnlyCollection<RemoteClientPort>)Array.Empty<RemoteClientPort>())
+                .Where(p => p.OutputPortAddress.HasValue)
+                .ToLookup(p => p.OutputPortAddress.Value);
+        }
+        return outputPortsByAddress;
+    }
+
     private async Task sendAllArtDMX()
     {
-        const double dmxRefreshTime = 1000 / 44.0; // Spec 1.4dh page 56
-        const double dmxKeepAliveTime = 800; // Spec 1.4dh page 53
+        const double dmxRefreshTime = 1000 / 44.0; // Spec 1.4dp: ArtPollReply RefreshRate, max DMX512 rate of 44Hz
+        const double dmxKeepAliveTime = 800; // Spec 1.4dp: recommended re-transmit time 800mS to 1000mS
+        // Universes whose last transmission is at least this old ride along with the next frame,
+        // so keep-alives of different universes converge onto shared frames (one ArtSync each).
+        const double keepAliveBatchTime = dmxKeepAliveTime / 2;
         const int interval = (int)(dmxRefreshTime / 3);
         List<Task> sendTasks = new List<Task>();
+        HashSet<IPv4Address> sentToIps = new HashSet<IPv4Address>();
+        DateTime lastFrame = DateTime.MinValue;
         while (!(IsDisposing || IsDisposed))
         {
             // Prevent CPU loop
@@ -607,71 +628,82 @@ public abstract class AbstractInstance : IInstance
             if (!EnableDmxOutput)
                 await Task.Delay(300);
             if (IsDeactivated)
+            {
                 await Task.Delay(300);
+                continue;
+            }
+            // Cheap exit for instances that never send DMX (e.g. pure output nodes).
+            if (sendDMXBuffer.IsEmpty)
+                continue;
 
             try
             {
-                var ports = RemoteClientsPorts?.Where(port => port.OutputPortAddress.HasValue && !port.Timouted())?.ToList();
-
-                int sended = 0;
                 var utcNow = DateTime.UtcNow;
-                foreach (var group in ports.GroupBy(p => p.OutputPortAddress))
+
+                // A frame is due when data changed (rate limited to 44Hz for all universes together)
+                // or a universe needs its keep-alive. Nothing is allocated while no frame is due.
+                bool anyUpdated = false, anyKeepAlive = false;
+                foreach (var bag in sendDMXBuffer.Values)
+                {
+                    anyUpdated |= bag.Updated;
+                    anyKeepAlive |= (utcNow - bag.LastSended).TotalMilliseconds >= dmxKeepAliveTime;
+                }
+                if (!anyKeepAlive && !(anyUpdated && (utcNow - lastFrame).TotalMilliseconds >= dmxRefreshTime))
+                    continue;
+
+                var portsByAddress = getOutputPortsByAddress();
+                int sended = 0;
+                foreach (var kvp in sendDMXBuffer)
                     try
                     {
-                        if (!group.Key.HasValue)
+                        PortAddress outputPortAddress = kvp.Key;
+                        DMXSendBag bag = kvp.Value;
+                        if (!bag.Updated && (utcNow - bag.LastSended).TotalMilliseconds < keepAliveBatchTime)
                             continue;
-                        PortAddress outputPortAddress = group.Key.Value;
-                        if (sendDMXBuffer.TryGetValue(outputPortAddress, out DMXSendBag bag))
-                            if ((bag.Updated && (utcNow - bag.LastSended).TotalMilliseconds >= dmxRefreshTime) || (utcNow - bag.LastSended).TotalMilliseconds >= dmxKeepAliveTime)
-                            {
-                                PortConfig config = null;
-                                byte sourcePort = 0;
-                                try
-                                {
-                                    bag.LastSended = utcNow;
-                                    // Send only to ports which are inputs into ArtNet
-                                    config = portConfigs?.Where(cfg => cfg.Input)
-                                                         .FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, outputPortAddress));
 
-                                    if (config == null)
-                                        continue;
+                        // Spec: ArtDmx is only sent to subscribers of the universe.
+                        if (!portsByAddress.Contains(outputPortAddress))
+                            continue;
 
-                                    sourcePort = config?.PortNumber ?? 0;
-                                    var sequence = bag.GetSequence();
-                                    var ipGroups = group.GroupBy(g => g.IpAddress);
-                                    foreach (var ipGroup in ipGroups)
-                                    {
-                                        var port = ipGroup.First();
-                                        sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, sequence, config?.ForceBroadcast ?? false));
-                                        sended++;
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    Logger.LogError(e, "Inner Block");
-                                    continue;
-                                }
+                        bag.LastSended = utcNow;
+                        // Send only to ports which are inputs into ArtNet
+                        PortConfig config = portConfigs?.Where(cfg => cfg.Input)
+                                                        .FirstOrDefault(pc => PortAddress.Equals(pc.PortAddress, outputPortAddress));
+                        if (config == null)
+                            continue;
 
-                                var additionalEndpoints = config?.AdditionalIPEndpoints.ToList();
-                                foreach (IPv4Address ip in additionalEndpoints)
-                                {
-                                    sendTasks.Add(sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, bag.GetSequence()));
-                                    sended++;
-                                }
+                        byte sourcePort = config.PortNumber;
+                        var sequence = bag.GetSequence();
+                        sentToIps.Clear();
+                        foreach (var port in portsByAddress[outputPortAddress])
+                        {
+                            if (port.Timouted() || !sentToIps.Add(port.IpAddress))
+                                continue; // one packet per IP, even if it has several matching ports
+                            sendTasks.Add(sendArtDMX(port, sourcePort, bag.Data, sequence, config.ForceBroadcast));
+                            sended++;
+                        }
 
-                                bag.LastSended = DateTime.UtcNow;
-                            }
+                        foreach (IPv4Address ip in config.AdditionalIPEndpoints.ToList())
+                        {
+                            sendTasks.Add(sendArtDMX(ip, config.PortAddress, sourcePort, bag.Data, bag.GetSequence()));
+                            sended++;
+                        }
                     }
                     catch (Exception e)
                     {
-                        Logger.LogError(e, "Outer Block");
+                        Logger.LogError(e, "Send ArtDMX");
                     }
 
                 await Task.WhenAll(sendTasks);
                 sendTasks.Clear();
 
-                if (EnableSync && sended != 0)
-                    await sendArtSync();
+                if (sended != 0)
+                {
+                    lastFrame = utcNow;
+                    // One ArtSync per frame, after all universes of that frame (Spec: ArtSync).
+                    if (EnableSync)
+                        await sendArtSync();
+                }
             }
             catch (Exception ex) { Logger.LogError(ex); }
         }
@@ -875,6 +907,7 @@ public abstract class AbstractInstance : IInstance
         catch (Exception ex) { Logger.LogError(ex); }
 
         RemoteClients = remoteClients.Select(p => p.Value).ToList().AsReadOnly();
+        outputPortsDirty = true;
         pollReplyProcessSemaphoreSlim.Release();
     }
     private void processArtDMX(ArtDMX artDMX, IPv4Address sourceIp)
@@ -1370,6 +1403,7 @@ public abstract class AbstractInstance : IInstance
         }
 
         RemoteClients = remoteClients.Select(p => p.Value).ToList().AsReadOnly();
+        outputPortsDirty = true;
         pollReplyProcessSemaphoreSlim.Release();
     }
 
@@ -1388,6 +1422,8 @@ public abstract class AbstractInstance : IInstance
 
             ArtNetInstance.OnInstanceAdded -= ArtNet_OnInstanceAdded;
             ArtNetInstance.OnInstanceRemoved -= ArtNet_OnInstanceRemoved;
+            // The poll event is static: without this the disposed instance would stay referenced forever.
+            sendPollThreadBag.SendArtPollEvent -= TimerSendPoll_Elapsed;
 
             foreach (var rBuffer in receivedDMXBuffer.Values)
                 rBuffer.Dispose();

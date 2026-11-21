@@ -37,10 +37,8 @@ namespace ArtNetSharp
             else if (packet.Length != PacketMinLength)
                 throw new ArgumentOutOfRangeException($"This Packet({packet.Length}) should be {PacketMinLength} bytes");
         }
-        ~AbstractArtPacketCore()
-        {
-            ((IDisposable)this).Dispose();
-        }
+        // No finalizer on purpose: packets hold no unmanaged resources, and a finalizer would push
+        // every received/sent packet through the finalization queue (thousands per second with many universes).
 
         public byte[] GetPacket()
         {
