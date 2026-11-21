@@ -440,8 +440,11 @@ public class ArtNet : IDisposable
             bag = new ConcurrentQueue<LoopDataBag>();
             Mask = mask;
         }
+        /// <summary>Every packet sent through the loop (tests count sent packets with it).</summary>
+        public event Action<byte[]> Sent;
         public void Send(byte[] _data)
         {
+            Sent?.Invoke(_data);
             bag.Enqueue(new LoopDataBag(_data));
             DataReceived?.InvokeFailSafe(this, EventArgs.Empty);
         }

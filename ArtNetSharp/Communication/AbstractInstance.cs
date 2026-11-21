@@ -993,11 +993,12 @@ public abstract class AbstractInstance : IInstance
                     pa = port.OutputPortAddress.Value;
                 else if (rdmMessage.Command.HasFlag(ERDM_Command.RESPONSE) && port.InputPortAddress.HasValue)
                     pa = port.InputPortAddress.Value;
-                //Todo Buffer per IP address to prevent Hardware from overflow
-                if (tuples.Any(t => t.Item2 == pa && t.Item1 == port.IpAddress))// skip multiple send the same Package to the same IP
+                // The packet is addressed with the ToD's Port-Address; never send the same packet twice to the same IP.
+                PortAddress destination = bag?.PortAddress ?? pa;
+                if (tuples.Any(t => t.Item2 == destination && t.Item1 == port.IpAddress))
                     continue;
-                tuples.Add(new Tuple<IPv4Address, PortAddress>(port.IpAddress, pa));
-                ArtRDM artRDM = new ArtRDM(bag?.PortAddress ?? pa, rdmMessage);
+                tuples.Add(new Tuple<IPv4Address, PortAddress>(port.IpAddress, destination));
+                ArtRDM artRDM = new ArtRDM(destination, rdmMessage);
                 tasks.Add(Task.Run(async () =>
                 {
                     await handleGatewayQueue(artRDM, port.IpAddress);
@@ -1613,6 +1614,36 @@ public abstract class AbstractInstance : IInstance
         }
         catch (Exception ex) { Logger.LogError(ex); }
     }
+    /// <summary>
+    /// The remote ports an ArtTodData belongs to. A ToD describes the responders of one output: the one with this
+    /// BindIndex and Port-Address. Devices with several ports per BindIndex (e.g. Botex NETcon8-3: 4 ports per
+    /// ArtPollReply) must not get the ToD on all of them, or every ArtRdm is sent once per port.
+    /// </summary>
+    private List<RemoteClientPort> findTodPorts(ArtTodData artTodData, IPv4Address source, out byte usedBindIndex)
+    {
+        usedBindIndex = artTodData.BindIndex;
+        var fromSource = RemoteClientsPorts.Where(p => IPv4Address.Equals(p.IpAddress, source)).ToList();
+        byte bindIndex = artTodData.BindIndex;
+        PortAddress portAddress = artTodData.PortAddress;
+
+        // 1. Spec: BindIndex + Port-Address of the output
+        var ports = fromSource.Where(p => p.BindIndex == bindIndex && p.OutputPortAddress == portAddress).ToList();
+        if (ports.Count != 0)
+            return ports;
+
+        // 2. Devices that send a wrong / no BindIndex (Art-Net 3): the output with this Port-Address
+        ports = fromSource.Where(p => p.OutputPortAddress == portAddress).ToList();
+        if (ports.Count != 0)
+            return ports;
+
+        // 3. Legacy fallback (output address unknown): all ports of this BindIndex, or BindIndex == physical port
+        ports = fromSource.Where(p => p.BindIndex == bindIndex).ToList();
+        if (ports.Count != 0)
+            return ports;
+        usedBindIndex = artTodData.Port;
+        return fromSource.Where(p => p.BindIndex == artTodData.Port).ToList();
+    }
+
     protected void processArtTodData(ArtTodData artTodData, IPv4Address source)
     {
         if (IsDisposing || IsDisposed || IsDeactivated)
@@ -1634,30 +1665,15 @@ public abstract class AbstractInstance : IInstance
         {
             if (RemoteClientsPorts.Count != 0)
             {
-                var ports = RemoteClientsPorts
-                    .Where(p => IPv4Address.Equals(p.IpAddress, source) && p.BindIndex == bindIndex)
-                    .ToList();
-
+                var ports = findTodPorts(artTodData, source, out byte usedBindIndex);
                 if (ports.Count == 0)
-                {
-                    Logger?.LogWarning($"No Port found for Port: {port}, BindIndex: {bindIndex}, SourceIp: {source}");
-                    ports = RemoteClientsPorts
-                    .Where(p => IPv4Address.Equals(p.IpAddress, source) && p.BindIndex == port)
-                    .ToList();
-                    foreach (var _port in ports)
-                        if (emptyTod)
-                            _port.ClearResponderRdmUIDs(artTodData.PortAddress);
-                        else
-                            _port.AddResponderRdmUIDs(artTodData.PortAddress, port, artTodData.Uids);
-                }
-                else
-                {
-                    foreach (var _port in ports)
-                        if (emptyTod)
-                            _port.ClearResponderRdmUIDs(artTodData.PortAddress);
-                        else
-                            _port.AddResponderRdmUIDs(artTodData.PortAddress, bindIndex, artTodData.Uids);
-                }
+                    Logger?.LogWarning($"No Port found for ArtTodData Port-Address: {artTodData.PortAddress}, Port: {port}, BindIndex: {bindIndex}, SourceIp: {source}");
+
+                foreach (var _port in ports)
+                    if (emptyTod)
+                        _port.ClearResponderRdmUIDs(artTodData.PortAddress);
+                    else
+                        _port.AddResponderRdmUIDs(artTodData.PortAddress, usedBindIndex, artTodData.Uids);
             }
         }
         catch (Exception ex) { Logger.LogError(ex); }

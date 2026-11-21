@@ -183,6 +183,60 @@ public class Luminex_Luminode1
         });
         // Test Address input Universe not Supported
     }
+    [Test, DependsOnTest(nameof(Test_Default))]
+    public async Task Test_Rdm()
+    {
+        var responses = new System.Collections.Concurrent.ConcurrentQueue<ArtNetSharp.Misc.ResponseRDMMessageReceivedEventArgs>();
+        instance.ResponseRDMMessageReceived += (_, e) => responses.Enqueue(e);
+
+        // ToD of every output; AtcFlush once to start discovery on the node
+        var outputs = remoteClient!.Ports.Where(p => p.OutputPortAddress.HasValue).Select(p => p.OutputPortAddress!.Value).Distinct().ToArray();
+        foreach (var output in outputs)
+            await instance.PerformRDMDiscovery(output, flush: true);
+        RDMUID_ReceivedBag[] bags = [];
+        for (int i = 0; i < 200; i++)
+        {
+            foreach (var output in outputs)
+                await instance.PerformRDMDiscovery(output);
+            await Task.Delay(100);
+            bags = remoteClient.Ports.SelectMany(p => p.KnownResponderRDMUIDs).ToArray();
+            if (bags.Length != 0 && i > 20)
+                break;
+        }
+        foreach (var port in remoteClient.Ports)
+            TestContext.Out.WriteLine($"Bind {port.BindIndex}: out {port.OutputPortAddress}, UIDs [{string.Join(", ", port.KnownResponderRDMUIDs.Select(b => $"{b.Uid}@{b.PortAddress}"))}]");
+        if (bags.Length == 0)
+            Assert.Ignore("No RDM responders connected");
+
+        Assert.Multiple(() =>
+        {
+            foreach (var port in remoteClient.Ports)
+                foreach (var bag in port.KnownResponderRDMUIDs)
+                    Assert.That(port.OutputPortAddress, Is.EqualTo(bag.PortAddress), $"{bag.Uid} only on the output of its ToD");
+        });
+
+        byte tn = 50;
+        foreach (var uid in bags.Select(b => b.Uid).Distinct())
+        {
+            byte transaction = tn++;
+            await instance.SendArtRDM(new RDMSharp.RDMMessage
+            {
+                Command = RDMSharp.ERDM_Command.GET_COMMAND,
+                Parameter = RDMSharp.ERDM_Parameter.DEVICE_INFO,
+                DestUID = uid,
+                TransactionCounter = transaction,
+            });
+            ArtNetSharp.Misc.ResponseRDMMessageReceivedEventArgs? response = null;
+            for (int i = 0; i < 200 && response == null; i++)
+            {
+                response = responses.FirstOrDefault(r => r.Response.SourceUID == uid && r.Response.TransactionCounter == transaction);
+                await Task.Delay(10);
+            }
+            TestContext.Out.WriteLine($"{uid}: {response?.Response.ResponseType} (PortAddress {response?.PortAddress})");
+            Assert.That(response, Is.Not.Null, $"Response from {uid}");
+        }
+    }
+
     [Test, DependsOnTest(nameof(Test_ArtAddressPort))]
     public async Task Test_ArtAddressIndicate()
     {
