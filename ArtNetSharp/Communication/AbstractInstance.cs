@@ -1573,11 +1573,16 @@ public abstract class AbstractInstance : IInstance
                     knownControllerRDMUIDs.TryAdd(artRDM.Source, bag);
                 }
             }
-            else if (knownControllerRDMUIDs.TryGetValue(artRDM.Destination, out bag))
+            // A response addressed to another controller is not for us. Our own UID can be in this list too
+            // (whenever we saw our own request, e.g. controller and node in one process) - then it IS for us.
+            else if (artRDM.Destination != UID && knownControllerRDMUIDs.TryGetValue(artRDM.Destination, out bag))
                 return;
 
+            // A request comes from a controller's port that inputs onto Art-Net (InputPortAddress),
+            // a response from the node's output port with the RDM devices (OutputPortAddress). This was swapped.
+            bool isResponse = artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE);
             var ports = RemoteClientsPorts
-                .Where(p => IPv4Address.Equals(p.IpAddress, source) && (artRDM.RDMMessage.Command.HasFlag(ERDM_Command.RESPONSE) ? PortAddress.Equals(p.InputPortAddress, artRDM.PortAddress) : PortAddress.Equals(p.OutputPortAddress, artRDM.PortAddress)))
+                .Where(p => IPv4Address.Equals(p.IpAddress, source) && (isResponse ? PortAddress.Equals(p.OutputPortAddress, artRDM.PortAddress) : PortAddress.Equals(p.InputPortAddress, artRDM.PortAddress)))
                 .ToList();
             if (ports.Count != 0)
             {
@@ -1878,6 +1883,9 @@ public abstract class AbstractInstance : IInstance
         }
     }
 
+    /// <summary>Time between sending ArtPoll and checking RemoteClients/ports for timeouts. Settable for tests only.</summary>
+    internal static TimeSpan TimeoutCheckDelay { get; set; } = TimeSpan.FromSeconds(4);
+
     private async void TimerSendPoll_Elapsed(object sender, EventArgs e)
     {
         if (IsDeactivated)
@@ -1887,7 +1895,7 @@ public abstract class AbstractInstance : IInstance
         {
             removeExpiredRdmDedupeEntries();
             await triggerSendArtPoll();
-            await Task.Delay(4000);
+            await Task.Delay(TimeoutCheckDelay); // give the polled devices time to reply before checking for timeouts
             if (IsDisposing || IsDisposed)
                 return;
             await pollReplyProcessSemaphoreSlim.WaitAsync();

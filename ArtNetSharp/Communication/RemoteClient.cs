@@ -80,10 +80,11 @@ public sealed class RemoteClient : INotifyPropertyChanged
             onPropertyChanged();
         }
     }
-    internal bool Timouted() // Spec 1.4dd page 12, doubled to allow one lost reply (6s is allowad, for some delay i add 500 ms)
+    /// <summary>Spec 1.4dd page 12, doubled to allow one lost reply. Settable for tests only.</summary>
+    internal static TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(6);
+    internal bool Timouted()
     {
-        var now = DateTime.UtcNow.AddSeconds(-6);
-        return LastSeen <= now;
+        return LastSeen <= DateTime.UtcNow - Timeout;
     }
 
     private bool isRDMCapable;
@@ -340,6 +341,7 @@ public sealed class RemoteClient : INotifyPropertyChanged
                         // Internal, synchronous hook (not the public event): the library's own state must not
                         // depend on the event queue, which an application handler may delay.
                         port.RdmUidAdded = Port_RDMUIDReceived;
+                        port.RdmUidRemoved = Port_RDMUIDRemoved;
                         EventDispatcher.Raise(events, () => PortDiscovered?.InvokeFailSafe(this, port));
                     }
                 }
@@ -388,7 +390,13 @@ public sealed class RemoteClient : INotifyPropertyChanged
     private void Port_RDMUIDReceived(RDMUID_ReceivedBag bag)
     {
         knownRDMUIDs.AddOrUpdate(bag.Uid, bag, (x, y) => bag);
+        KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly(); // the public list was never updated here
         EventDispatcher.Raise(events, () => RDMUIDReceived?.InvokeFailSafe(this, bag));
+    }
+    private void Port_RDMUIDRemoved(RDMUID_ReceivedBag bag)
+    {
+        if (knownRDMUIDs.TryRemove(bag.Uid, out _))
+            KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
     }
     public void RemoveOutdatedRdmUIDs()
     {

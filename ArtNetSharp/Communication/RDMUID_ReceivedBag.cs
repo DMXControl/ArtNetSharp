@@ -64,10 +64,11 @@ public sealed class RDMUID_ReceivedBag : INotifyPropertyChanged
         LastSeen = DateTime.UtcNow;
     }
 
+    /// <summary>A UID not seen for this long counts as gone. Settable for tests only.</summary>
+    internal static TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
     internal bool Timouted()
     {
-        var now = DateTime.UtcNow.AddSeconds(-30);
-        return LastSeen <= now;
+        return LastSeen <= DateTime.UtcNow - Timeout;
     }
 
     internal byte NewTransactionNumber()

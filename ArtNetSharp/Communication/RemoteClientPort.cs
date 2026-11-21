@@ -157,6 +157,8 @@ public sealed class RemoteClientPort : INotifyPropertyChanged
     private readonly EventDispatcher events;
     /// <summary>Internal, synchronous notification for the owning RemoteClient (keeps library state independent of the event queue).</summary>
     internal Action<RDMUID_ReceivedBag> RdmUidAdded;
+    /// <summary>Internal, synchronous notification for the owning RemoteClient when an empty ToD removed responders.</summary>
+    internal Action<RDMUID_ReceivedBag> RdmUidRemoved;
 
     public RemoteClientPort(in ArtPollReply artPollReply, byte portIndex = 0) : this(artPollReply, portIndex, null)
     {
@@ -259,7 +261,11 @@ public sealed class RemoteClientPort : INotifyPropertyChanged
     {
         bool removed = false;
         foreach (var entry in knownResponderRDMUIDs.Where(kv => kv.Value.PortAddress == portAddress).ToList())
-            removed |= knownResponderRDMUIDs.TryRemove(entry.Key, out _);
+            if (knownResponderRDMUIDs.TryRemove(entry.Key, out var bag))
+            {
+                removed = true;
+                RdmUidRemoved?.Invoke(bag); // keep the RemoteClient's aggregated list in sync
+            }
         if (removed)
             KnownResponderRDMUIDs = knownResponderRDMUIDs.Values.ToList().AsReadOnly();
     }
