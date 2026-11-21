@@ -834,25 +834,22 @@ public abstract class AbstractInstance : IInstance
         List<UID> uids = portConfig.AdditionalRDMUIDs.Select(bag => bag).ToList();
         uids.AddRange(portConfig.DiscoveredRDMUIDs.Select(bag => bag.Uid));
         uids = uids.OrderBy(uid => uid).ToList();
-        ushort totalCount = (ushort)uids.Count();
+        uids = uids.Distinct().ToList();
+        ushort totalCount = (ushort)uids.Count;
+        // Spec (ArtTodData): TodFull = "entire ToD or one packet of a sequence that contains the entire ToD",
+        // BlockCount 0,1,2,... for blocks of up to 200 UIDs. TodNak means "ToD not available / discovery incomplete",
+        // so it is wrong both for the follow-up blocks and for an empty ToD (that is a full ToD with UidTotal 0).
         byte blockCount = 0;
-        EArtTodDataCommandResponse command = EArtTodDataCommandResponse.TodFull;
+        int offset = 0;
         do
         {
-            if (uids.Count == 0)
-                command = EArtTodDataCommandResponse.TodNak;
-
-            var current = uids.Take(200).ToArray();
-            artTodData = new ArtTodData(portConfig.PortAddress, portConfig.PortNumber, portConfig.BindIndex, totalCount, blockCount, current, command);
+            var current = uids.Skip(offset).Take(ArtTodData.MaxUidsPerPacket).ToArray();
+            artTodData = new ArtTodData(portConfig.PortAddress, portConfig.PortNumber, portConfig.BindIndex, totalCount, blockCount, current, EArtTodDataCommandResponse.TodFull);
             await TrySendPacket(artTodData, ipAddress);
             blockCount++;
-            uids = uids.Except(current).ToList();
-
-            if (uids.Count != 0)
-                command = EArtTodDataCommandResponse.TodNak;
+            offset += current.Length;
         }
-        while (uids.Count != 0);
-        uids.Clear();
+        while (offset < uids.Count);
     }
     public async Task SendArtRDM(RDMMessage rdmMessage)
     {
@@ -1147,7 +1144,13 @@ public abstract class AbstractInstance : IInstance
         if (IsDisposing || IsDisposed || IsDeactivated)
             return;
 
-        if (artTodData.UidTotalCount == 0 || artTodData.Uids.Length == 0)
+        // Spec: TodNak = ToD not available / discovery incomplete -> keep what is known.
+        if (artTodData.Command == EArtTodDataCommandResponse.TodNak)
+            return;
+
+        // A TodFull with UidTotal 0 is a valid, empty ToD: all responders on this Port-Address are gone.
+        bool emptyTod = artTodData.UidTotalCount == 0;
+        if (!emptyTod && artTodData.Uids.Length == 0)
             return;
 
         byte bindIndex = artTodData.BindIndex;
@@ -1168,12 +1171,18 @@ public abstract class AbstractInstance : IInstance
                     .Where(p => IPv4Address.Equals(p.IpAddress, source) && p.BindIndex == port)
                     .ToList();
                     foreach (var _port in ports)
-                        _port.AddResponderRdmUIDs(artTodData.PortAddress, port, artTodData.Uids);
+                        if (emptyTod)
+                            _port.ClearResponderRdmUIDs(artTodData.PortAddress);
+                        else
+                            _port.AddResponderRdmUIDs(artTodData.PortAddress, port, artTodData.Uids);
                 }
                 else
                 {
                     foreach (var _port in ports)
-                        _port.AddResponderRdmUIDs(artTodData.PortAddress, bindIndex, artTodData.Uids);
+                        if (emptyTod)
+                            _port.ClearResponderRdmUIDs(artTodData.PortAddress);
+                        else
+                            _port.AddResponderRdmUIDs(artTodData.PortAddress, bindIndex, artTodData.Uids);
                 }
             }
         }
@@ -1186,13 +1195,19 @@ public abstract class AbstractInstance : IInstance
                 .ToList();
 
             foreach (var config in configs)
-                config.AddDiscoveredRdmUIDs(artTodData.PortAddress, artTodData.BindIndex, artTodData.Uids);
+                if (emptyTod)
+                    config.ClearDiscoveredRdmUIDs(artTodData.PortAddress);
+                else
+                    config.AddDiscoveredRdmUIDs(artTodData.PortAddress, artTodData.BindIndex, artTodData.Uids);
         }
         catch (Exception ex) { Logger.LogError(ex); }
 
         try
         {
-            AddRdmUIDs(artTodData.PortAddress, artTodData.BindIndex, artTodData.Uids);
+            if (emptyTod)
+                clearRdmUIDs(artTodData.PortAddress, artTodData.BindIndex);
+            else
+                AddRdmUIDs(artTodData.PortAddress, artTodData.BindIndex, artTodData.Uids);
         }
         catch (Exception ex) { Logger.LogError(ex); }
     }
@@ -1421,6 +1436,14 @@ public abstract class AbstractInstance : IInstance
             nodeStatus |= NodeStatus.RDMSupported;
 
         return nodeStatus;
+    }
+    private void clearRdmUIDs(PortAddress portAddress, byte bindIndex)
+    {
+        bool removed = false;
+        foreach (var entry in knownRDMUIDs.Where(kv => kv.Value.PortAddress == portAddress && kv.Value.BindIndex == bindIndex).ToList())
+            removed |= knownRDMUIDs.TryRemove(entry.Key, out _);
+        if (removed)
+            KnownRDMUIDs = knownRDMUIDs.Values.ToList().AsReadOnly();
     }
     private void AddRdmUIDs(PortAddress portAddress, byte bindIndex, params UID[] rdmuids)
     {

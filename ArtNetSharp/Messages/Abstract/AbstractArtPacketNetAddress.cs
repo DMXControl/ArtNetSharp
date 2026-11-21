@@ -16,6 +16,7 @@
                              in ushort protocolVersion = Constants.PROTOCOL_VERSION) : base(net, protocolVersion)
         {
             Address = address;
+            PortAddress = new PortAddress(Net, Address); // was only set when deserializing, so created packets reported Port-Address 0
         }
         public AbstractArtPacketNetAddress(in byte[] packet) : base(packet)
         {

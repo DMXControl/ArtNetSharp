@@ -146,6 +146,15 @@ public class PortConfig
 
         AdditionalRDMUIDs = additionalRDMUIDs.Values.ToList().AsReadOnly();
     }
+    /// <summary>An empty ToD (TodFull with UidTotal 0) was received: no responders left on this Port-Address.</summary>
+    internal void ClearDiscoveredRdmUIDs(PortAddress portAddress)
+    {
+        bool removed = false;
+        foreach (var entry in discoveredRDMUIDs.Where(kv => kv.Value.PortAddress == portAddress).ToList())
+            removed |= discoveredRDMUIDs.TryRemove(entry.Key, out _);
+        if (removed)
+            DiscoveredRDMUIDs = discoveredRDMUIDs.Values.ToList().AsReadOnly();
+    }
     public void RemoveOutdatedRdmUIDs()
     {
         var outdated = discoveredRDMUIDs.Where(uid => uid.Value.Timouted()).ToList();

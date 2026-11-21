@@ -250,6 +250,15 @@ public sealed class RemoteClientPort : INotifyPropertyChanged
         }
         KnownResponderRDMUIDs = knownResponderRDMUIDs.Values.ToList().AsReadOnly();
     }
+    /// <summary>An empty ToD (TodFull with UidTotal 0) was received: no responders left on this Port-Address.</summary>
+    internal void ClearResponderRdmUIDs(PortAddress portAddress)
+    {
+        bool removed = false;
+        foreach (var entry in knownResponderRDMUIDs.Where(kv => kv.Value.PortAddress == portAddress).ToList())
+            removed |= knownResponderRDMUIDs.TryRemove(entry.Key, out _);
+        if (removed)
+            KnownResponderRDMUIDs = knownResponderRDMUIDs.Values.ToList().AsReadOnly();
+    }
     public void RemoveOutdatedRdmUIDs()
     {
         var outdated = knownResponderRDMUIDs.Where(uid => uid.Value.Timouted()).ToList();
