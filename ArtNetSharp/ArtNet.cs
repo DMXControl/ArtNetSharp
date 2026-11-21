@@ -695,6 +695,10 @@ public class ArtNet : IDisposable
                 continue; // already added: skip only this one, not the remaining instances
             if (this.instances.TryAdd(nextKey(), instance))
             {
+                // Before OnInstanceAdded: its handlers already check IsDeactivated.
+                // Only for the ArtNet the instance was created for (same semantics as the former Instances.Contains check).
+                if (ReferenceEquals(instance.ArtNetInstance, this))
+                    instance.RegisteredIn = this;
                 Logger?.LogDebug($"Added instance {instance.GetType().Name}: {instance.Name} ({instance.ShortName})");
                 OnInstanceAdded?.InvokeFailSafe(this, instance);
             }
@@ -711,6 +715,8 @@ public class ArtNet : IDisposable
                 continue; // not registered: skip only this one, not the remaining instances
             if (this.instances.TryRemove(toRemove.Key, out _))
             {
+                if (ReferenceEquals(instance.RegisteredIn, this))
+                    instance.RegisteredIn = null;
                 Logger?.LogDebug($"Removed instance {instance.Name} ({instance.ShortName})");
                 OnInstanceRemoved?.InvokeFailSafe(this, instance);
             }

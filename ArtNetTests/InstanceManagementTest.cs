@@ -41,6 +41,22 @@ public class InstanceManagementTest
     }
 
     [Test]
+    public void IsDeactivatedFollowsAddAndRemove()
+    {
+        var a = new NodeMock(artNet) { Name = "A" };
+        Assert.That(a.IsDeactivated, Is.True, "not added yet");
+        artNet.AddInstance(a);
+        Assert.That(a.IsDeactivated, Is.False, "added");
+        artNet.RemoveInstance(a);
+        Assert.That(a.IsDeactivated, Is.True, "removed");
+
+        using var otherArtNet = new ArtNet();
+        otherArtNet.AddInstance(a);
+        Assert.That(a.IsDeactivated, Is.True, "added to an ArtNet it was not created for");
+        otherArtNet.RemoveInstance(a);
+    }
+
+    [Test]
     public void ManyInstancesAreAllAdded()
     {
         var nodes = Enumerable.Range(0, 200).Select(i => new NodeMock(artNet) { Name = $"N{i}" }).ToArray();

@@ -25,7 +25,19 @@ public abstract class AbstractInstance : IInstance
     bool IDisposableExtended.IsDisposed => IsDisposed;
     bool IDisposableExtended.IsDisposing => IsDisposing;
 
-    public bool IsDeactivated => !ArtNetInstance?.Instances.Contains(this) ?? true;
+    /// <summary>
+    /// The ArtNet this instance is currently added to (set by <see cref="ArtNet.AddInstance"/> / <see cref="ArtNet.RemoveInstance"/>).
+    /// Replaces a lookup in <see cref="ArtNet.Instances"/>, which allocated two lists on every check (every packet, send and DMX tick).
+    /// </summary>
+    internal volatile ArtNet RegisteredIn;
+    public bool IsDeactivated
+    {
+        get
+        {
+            var artNet = ArtNetInstance;
+            return artNet == null || !ReferenceEquals(RegisteredIn, artNet);
+        }
+    }
 
     private readonly Random _random;
     internal ArtNet ArtNetInstance;
@@ -1410,7 +1422,7 @@ public abstract class AbstractInstance : IInstance
 
     private async void TimerSendPoll_Elapsed(object sender, EventArgs e)
     {
-        if (!(ArtNetInstance?.Instances?.Contains(this) ?? false))
+        if (IsDeactivated)
             return;
 
         await triggerSendArtPoll();
