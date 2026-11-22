@@ -1737,6 +1737,10 @@ public abstract class AbstractInstance : IInstance
     {
         if (IsDisposing || IsDisposed || IsDeactivated)
             return;
+        // async void: an escaping exception would terminate the host application. An ArtRdm without a valid RDM message
+        // can not be processed (the duplicate detection below needs its transaction).
+        if (artRDM?.RDMMessage is null)
+            return;
         ControllerRDMUID_Bag bag = null;
         try
         {

@@ -656,23 +656,31 @@ public class ArtNet : IDisposable
             return;
 
         // Remove clients whose socket died (e.g. after a send error), so they get recreated below.
-        foreach (var dead in networkClients.Where(nc => !nc.Value.ClientAlive).ToList())
-            if (networkClients.TryRemove(dead.Key, out NetworkClientBag ncb))
-            {
-                ncb.ReceivedData -= ReceivedData;
-                ncb.Dispose();
-                unicastRoutes.Clear();
-                nicScanRequested = true;
-                Logger?.LogDebug($"Removed dead NetworkClient {ncb.LocalIpAddress}");
-            }
+        try // async void: an escaping exception would terminate the host application
+        {
+            foreach (var dead in networkClients.Where(nc => !nc.Value.ClientAlive).ToList())
+                if (networkClients.TryRemove(dead.Key, out NetworkClientBag ncb))
+                {
+                    ncb.ReceivedData -= ReceivedData;
+                    ncb.Dispose();
+                    unicastRoutes.Clear();
+                    nicScanRequested = true;
+                    Logger?.LogDebug($"Removed dead NetworkClient {ncb.LocalIpAddress}");
+                }
+        }
+        catch (Exception e)
+        {
+            Logger?.LogError(e, "Error removing dead NetworkClients");
+        }
 
         if (!nicScanRequested && DateTime.UtcNow - lastFullNicScan < FullNicScanInterval)
             return;
 
-        if (updateNetworkSenaphoreSlim.CurrentCount == 0)
+        var semaphore = updateNetworkSenaphoreSlim; // set to null on dispose, possibly while we get here
+        if (semaphore is null || semaphore.CurrentCount == 0)
             return; // a scan is running; nicScanRequested stays set, so the next tick picks it up
 
-        await updateNetworkSenaphoreSlim?.WaitAsync();
+        await semaphore.WaitAsync();
         try
         {
             nicScanRequested = false;
@@ -719,8 +727,14 @@ public class ArtNet : IDisposable
         }
         finally
         {
-            if (!(IsDisposed || IsDisposing))
-                updateNetworkSenaphoreSlim?.Release();
+            try
+            {
+                semaphore.Release();
+            }
+            catch (ObjectDisposedException)
+            {
+                // disposed while the scan was running
+            }
         }
     }
 
