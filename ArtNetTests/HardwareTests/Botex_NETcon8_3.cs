@@ -147,7 +147,7 @@ public class Botex_NETcon8_3
         return [];
     }
 
-    [Test, Order(1)]
+    [Test]
     public void Test_Default()
     {
         Assert.That(remoteClient, Is.Not.Null);
@@ -161,7 +161,7 @@ public class Botex_NETcon8_3
         });
     }
 
-    [Test, Order(2)]
+    [Test, DependsOnTest(nameof(Test_Default))]
     public async Task Test_TodLandsOnlyOnTheMatchingOutput()
     {
         Assert.That(remoteClient, Is.Not.Null);
@@ -177,7 +177,7 @@ public class Botex_NETcon8_3
         });
     }
 
-    [Test, Order(3)]
+    [Test, DependsOnTest(nameof(Test_Default))]
     public async Task Test_GetDeviceInfoFromEveryResponder()
     {
         Assert.That(remoteClient, Is.Not.Null);

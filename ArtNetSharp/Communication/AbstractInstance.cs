@@ -1949,9 +1949,14 @@ public abstract class AbstractInstance : IInstance
             ports = RemoteClientsPorts.Where(port => port.OutputPortAddress.HasValue && PortAddress.Equals(port.OutputPortAddress.Value, portAddress.Value)).ToList();
 
         List<Task> tasks = new List<Task>();
+        // Several remote ports can share IP and output Port-Address (e.g. LumiNode12: process blocks 13-16 report
+        // Universe 0 like output 1): one ArtTodRequest / AtcFlush per IP and Port-Address (broadcast: per Port-Address).
+        var sent = new HashSet<(IPv4Address, PortAddress)>();
         foreach (var port in ports)
         {
             if (!port.IsRDMCapable)
+                continue;
+            if (!sent.Add((broadcast ? default : port.IpAddress, port.OutputPortAddress.Value)))
                 continue;
 
             if (flush)
