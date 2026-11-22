@@ -31,9 +31,21 @@
 		</None>
 		<None Include="Icons\ArtNetSharp.png" Pack="true" PackagePath="" />
 	</ItemGroup>
+	<PropertyGroup>
+		<!-- Local development: if the RDMSharp repository is checked out next to this one, build against it directly. -->
+		<RDMSharpProject>$(MSBuildThisFileDirectory)..\..\RDMSharp\RDMSharp\RDMSharp.csproj</RDMSharpProject>
+	</PropertyGroup>
+
+	<ItemGroup Condition="Exists('$(RDMSharpProject)')">
+		<ProjectReference Include="$(RDMSharpProject)" />
+	</ItemGroup>
+
+	<!-- Otherwise (e.g. GitHub Actions, which only checks out this repository) use the published package. -->
+	<ItemGroup Condition="!Exists('$(RDMSharpProject)')">
+		<PackageReference Include="RDMSharp" Version="0.0.17" />
+	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="DMXControlProjects.WellKnownDataTypes" Version="0.0.6" />
-		<PackageReference Include="RDMSharp" Version="0.0.17" />
 	</ItemGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0" />
